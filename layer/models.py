@@ -17,8 +17,8 @@ class Unit(models.Model):
         PERCENTAGE = "%"
 
     name = models.CharField(null=False, choices=UnitTypes.choices, unique=True)
-    description = models.CharField(null=True, max_length=1500)
-    symbol = models.CharField(null=False, choices=UnitSymbolTypes.choices)
+    description = models.CharField(null=True, max_length=1500, blank=True)
+    symbol = models.CharField(null=False, choices=UnitSymbolTypes.choices, blank=True)
 
 
 class Geography(models.Model):
@@ -40,8 +40,8 @@ class Geography(models.Model):
 
 
 class Page(models.Model):
-    name = models.CharField(max_length=20, null=True)
-    description = models.CharField(null=True, max_length=1500)
+    name = models.CharField(max_length=20, null=True, blank=True)
+    description = models.CharField(null=True, max_length=1500, blank=True)
     slug = models.CharField(max_length=20, null=True)
 
     def save(self, *args, **kwargs):
@@ -84,7 +84,7 @@ class Indicators(models.Model):
     geography = models.ForeignKey(Geography, on_delete=models.PROTECT)
     department = models.ForeignKey(Department, on_delete=models.PROTECT)
     # page = models.ManyToManyField(Page, blank=True)
-    scheme = models.ForeignKey(Scheme, on_delete=models.PROTECT)
+    scheme = models.ForeignKey(Scheme, on_delete=models.PROTECT, null=True, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -99,4 +99,4 @@ class Data(models.Model):
     indicator = models.ForeignKey(Indicators, on_delete=models.CASCADE, null=False)
     geography = models.ForeignKey(Geography, on_delete=models.PROTECT, null=False)
     scheme = models.ForeignKey(Scheme, on_delete=models.PROTECT, null=False)
-    data_period = models.CharField(max_length=100, null=True)
+    data_period = models.CharField(max_length=100, null=True, blank=True)
