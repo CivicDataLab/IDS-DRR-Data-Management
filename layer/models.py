@@ -42,7 +42,7 @@ class Geography(models.Model):
 class Page(models.Model):
     name = models.CharField(max_length=20, null=True, blank=True)
     description = models.CharField(null=True, max_length=1500, blank=True)
-    slug = models.CharField(max_length=20, null=True)
+    slug = models.CharField(max_length=20, null=True, blank=True)
 
     def save(self, *args, **kwargs):
         self.slug = slugify(f"{self.name}_{self.id}")
@@ -51,8 +51,8 @@ class Page(models.Model):
 
 class Department(models.Model):
     name = models.CharField(max_length=20, null=False)
-    description = models.CharField(null=True, max_length=1500)
-    slug = models.SlugField(max_length=20, null=True)
+    description = models.CharField(null=True, max_length=1500, blank=True)
+    slug = models.SlugField(max_length=20, null=True, blank=True)
     geography = models.ForeignKey(Geography, on_delete=models.PROTECT)
 
     def save(self, *args, **kwargs):
@@ -63,8 +63,8 @@ class Department(models.Model):
 
 class Scheme(models.Model):
     name = models.CharField(max_length=20, null=False)
-    description = models.CharField(null=True, max_length=1500)
-    slug = models.SlugField(max_length=20, null=True)
+    description = models.CharField(null=True, max_length=1500, blank=True)
+    slug = models.SlugField(max_length=20, null=True, blank=True)
     department = models.ForeignKey(Department, on_delete=models.PROTECT)
 
     def save(self, *args, **kwargs):
@@ -75,14 +75,14 @@ class Scheme(models.Model):
 
 class Indicators(models.Model):
     name = models.CharField(max_length=20, null=False)
-    long_description = models.CharField(null=True, max_length=500)
-    short_description = models.CharField(null=True, max_length=100)
-    category = models.CharField(null=True, max_length=100)
+    long_description = models.CharField(null=True, max_length=500, blank=True)
+    short_description = models.CharField(null=True, max_length=100, blank=True)
+    category = models.CharField(null=True, max_length=100, blank=True)
     type = models.CharField(max_length=20, null=False)
     slug = models.SlugField(max_length=20, null=True, blank=True)
     unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True)
-    geography = models.ForeignKey(Geography, on_delete=models.PROTECT)
-    department = models.ForeignKey(Department, on_delete=models.PROTECT)
+    geography = models.ForeignKey(Geography, on_delete=models.PROTECT, null=True, blank=True)
+    department = models.ForeignKey(Department, on_delete=models.PROTECT, null=True, blank=True)
     # page = models.ManyToManyField(Page, blank=True)
     scheme = models.ForeignKey(Scheme, on_delete=models.PROTECT, null=True, blank=True)
 
@@ -93,7 +93,7 @@ class Indicators(models.Model):
 
 
 class Data(models.Model):
-    value = models.FloatField(null=True)
+    value = models.FloatField(null=True, blank=True)
     added = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
     indicator = models.ForeignKey(Indicators, on_delete=models.CASCADE, null=False)
