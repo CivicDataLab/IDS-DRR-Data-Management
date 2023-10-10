@@ -30,7 +30,15 @@ def get_district_data():
 
     data_queryset = Data.objects.all()
     for obj in data_queryset:
-        data_dict[obj.geography.type] = obj.geography.name
+        data_dict[
+            obj.geography.parentId.type
+            if obj.geography.parentId
+            else obj.geography.type
+        ] = (
+            obj.geography.parentId.name
+            if obj.geography.parentId
+            else obj.geography.name
+        )
         data_dict[obj.indicator.name] = obj.value
         data_list.append(data_dict)
         data_dict = {}
