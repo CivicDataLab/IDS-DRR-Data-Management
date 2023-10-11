@@ -30,15 +30,18 @@ def get_district_data() -> list:
     data_list = []
     data_dict = {}
 
+    geo_list = Data.objects.values_list("geography__name", flat=True).distinct()
     data_queryset = Data.objects.all()
-    filtered_queryset = data_queryset.values(
+    colated_queryset = data_queryset.values(
         "indicator__name", "geography__parentId__name", "geography__parentId__type"
-    ).annotate(indc_avg=Avg("value"))
+    ).annotate(indc_avg=Avg("value")).order_by()
 
-    print(filtered_queryset)
-    for obj in filtered_queryset:
-        data_dict[obj["geography__parentId__type"].lower()] = obj["geography__parentId__name"]
-        data_dict[obj["indicator__name"]] = obj["indc_avg"]
+    # print(filtered_queryset.filter(geography__name="Assam"))
+    for geo in geo_list:
+        filtered_queryset = colated_queryset.filter(geography__name=f"{geo}")
+        for obj in filtered_queryset:
+            data_dict[obj["geography__parentId__type"].lower()] = obj["geography__parentId__name"]
+            data_dict[obj["indicator__name"]] = obj["indc_avg"]
         data_list.append(data_dict)
         data_dict = {}
 
