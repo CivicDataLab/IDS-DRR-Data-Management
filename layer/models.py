@@ -74,7 +74,7 @@ class Scheme(models.Model):
 
 
 class Indicators(models.Model):
-    name = models.CharField(max_length=20, null=False)
+    name = models.CharField(max_length=100, null=False)
     long_description = models.CharField(null=True, max_length=500, blank=True)
     short_description = models.CharField(null=True, max_length=100, blank=True)
     category = models.CharField(null=True, max_length=100, blank=True)

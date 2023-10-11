@@ -1,12 +1,14 @@
 import strawberry
 import strawberry_django
 import json
+
+from django.db.models import Avg, Count
 from typing import Optional
 from strawberry.scalars import JSON
 from strawberry_django.optimizer import DjangoOptimizerExtension
 
 from . import types
-from .models import Geography, Data
+from .models import Geography, Data, Indicators
 
 
 # def get_bar_data(self) -> str:
@@ -24,24 +26,22 @@ from .models import Geography, Data
 #     return obj
 
 
-def get_district_data():
+def get_district_data() -> list:
     data_list = []
     data_dict = {}
 
     data_queryset = Data.objects.all()
-    for obj in data_queryset:
-        data_dict[
-            obj.geography.parentId.type
-            if obj.geography.parentId
-            else obj.geography.type
-        ] = (
-            obj.geography.parentId.name
-            if obj.geography.parentId
-            else obj.geography.name
-        )
-        data_dict[obj.indicator.name] = obj.value
+    filtered_queryset = data_queryset.values(
+        "indicator__name", "geography__parentId__name", "geography__parentId__type"
+    ).annotate(indc_avg=Avg("value"))
+
+    print(filtered_queryset)
+    for obj in filtered_queryset:
+        data_dict[obj["geography__parentId__type"].lower()] = obj["geography__parentId__name"]
+        data_dict[obj["indicator__name"]] = obj["indc_avg"]
         data_list.append(data_dict)
         data_dict = {}
+
     return data_list
 
 
@@ -49,7 +49,7 @@ def get_district_data():
 class Query:  # camelCase
     # unit: list[types.Unit] = strawberry.django.field(resolver=get_unit)
     geography: list[types.Geography] = strawberry.django.field()
-    department: list[types.Department] = strawberry.django.field()
+    # department: list[types.Department] = strawberry.django.field()
     scheme: list[types.Scheme] = strawberry.django.field()
     indicators: list[types.Indicators] = strawberry.django.field()
     data: list[types.Data] = strawberry.django.field()
