@@ -41,7 +41,7 @@ def get_district_data() -> list:
         filtered_queryset = colated_queryset.filter(geography__parentId__name=f"{geo}")
         for obj in filtered_queryset:
             data_dict[obj["geography__parentId__type"].lower()] = obj["geography__parentId__name"]
-            data_dict[obj["indicator__name"]] = obj["indc_avg"]
+            data_dict[obj["indicator__name"]] = round(obj["indc_avg"],2)
         data_list.append(data_dict)
         data_dict = {}
 
