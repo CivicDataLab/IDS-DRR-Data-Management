@@ -7,7 +7,6 @@ from strawberry import auto
 from . import models
 
 """
-NOTE
 
 Type Name should be in PascalCase.
 Field Name should be in camelCase.
@@ -16,6 +15,8 @@ This is as per Apollo Schema naming convention. Read more here - https://www.apo
 
 class User: <This is Type Name>
     name: str <This is Field Name>
+
+NOTE: Field names in a Type should match with its Model counterpart. 
 
 """
 
@@ -72,8 +73,8 @@ class Scheme:
 @strawberry.django.type(models.Indicators)
 class Indicators:
     name: auto
-    longDescription: Optional[str] = None
-    shortDescription: Optional[str] = None
+    long_description: Optional[str] = None
+    short_description: Optional[str] = None
     category: Optional[str] = None
     type: auto
     slug: Optional[str] = None
@@ -82,6 +83,7 @@ class Indicators:
     department: Optional["Department"] = None
     # page: Optional[List[Page]] = None
     scheme: Optional["Scheme"] = None
+    parent: auto
 
 
 @strawberry.django.type(models.Data)
@@ -91,7 +93,7 @@ class Data:
     indicator: "Indicators"
     geography: "Geography"
     scheme: Optional["Scheme"] = None
-    dataPeriod: Optional[str]
+    data_period: Optional[str]
 
 
 # @strawberry.type

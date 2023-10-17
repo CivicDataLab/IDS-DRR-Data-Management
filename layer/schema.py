@@ -8,7 +8,7 @@ from strawberry.scalars import JSON
 from strawberry_django.optimizer import DjangoOptimizerExtension
 
 from . import types
-from .models import Geography, Data, Indicators
+from .models import Geography, Data
 
 
 # def get_bar_data(self) -> str:
@@ -19,31 +19,57 @@ from .models import Geography, Data, Indicators
 #     )
 
 
-# def get_unit(filter: Optional[UnitFilter]):
+# def get_unit(filter:Optional[types.UnitFilter]=None):
 #     print(filter)
-#     obj = models.Unit.objects.all()
+#     obj = Unit.objects.all()
 #     obj = strawberry_django.filters.apply(filter, obj)
 #     return obj
 
 
-def get_district_data() -> list:
+def get_district_data(geo_filter: Optional[types.GeoFilter] = None) -> list:
     data_list = []
     data_dict = {}
 
-    geo_list = Data.objects.values_list("geography__parentId__name", flat=True).distinct()
-    data_queryset = Data.objects.all()
-    colated_queryset = data_queryset.values(
-        "indicator__slug", "geography__parentId__name", "geography__parentId__type"
-    ).annotate(indc_avg=Avg("value")).order_by()
+    if geo_filter:
+        geo_list = Geography.objects.filter(parentId=geo_filter.parentId.pk)
+        colated_queryset = Data.objects.filter(
+            geography__parentId=geo_filter.parentId.pk
+        )
+        for geo in geo_list:
+            filtered_queryset = colated_queryset.filter(geography=geo)
+            for obj in filtered_queryset:
+                data_dict[obj.geography.type.lower()] = obj.geography.name
+                data_dict[obj.indicator.slug] = round(obj.value, 2)
+            data_list.append(data_dict)
+            data_dict = {}
 
-    # print(filtered_queryset.filter(geography__name="Assam"))
-    for geo in geo_list:
-        filtered_queryset = colated_queryset.filter(geography__parentId__name=f"{geo}")
-        for obj in filtered_queryset:
-            data_dict[obj["geography__parentId__type"].lower()] = obj["geography__parentId__name"]
-            data_dict[obj["indicator__slug"]] = round(obj["indc_avg"],2)
-        data_list.append(data_dict)
-        data_dict = {}
+    else:
+        geo_list = Data.objects.values_list(
+            "geography__parentId__name", flat=True
+        ).distinct()
+        # print(geo_list)
+        data_queryset = Data.objects.all()
+        colated_queryset = (
+            data_queryset.values(
+                "indicator__slug",
+                "geography__parentId__name",
+                "geography__parentId__type",
+            )
+            .annotate(indc_avg=Avg("value"))
+            .order_by()
+        )
+
+        for geo in geo_list:
+            filtered_queryset = colated_queryset.filter(
+                geography__parentId__name=f"{geo}"
+            )
+            for obj in filtered_queryset:
+                data_dict[obj["geography__parentId__type"].lower()] = obj[
+                    "geography__parentId__name"
+                ]
+                data_dict[obj["indicator__slug"]] = round(obj["indc_avg"], 2)
+            data_list.append(data_dict)
+            data_dict = {}
 
     return data_list
 
