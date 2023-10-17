@@ -83,7 +83,7 @@ class Indicators:
     department: Optional["Department"] = None
     # page: Optional[List[Page]] = None
     scheme: Optional["Scheme"] = None
-    parent: auto
+    parent: Optional["Indicators"]
 
 
 @strawberry.django.type(models.Data)
