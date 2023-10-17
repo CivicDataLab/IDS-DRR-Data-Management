@@ -77,15 +77,17 @@ class Indicators(models.Model):
     name = models.CharField(max_length=100, null=False)
     long_description = models.CharField(null=True, max_length=500, blank=True)
     short_description = models.CharField(null=True, max_length=100, blank=True)
-    category = models.CharField(null=True, max_length=100, blank=True)
-    type = models.CharField(max_length=20, null=False)
+    category = models.CharField(null=True, max_length=100, blank=True, help_text="Contains a list of sub-indicators.")
+    type = models.CharField(max_length=20, null=False, help_text="Defines the type of indicator that is Raw, Derived, etc.")
     slug = models.SlugField(max_length=20, null=True, blank=True)
     unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True)
     geography = models.ForeignKey(Geography, on_delete=models.PROTECT, null=True, blank=True)
     department = models.ForeignKey(Department, on_delete=models.PROTECT, null=True, blank=True)
+    data_source = models.CharField(max_length=100, null=True, blank=True)
     # page = models.ManyToManyField(Page, blank=True)
     scheme = models.ForeignKey(Scheme, on_delete=models.PROTECT, null=True, blank=True)
-
+    parent = models.ForeignKey("self", blank=True, null=True, on_delete=models.PROTECT, related_name="parent_field")
+    
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(f"{self.name}")
