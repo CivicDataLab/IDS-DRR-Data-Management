@@ -98,13 +98,17 @@ def get_categories():
     data_list = []
     data_dict = {}
     
-    indc_queryset = Indicators.objects.all()
-    for ind in indc_queryset:
-        filtered_queryset = indc_queryset.filter(parent=ind)
+    category_list = Indicators.objects.values_list('category', flat=True).distinct()
+    # print(category_list)
+    for catgry in category_list:
+        filtered_queryset = Indicators.objects.filter(category=catgry)
         if filtered_queryset.exists():
-            for i, obj in enumerate(filtered_queryset):
-                data_dict["parent"] = ind.name
-                data_dict[f"child_{i}"] = obj.name
+            data_dict[catgry] = {}
+            for obj in filtered_queryset:
+                data_dict[catgry][obj.name] = obj.slug
+                # print(data_dict)
+                # data_dict[catgry] = {}
+                # data_dict[f"child_{i}"] = obj.name
             data_list.append(data_dict)
             data_dict = {}
     
