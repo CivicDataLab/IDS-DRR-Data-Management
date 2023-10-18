@@ -8,7 +8,7 @@ from strawberry.scalars import JSON
 from strawberry_django.optimizer import DjangoOptimizerExtension
 
 from . import types
-from .models import Geography, Data
+from .models import Geography, Data, Indicators
 
 
 # def get_bar_data(self) -> str:
@@ -39,7 +39,7 @@ def get_district_data(geo_filter: Optional[types.GeoFilter] = None) -> list:
             filtered_queryset = colated_queryset.filter(geography=geo)
             for obj in filtered_queryset:
                 data_dict[obj.geography.type.lower()] = obj.geography.name
-                data_dict[obj.indicator.slug] = round(obj.value, 2)
+                data_dict[obj.indicator.slug] = obj.value
             data_list.append(data_dict)
             data_dict = {}
 
@@ -74,6 +74,43 @@ def get_district_data(geo_filter: Optional[types.GeoFilter] = None) -> list:
     return data_list
 
 
+def get_revenue_data(geo_filter: Optional[types.GeoFilter] = None) -> list:
+    data_list = []
+    data_dict = {}
+
+    geo_queryset = Geography.objects.filter(type="REVENUE CIRCLE")
+    if geo_filter:
+        geo_queryset = strawberry_django.filters.apply(geo_filter, geo_queryset)
+    # print(geo_queryset)
+    rc_data_queryset = Data.objects.all()
+
+    for geo in geo_queryset:
+        filtered_queryset = rc_data_queryset.filter(geography=geo)
+        for obj in filtered_queryset:
+            data_dict[obj.geography.type.lower()] = obj.geography.name
+            data_dict[obj.indicator.slug] = obj.value
+        data_list.append(data_dict)
+        data_dict = {}
+
+    return data_list
+
+def get_categories():
+    data_list = []
+    data_dict = {}
+    
+    indc_queryset = Indicators.objects.all()
+    for ind in indc_queryset:
+        filtered_queryset = indc_queryset.filter(parent=ind)
+        if filtered_queryset.exists():
+            for i, obj in enumerate(filtered_queryset):
+                data_dict["parent"] = ind.name
+                data_dict[f"child_{i}"] = obj.name
+            data_list.append(data_dict)
+            data_dict = {}
+    
+    # print(data_list)
+    return data_list
+
 @strawberry.type
 class Query:  # camelCase
     # unit: list[types.Unit] = strawberry.django.field(resolver=get_unit)
@@ -81,8 +118,10 @@ class Query:  # camelCase
     # department: list[types.Department] = strawberry.django.field()
     scheme: list[types.Scheme] = strawberry.django.field()
     indicators: list[types.Indicators] = strawberry.django.field()
+    indicatorsByCategory: JSON = strawberry.django.field(resolver=get_categories)
     data: list[types.Data] = strawberry.django.field()
     districtViewTableData: JSON = strawberry.django.field(resolver=get_district_data)
+    revCricleViewTableData: JSON = strawberry.django.field(resolver=get_revenue_data)
     # barChart: types.BarChart = strawberry.django.field(resolver=get_bar_data)
 
 
