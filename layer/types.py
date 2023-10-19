@@ -4,6 +4,7 @@ import strawberry
 from typing import List, Optional
 from strawberry import auto
 
+
 from . import models
 
 """
@@ -37,9 +38,12 @@ class Unit:
 @strawberry.django.filter(models.Geography)
 class GeoFilter:
     name: Optional[str]
-    id: Optional[strawberry.ID]
-    parentId: Optional["Geography"]
+    code: Optional[strawberry.ID]
 
+@strawberry.django.filter(models.Indicators)
+class IndicatorFilter:
+    name: Optional[str]
+    slug: Optional[str]
 
 @strawberry.django.type(models.Geography, filters=GeoFilter)
 class Geography:

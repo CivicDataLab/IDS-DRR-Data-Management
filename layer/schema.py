@@ -1,8 +1,7 @@
 import strawberry
 import strawberry_django
-import json
 
-from django.db.models import Avg, Count
+from django.db.models import Avg, Q
 from typing import Optional
 from strawberry.scalars import JSON
 from strawberry_django.optimizer import DjangoOptimizerExtension
@@ -26,17 +25,25 @@ from .models import Geography, Data, Indicators
 #     return obj
 
 
-def get_district_data(geo_filter: Optional[types.GeoFilter] = None) -> list:
+def get_district_data(
+    geo_filter: Optional[types.GeoFilter] = None,
+    indc_filter: Optional[types.IndicatorFilter] = None,
+) -> list:
     data_list = []
     data_dict = {}
 
     if geo_filter:
-        geo_list = Geography.objects.filter(parentId=geo_filter.parentId.pk)
+        geo_list = Geography.objects.filter(parentId__name=geo_filter.name)
         colated_queryset = Data.objects.filter(
-            geography__parentId=geo_filter.parentId.pk
+            geography__parentId__name=geo_filter.name
         )
         for geo in geo_list:
             filtered_queryset = colated_queryset.filter(geography=geo)
+            if indc_filter:
+                filtered_queryset = filtered_queryset.filter(
+                    Q(indicator__slug=indc_filter.slug)
+                    | Q(indicator__parent__slug=indc_filter.slug)
+                )
             for obj in filtered_queryset:
                 data_dict[obj.geography.type.lower()] = obj.geography.name
                 data_dict[obj.indicator.slug] = obj.value
@@ -51,6 +58,7 @@ def get_district_data(geo_filter: Optional[types.GeoFilter] = None) -> list:
         data_queryset = Data.objects.all()
         colated_queryset = (
             data_queryset.values(
+                "indicator__parent__slug",
                 "indicator__slug",
                 "geography__parentId__name",
                 "geography__parentId__type",
@@ -63,6 +71,15 @@ def get_district_data(geo_filter: Optional[types.GeoFilter] = None) -> list:
             filtered_queryset = colated_queryset.filter(
                 geography__parentId__name=f"{geo}"
             )
+            # print(filtered_queryset)
+            if indc_filter:
+                # print(indc_filter)
+                filtered_queryset = filtered_queryset.filter(
+                    Q(indicator__slug=indc_filter.slug)
+                    | Q(indicator__parent__slug=indc_filter.slug)
+                )
+                # print(filtered_queryset)
+
             for obj in filtered_queryset:
                 data_dict[obj["geography__parentId__type"].lower()] = obj[
                     "geography__parentId__name"
@@ -74,7 +91,10 @@ def get_district_data(geo_filter: Optional[types.GeoFilter] = None) -> list:
     return data_list
 
 
-def get_revenue_data(geo_filter: Optional[types.GeoFilter] = None) -> list:
+def get_revenue_data(
+    geo_filter: Optional[types.GeoFilter] = None,
+    indc_filter: Optional[types.IndicatorFilter] = None,
+) -> list:
     data_list = []
     data_dict = {}
 
@@ -86,6 +106,11 @@ def get_revenue_data(geo_filter: Optional[types.GeoFilter] = None) -> list:
 
     for geo in geo_queryset:
         filtered_queryset = rc_data_queryset.filter(geography=geo)
+        if indc_filter:
+            filtered_queryset = filtered_queryset.filter(
+                Q(indicator__slug=indc_filter.slug)
+                | Q(indicator__parent__slug=indc_filter.slug)
+            )
         for obj in filtered_queryset:
             data_dict[obj.geography.type.lower()] = obj.geography.name
             data_dict[obj.indicator.slug] = obj.value
@@ -94,11 +119,12 @@ def get_revenue_data(geo_filter: Optional[types.GeoFilter] = None) -> list:
 
     return data_list
 
-def get_categories():
+
+def get_categories() -> list:
     data_list = []
     data_dict = {}
-    
-    category_list = Indicators.objects.values_list('category', flat=True).distinct()
+
+    category_list = Indicators.objects.values_list("category", flat=True).distinct()
     # print(category_list)
     for catgry in category_list:
         filtered_queryset = Indicators.objects.filter(category=catgry)
@@ -106,14 +132,13 @@ def get_categories():
             data_dict[catgry] = {}
             for obj in filtered_queryset:
                 data_dict[catgry][obj.name] = obj.slug
-                # print(data_dict)
-                # data_dict[catgry] = {}
-                # data_dict[f"child_{i}"] = obj.name
+
             data_list.append(data_dict)
             data_dict = {}
-    
+
     # print(data_list)
     return data_list
+
 
 @strawberry.type
 class Query:  # camelCase
