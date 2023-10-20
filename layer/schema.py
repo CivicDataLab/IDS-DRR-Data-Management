@@ -29,9 +29,12 @@ def get_district_data(
     geo_filter: Optional[types.GeoFilter] = None,
     indc_filter: Optional[types.IndicatorFilter] = None,
 ) -> list:
+    
     data_list = []
     data_dict = {}
-
+    frims_data_list = []
+    frims_data_dict = {}
+    
     if geo_filter:
         geo_list = Geography.objects.filter(parentId__name=geo_filter.name)
         colated_queryset = Data.objects.filter(
@@ -39,6 +42,14 @@ def get_district_data(
         )
         for geo in geo_list:
             filtered_queryset = colated_queryset.filter(geography=geo)
+            for obj in filtered_queryset:
+                if obj.indicator.data_source == "FRIMS":
+                    # print(obj["indicator__data_source"])
+                    frims_data_dict[obj.geography.name.lower()] = obj.geography.name
+                    frims_data_dict[obj.indicator.slug] = obj.value
+            if frims_data_dict:
+                frims_data_list.append(frims_data_dict)
+                frims_data_dict = {}
             if indc_filter:
                 filtered_queryset = filtered_queryset.filter(
                     Q(indicator__slug=indc_filter.slug)
@@ -47,8 +58,9 @@ def get_district_data(
             for obj in filtered_queryset:
                 data_dict[obj.geography.type.lower()] = obj.geography.name
                 data_dict[obj.indicator.slug] = obj.value
-            data_list.append(data_dict)
-            data_dict = {}
+            if data_dict:
+                data_list.append(data_dict)
+                data_dict = {}
 
     else:
         geo_list = Data.objects.values_list(
@@ -60,35 +72,54 @@ def get_district_data(
             data_queryset.values(
                 "indicator__parent__slug",
                 "indicator__slug",
+                "indicator__category",
                 "geography__parentId__name",
                 "geography__parentId__type",
+                "indicator__data_source"
             )
             .annotate(indc_avg=Avg("value"))
             .order_by()
         )
-
+        
         for geo in geo_list:
             filtered_queryset = colated_queryset.filter(
                 geography__parentId__name=f"{geo}"
             )
+            # print(len(filtered_queryset))
+            for obj in filtered_queryset:
+                if obj["indicator__data_source"] == "FRIMS":
+                    # print(obj["indicator__data_source"])
+                    frims_data_dict[obj["geography__parentId__type"].lower()] = obj[
+                    "geography__parentId__name"]
+                    frims_data_dict[obj["indicator__slug"]] = round(obj["indc_avg"], 2)
+            if frims_data_dict:
+                frims_data_list.append(frims_data_dict)
+                frims_data_dict = {}
+            
             # print(filtered_queryset)
             if indc_filter:
                 # print(indc_filter)
-                filtered_queryset = filtered_queryset.filter(
-                    Q(indicator__slug=indc_filter.slug)
-                    | Q(indicator__parent__slug=indc_filter.slug)
-                )
+                slug_catgry = filtered_queryset.filter(indicator__slug=indc_filter.slug)
+                if slug_catgry.exists():
+                    # print(slug_catgry[0])
+                    filtered_queryset = filtered_queryset.filter(indicator__category=slug_catgry[0]["indicator__category"])
+                # filtered_queryset = filtered_queryset.filter(
+                #     Q(indicator__slug=indc_filter.slug)
+                #     | Q(indicator__parent__slug=indc_filter.slug)
+                # )
                 # print(filtered_queryset)
 
             for obj in filtered_queryset:
+                # print(obj)
                 data_dict[obj["geography__parentId__type"].lower()] = obj[
                     "geography__parentId__name"
                 ]
                 data_dict[obj["indicator__slug"]] = round(obj["indc_avg"], 2)
-            data_list.append(data_dict)
-            data_dict = {}
+            if data_dict:
+                data_list.append(data_dict)
+                data_dict = {}
 
-    return data_list
+    return {'table_data': data_list, 'frims_data': frims_data_list}
 
 
 def get_revenue_data(
@@ -97,6 +128,8 @@ def get_revenue_data(
 ) -> list:
     data_list = []
     data_dict = {}
+    frims_data_list = []
+    frims_data_dict = {}
 
     geo_queryset = Geography.objects.filter(type="REVENUE CIRCLE")
     if geo_filter:
@@ -106,7 +139,15 @@ def get_revenue_data(
 
     for geo in geo_queryset:
         filtered_queryset = rc_data_queryset.filter(geography=geo)
+        for obj in filtered_queryset:
+            if obj.indicator.data_source == "FRIMS":
+                frims_data_dict[obj.geography.name.lower()] = obj.geography.name
+                frims_data_dict[obj.indicator.slug] = obj.value
+        if frims_data_dict:
+            frims_data_list.append(frims_data_dict)
+            frims_data_dict = {}
         if indc_filter:
+            # print(indc_filter)
             filtered_queryset = filtered_queryset.filter(
                 Q(indicator__slug=indc_filter.slug)
                 | Q(indicator__parent__slug=indc_filter.slug)
@@ -114,10 +155,11 @@ def get_revenue_data(
         for obj in filtered_queryset:
             data_dict[obj.geography.type.lower()] = obj.geography.name
             data_dict[obj.indicator.slug] = obj.value
-        data_list.append(data_dict)
-        data_dict = {}
+        if data_dict:
+            data_list.append(data_dict)
+            data_dict = {}
 
-    return data_list
+    return {'table_data': data_list, 'frims_data': frims_data_list}
 
 
 def get_categories() -> list:
@@ -127,7 +169,7 @@ def get_categories() -> list:
     category_list = Indicators.objects.values_list("category", flat=True).distinct()
     # print(category_list)
     for catgry in category_list:
-        filtered_queryset = Indicators.objects.filter(category=catgry)
+        filtered_queryset = Indicators.objects.filter(category=catgry).order_by("display_order")
         if filtered_queryset.exists():
             data_dict[catgry] = {}
             for obj in filtered_queryset:

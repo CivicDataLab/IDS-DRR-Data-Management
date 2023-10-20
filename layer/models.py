@@ -77,7 +77,7 @@ class Indicators(models.Model):
     name = models.CharField(max_length=100, null=False)
     long_description = models.CharField(null=True, max_length=500, blank=True)
     short_description = models.CharField(null=True, max_length=100, blank=True)
-    category = models.CharField(null=True, max_length=100, blank=True, help_text="Contains a list of sub-indicators.")
+    category = models.CharField(null=True, max_length=100, blank=True, help_text="Describes the type sub-indicators")
     type = models.CharField(max_length=20, null=False, help_text="Defines the type of indicator that is Raw, Derived, etc.")
     slug = models.SlugField(max_length=20, null=True, blank=True)
     unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True)
@@ -87,6 +87,7 @@ class Indicators(models.Model):
     # page = models.ManyToManyField(Page, blank=True)
     scheme = models.ForeignKey(Scheme, on_delete=models.PROTECT, null=True, blank=True)
     parent = models.ForeignKey("self", blank=True, null=True, on_delete=models.PROTECT, related_name="parent_field")
+    display_order = models.IntegerField(null=True, blank=True)
     
     def save(self, *args, **kwargs):
         if not self.slug:
