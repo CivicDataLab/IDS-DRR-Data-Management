@@ -54,9 +54,9 @@ def get_district_data(
                 slug_catgry = filtered_queryset.filter(indicator__slug=indc_filter.slug)
                 if slug_catgry.exists():
                     if slug_catgry[0].indicator.category == "Main":
-                        filtered_queryset = filtered_queryset.filter(Q(indicator__parent__category=slug_catgry[0]["indicator__category"]) | Q(indicator__category=slug_catgry[0]["indicator__category"]))
+                        filtered_queryset = filtered_queryset.filter(Q(indicator__parent__category=slug_catgry[0].indicator.category) | Q(indicator__category=slug_catgry[0].indicator.category))
                     else:
-                        filtered_queryset = filtered_queryset.filter(indicator__category=slug_catgry[0]["indicator__category"])
+                        filtered_queryset = filtered_queryset.filter(indicator__category=slug_catgry[0].indicator.category)
             for obj in filtered_queryset:
                 data_dict[obj.geography.type.lower()] = obj.geography.name
                 data_dict[obj.indicator.slug] = obj.value
@@ -156,7 +156,7 @@ def get_revenue_data(
                 if slug_catgry[0].indicator.category == "Main":
                     filtered_queryset = filtered_queryset.filter(Q(indicator__parent__category=slug_catgry[0].indicator.category) | Q(indicator__category=slug_catgry[0].indicator.category))
                 else:
-                    filtered_queryset = filtered_queryset.filter(indicator__category=slug_catgry.indicator.category)
+                    filtered_queryset = filtered_queryset.filter(indicator__category=slug_catgry[0].indicator.category)
         for obj in filtered_queryset:
             data_dict[obj.geography.type.lower()] = obj.geography.name
             data_dict[obj.indicator.slug] = obj.value
