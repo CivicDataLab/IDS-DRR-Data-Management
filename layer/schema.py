@@ -84,7 +84,7 @@ def get_district_data(
         )
         
         for geo in geo_list:
-            print(geo)
+            # print(geo)
             filtered_queryset = colated_queryset.filter(
                 geography__parentId__name=f"{geo}"
             )
@@ -114,7 +114,7 @@ def get_district_data(
                 # print(filtered_queryset)
 
             for obj in filtered_queryset:
-                print(obj)
+                # print(obj)
                 data_dict[obj["geography__parentId__type"].lower()] = obj[
                     "geography__parentId__name"
                 ]
@@ -151,16 +151,12 @@ def get_revenue_data(
             frims_data_list.append(frims_data_dict)
             frims_data_dict = {}
         if indc_filter:
-            # print(indc_filter)
             slug_catgry = filtered_queryset.filter(indicator__slug=indc_filter.slug)
             if slug_catgry.exists():
-                print(slug_catgry[0].indicator.category)
                 if slug_catgry[0].indicator.category == "Main":
-                    # print(filtered_queryset)
-                    filtered_queryset = filtered_queryset.filter(Q(indicator__parent__category=slug_catgry[0]["indicator__category"]) | Q(indicator__category=slug_catgry[0]["indicator__category"]))
-                    print(filtered_queryset)
+                    filtered_queryset = filtered_queryset.filter(Q(indicator__parent__category=slug_catgry[0].indicator.category) | Q(indicator__category=slug_catgry[0].indicator.category))
                 else:
-                    filtered_queryset = filtered_queryset.filter(indicator__category=slug_catgry[0]["indicator__category"])
+                    filtered_queryset = filtered_queryset.filter(indicator__category=slug_catgry.indicator.category)
         for obj in filtered_queryset:
             data_dict[obj.geography.type.lower()] = obj.geography.name
             data_dict[obj.indicator.slug] = obj.value
