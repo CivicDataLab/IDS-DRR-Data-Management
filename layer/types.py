@@ -53,10 +53,10 @@ class Geography:
     parentId: Optional["Geography"]
 
 
-@strawberry.django.type(models.Page)
-class Page:
-    name: Optional[str] = None
-    description: Optional[str] = None
+# @strawberry.django.type(models.Page)
+# class Page:
+#     name: Optional[str] = None
+#     description: Optional[str] = None
 
 
 @strawberry.django.type(models.Department)

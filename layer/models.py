@@ -1,24 +1,24 @@
-# from django.contrib.gis.db import models
+from django.contrib.gis.db import models
 from django.utils.text import slugify
-from django.db import models
+# from django.db import models
 
 class Unit(models.Model):
-    class UnitTypes(models.TextChoices):
-        NUMBER = "NUMBER"
-        RUPEES = "RUPEES"
-        RUPEESLAKHS = "RUPEESLAKHS"
-        PERCENTAGE = "PERCENTAGE"
-        SCORE = "SCORE"
+    # class UnitTypes(models.TextChoices):
+    #     NUMBER = "NUMBER"
+    #     RUPEES = "RUPEES"
+    #     RUPEESLAKHS = "RUPEESLAKHS"
+    #     PERCENTAGE = "PERCENTAGE"
+    #     SCORE = "SCORE"
 
-    class UnitSymbolTypes(models.TextChoices):
-        NUMBER = ""
-        RUPEES = "₹"
-        RUPEESLAKHS = "₹ (in Lacs)"
-        PERCENTAGE = "%"
+    # class UnitSymbolTypes(models.TextChoices):
+    #     NUMBER = ""
+    #     RUPEES = "₹"
+    #     RUPEESLAKHS = "₹ (in Lacs)"
+    #     PERCENTAGE = "%"
 
-    name = models.CharField(null=False, choices=UnitTypes.choices, unique=True)
+    name = models.CharField(null=False, unique=True) # choices=UnitTypes.choices
     description = models.CharField(null=True, max_length=1500, blank=True)
-    symbol = models.CharField(null=False, choices=UnitSymbolTypes.choices, blank=True)
+    symbol = models.CharField(null=True, blank=True)  # choices=UnitSymbolTypes.choices, 
 
 
 class Geography(models.Model):
@@ -33,20 +33,21 @@ class Geography(models.Model):
         # LA_CONSTITUTENCY = "LA_CONSTITUTENCY"
         # PA_CONSTITUTANCY = "PA_CONSTITUTANCY"
 
-    name = models.CharField(max_length=100, unique=True)
-    code = models.CharField(max_length=20, null=False, unique=True)
+    name = models.CharField(max_length=100, unique=False)
+    code = models.CharField(max_length=20, null=True) #unique=True)
     type = models.CharField(max_length=15, choices=GeoTypes.choices)
     parentId = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default="", blank=True)
+    geom = models.MultiPolygonField()
 
 
-class Page(models.Model):
-    name = models.CharField(max_length=20, null=True, blank=True)
-    description = models.CharField(null=True, max_length=1500, blank=True)
-    slug = models.CharField(max_length=20, null=True, blank=True)
+# class Page(models.Model):
+#     name = models.CharField(max_length=20, null=True, blank=True)
+#     description = models.CharField(null=True, max_length=1500, blank=True)
+#     slug = models.CharField(max_length=20, null=True, blank=True)
 
-    def save(self, *args, **kwargs):
-        self.slug = slugify(f"{self.name}_{self.id}")
-        return super().save(*args, **kwargs)
+#     def save(self, *args, **kwargs):
+#         self.slug = slugify(f"{self.name}_{self.id}")
+#         return super().save(*args, **kwargs)
 
 
 class Department(models.Model):
@@ -78,8 +79,8 @@ class Indicators(models.Model):
     long_description = models.CharField(null=True, max_length=500, blank=True)
     short_description = models.CharField(null=True, max_length=100, blank=True)
     category = models.CharField(null=True, max_length=100, blank=True, help_text="Describes the type sub-indicators")
-    type = models.CharField(max_length=20, null=False, help_text="Defines the type of indicator that is Raw, Derived, etc.")
-    slug = models.SlugField(max_length=20, null=True, blank=True)
+    type = models.CharField(max_length=20, null=True, help_text="Defines the type of indicator that is Raw, Derived, etc.")
+    slug = models.SlugField(max_length=50, null=True, blank=True)
     unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True)
     geography = models.ForeignKey(Geography, on_delete=models.PROTECT, null=True, blank=True)
     department = models.ForeignKey(Department, on_delete=models.PROTECT, null=True, blank=True)
@@ -87,12 +88,19 @@ class Indicators(models.Model):
     # page = models.ManyToManyField(Page, blank=True)
     scheme = models.ForeignKey(Scheme, on_delete=models.PROTECT, null=True, blank=True)
     parent = models.ForeignKey("self", blank=True, null=True, on_delete=models.PROTECT, related_name="parent_field")
-    display_order = models.IntegerField(null=True, blank=True)
+    display_order = models.IntegerField(default=1)
+    is_visible = models.BooleanField(null=False, blank=True, default=False)
     
     def save(self, *args, **kwargs):
+        indc_obj = Indicators.objects.last()
+        if indc_obj and not self.display_order:
+            self.display_order = indc_obj.display_order + 1
         if not self.slug:
             self.slug = slugify(f"{self.name}")
         return super().save(*args, **kwargs)
+    
+    class Meta:
+        ordering = ["display_order"]
 
 
 class Data(models.Model):
