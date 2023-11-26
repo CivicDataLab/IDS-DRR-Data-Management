@@ -8,14 +8,14 @@ class CustomUnitAdmin(admin.ModelAdmin):
         model = Unit
 
 class CustomGeoAdmin(admin.ModelAdmin):
-    list_display = ["name", "code", "type"]
+    list_display = ["name", "code", "type", "parentId"]
     class Meta:
         model = Geography
 
-class CustomPageAdmin(admin.ModelAdmin):
-    list_display = ["name"]
-    class Meta:
-        model = Page
+# class CustomPageAdmin(admin.ModelAdmin):
+#     list_display = ["name"]
+#     class Meta:
+#         model = Page
 
 class CustomDepartmentAdmin(admin.ModelAdmin):
     list_display = ["name", "geography"]
@@ -28,19 +28,19 @@ class CustomSchemeAdmin(admin.ModelAdmin):
         model = Scheme
 
 class CustomIndicatorAdmin(admin.ModelAdmin):
-    list_display = ["name", "type", "unit", "geography", "department", "scheme"]
+    list_display = ["name", "type", "display_order", "category"]
     class Meta:
         model = Indicators
 
 class CustomDataAdmin(admin.ModelAdmin):
-    list_display = ["value", "indicator", "geography", "scheme"]
+    list_display = ["value", "indicator", "geography"]
     class Meta:
         model = Data
 
 
 admin.site.register(Unit, CustomUnitAdmin)
 admin.site.register(Geography, CustomGeoAdmin)
-admin.site.register(Page, CustomPageAdmin)
+# admin.site.register(Page, CustomPageAdmin)
 admin.site.register(Department, CustomDepartmentAdmin)
 admin.site.register(Scheme, CustomSchemeAdmin)
 admin.site.register(Indicators, CustomIndicatorAdmin)
