@@ -93,7 +93,7 @@ class Indicators(models.Model):
     
     def save(self, *args, **kwargs):
         indc_obj = Indicators.objects.last()
-        if indc_obj and not self.display_order:
+        if indc_obj:
             self.display_order = indc_obj.display_order + 1
         if not self.slug:
             self.slug = slugify(f"{self.name}")
