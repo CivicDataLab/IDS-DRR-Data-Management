@@ -37,7 +37,7 @@ class Geography(models.Model):
     code = models.CharField(max_length=20, null=True) #unique=True)
     type = models.CharField(max_length=15, choices=GeoTypes.choices)
     parentId = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default="", blank=True)
-    geom = models.MultiPolygonField()
+    geom = models.MultiPolygonField(null=True, blank=True)
 
 
 # class Page(models.Model):
