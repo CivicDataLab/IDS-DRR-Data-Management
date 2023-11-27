@@ -140,8 +140,8 @@ def get_revenue_data(
 ) -> list:
     data_list = []
     data_dict = {}
-    frims_data_list = []
-    frims_data_dict = {}
+    # frims_data_list = []
+    # frims_data_dict = {}
 
     starttime = timeit.default_timer()
     
@@ -153,20 +153,22 @@ def get_revenue_data(
 
     for geo in geo_queryset:
         filtered_queryset = rc_data_queryset.filter(geography=geo, data_period=data_filter.data_period)
-        for obj in filtered_queryset:
-            if obj.indicator.data_source == "FRIMS":
-                frims_data_dict[obj.geography.type.lower().replace(" ","-")] = obj.geography.name
-                frims_data_dict[obj.indicator.slug] = obj.value
-        if frims_data_dict:
-            frims_data_list.append(frims_data_dict)
-            frims_data_dict = {}
+        # for obj in filtered_queryset:
+        #     if obj.indicator.data_source == "FRIMS":
+        #         frims_data_dict[obj.geography.type.lower().replace(" ","-")] = obj.geography.name
+        #         frims_data_dict[obj.indicator.slug] = obj.value
+        # if frims_data_dict:
+        #     frims_data_list.append(frims_data_dict)
+        #     frims_data_dict = {}
         if indc_filter:
-            slug_catgry = filtered_queryset.filter(indicator__slug=indc_filter.slug)
+            slug_catgry = filtered_queryset.filter(indicator__slug__iexact=indc_filter.slug)
             if slug_catgry.exists():
-                if slug_catgry[0].indicator.category == "Main":
-                    filtered_queryset = filtered_queryset.filter(Q(indicator__parent__category=slug_catgry[0].indicator.category) | Q(indicator__category=slug_catgry[0].indicator.category))
-                else:
-                    filtered_queryset = filtered_queryset.filter(indicator__category=slug_catgry[0].indicator.category)
+                # if slug_catgry[0].indicator.slug == "composite-score":
+                filtered_queryset = filtered_queryset.filter(Q(indicator__parent__slug=slug_catgry[0].indicator.slug) | Q(indicator__slug=slug_catgry[0].indicator.slug))
+                # else:
+                #     filtered_queryset = filtered_queryset.filter(indicator__category=slug_catgry[0].indicator.category)
+            else:
+                break
         for obj in filtered_queryset:
             data_dict[obj.geography.type.lower().replace(" ", "-")] = obj.geography.name
             data_dict[(obj.geography.type + " code").lower().replace(" ", "-")] = obj.geography.code
@@ -175,11 +177,9 @@ def get_revenue_data(
             data_list.append(data_dict)
             data_dict = {}
     
-    # gj = json.loads(serialize("geojson", geo_queryset.filter(name="Bhowraguri")))
-    # print(gj["features"])
     print("The time difference is :", timeit.default_timer() - starttime)
-    return {'table_data': data_list, 'frims_data': frims_data_list}
-    # return serialize("geojson", {'table_data': data_list, 'frims_data': frims_data_list})
+    return {'table_data': data_list}
+    # return {'table_data': data_list, 'frims_data': frims_data_list}
 
 def get_revenue_map_data(
     indc_filter: types.IndicatorFilter,
