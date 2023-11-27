@@ -192,7 +192,7 @@ def get_revenue_map_data(
     geo_json = json.loads(serialize("geojson", Geography.objects.filter(type="REVENUE CIRCLE")))
     
     # Get Indicator Data for each RC.
-    rc_data = get_revenue_data(geo_filter, indc_filter, data_filter)
+    rc_data = get_revenue_data(indc_filter=indc_filter, data_filter=data_filter, geo_filter=geo_filter)
     
     # Iterating over GeoJson and appending Indicator data for each RC.
     for rc in geo_json["features"]:    
