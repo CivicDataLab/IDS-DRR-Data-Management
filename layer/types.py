@@ -45,6 +45,10 @@ class IndicatorFilter:
     name: Optional[str]
     slug: Optional[str]
 
+@strawberry.django.filter(models.Data)
+class DataFilter:
+    data_period: Optional[str]
+
 @strawberry.django.type(models.Geography, filters=GeoFilter)
 class Geography:
     name: auto
@@ -90,7 +94,7 @@ class Indicators:
     parent: Optional["Indicators"]
 
 
-@strawberry.django.type(models.Data)
+@strawberry.django.type(models.Data, filters=DataFilter)
 class Data:
     value: Optional[int] = None
     added: datetime.datetime
@@ -104,3 +108,7 @@ class Data:
 # class BarChart:
 #     x: list[str]
 #     y: list[str]
+
+@strawberry.type
+class CustomDataPeriodList:
+    value: str

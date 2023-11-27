@@ -1,10 +1,15 @@
 import strawberry
 import strawberry_django
+import json
+import timeit
 
-from django.db.models import Avg, Q
-from typing import Optional
 from strawberry.scalars import JSON
 from strawberry_django.optimizer import DjangoOptimizerExtension
+
+from django.db.models import Avg, Q, F
+from typing import Optional
+from django.core.serializers import serialize
+
 
 from . import types
 from .models import Geography, Data, Indicators
@@ -28,6 +33,7 @@ from .models import Geography, Data, Indicators
 def get_district_data(
     geo_filter: Optional[types.GeoFilter] = None,
     indc_filter: Optional[types.IndicatorFilter] = None,
+    data_filter: Optional[types.DataFilter] = None,
 ) -> list:
     
     data_list = []
@@ -123,18 +129,22 @@ def get_district_data(
                 data_list.append(data_dict)
                 data_dict = {}
 
+
     return {'table_data': data_list, 'frims_data': frims_data_list}
 
 
 def get_revenue_data(
+    indc_filter: types.IndicatorFilter,
+    data_filter: types.DataFilter,
     geo_filter: Optional[types.GeoFilter] = None,
-    indc_filter: Optional[types.IndicatorFilter] = None,
 ) -> list:
     data_list = []
     data_dict = {}
     frims_data_list = []
     frims_data_dict = {}
 
+    starttime = timeit.default_timer()
+    
     geo_queryset = Geography.objects.filter(type="REVENUE CIRCLE")
     if geo_filter:
         geo_queryset = strawberry_django.filters.apply(geo_filter, geo_queryset)
@@ -142,10 +152,10 @@ def get_revenue_data(
     rc_data_queryset = Data.objects.all()
 
     for geo in geo_queryset:
-        filtered_queryset = rc_data_queryset.filter(geography=geo)
+        filtered_queryset = rc_data_queryset.filter(geography=geo, data_period=data_filter.data_period)
         for obj in filtered_queryset:
             if obj.indicator.data_source == "FRIMS":
-                frims_data_dict[obj.geography.name.lower()] = obj.geography.name
+                frims_data_dict[obj.geography.type.lower().replace(" ","-")] = obj.geography.name
                 frims_data_dict[obj.indicator.slug] = obj.value
         if frims_data_dict:
             frims_data_list.append(frims_data_dict)
@@ -158,23 +168,71 @@ def get_revenue_data(
                 else:
                     filtered_queryset = filtered_queryset.filter(indicator__category=slug_catgry[0].indicator.category)
         for obj in filtered_queryset:
-            data_dict[obj.geography.type.lower()] = obj.geography.name
-            data_dict[obj.indicator.slug] = obj.value
+            data_dict[obj.geography.type.lower().replace(" ", "-")] = obj.geography.name
+            data_dict[(obj.geography.type + " code").lower().replace(" ", "-")] = obj.geography.code
+            data_dict[obj.indicator.slug] = round(obj.value,3)
         if data_dict:
             data_list.append(data_dict)
             data_dict = {}
-
+    
+    # gj = json.loads(serialize("geojson", geo_queryset.filter(name="Bhowraguri")))
+    # print(gj["features"])
+    print("The time difference is :", timeit.default_timer() - starttime)
     return {'table_data': data_list, 'frims_data': frims_data_list}
+    # return serialize("geojson", {'table_data': data_list, 'frims_data': frims_data_list})
+
+def get_revenue_map_data(
+    indc_filter: types.IndicatorFilter,
+    data_filter: types.DataFilter,
+    geo_filter: Optional[types.GeoFilter] = None):
+    
+    starttime = timeit.default_timer()
+    
+    # Convert geography objects to a GeoJson format.
+    geo_json = json.loads(serialize("geojson", Geography.objects.filter(type="REVENUE CIRCLE")))
+    
+    # Get Indicator Data for each RC.
+    rc_data = get_revenue_data(geo_filter, indc_filter, data_filter)
+    
+    # Iterating over GeoJson and appending Indicator data for each RC.
+    for rc in geo_json["features"]:    
+        for data in rc_data["table_data"]:
+            if rc["properties"]["code"] in data['revenue-circle-code']:
+                
+                # Get RC details
+                geo_object = Geography.objects.get(code=data['revenue-circle-code'])
+                
+                # List the keys of Table Data.
+                key_list = list(data.keys())
+                
+                # Remove the name of RC and add other keys(Indicators) and its value to GeoJson.
+                key_list.remove('revenue-circle')
+                key_list.remove('revenue-circle-code')
+                for key in key_list:
+                    rc["properties"][f"{key}"] = data[f"{key}"]
+                    rc["properties"][f"{geo_object.parentId.type.lower()}"] = geo_object.parentId.name
+                break
+            else:
+                continue
+        
+        # Removing unnecessary values.
+        rc["properties"].pop('parentId', None)
+        rc["properties"].pop('pk', None)
+    
+    print("The time difference is :", timeit.default_timer() - starttime)
+    return geo_json
 
 
 def get_categories() -> list:
     data_list = []
     data_dict = {}
 
-    category_list = Indicators.objects.values_list("category", flat=True).distinct()
+    category_list = Indicators.objects.values_list("category", flat=True)
     # print(category_list)
-    for catgry in category_list:
-        filtered_queryset = Indicators.objects.filter(category=catgry).order_by("display_order")
+    unqiue_categories = []
+    [unqiue_categories.append(x) for x in category_list if x not in unqiue_categories]
+    for catgry in unqiue_categories:
+        filtered_queryset = Indicators.objects.filter(category=catgry, is_visible=True) #.order_by("display_order")
         if filtered_queryset.exists():
             data_dict[catgry] = {}
             for obj in filtered_queryset:
@@ -187,6 +245,42 @@ def get_categories() -> list:
     return data_list
 
 
+def get_timeperiod():
+    
+    # data = Data.objects.values_list("data_period", flat=True).distinct().order_by("-data_period")
+    # time_list = []
+    # for time in data:
+    #     time_list.append(types.CustomDataPeriodList(value=time))
+    # return time_list
+    
+    # Use annotation to create a custom field for sorting
+    data = (
+        Data.objects
+        .values_list("data_period", flat=True)
+        .annotate(custom_ordering=F("data_period"))
+        .distinct()
+        .order_by("-custom_ordering")
+    )
+
+    # Create CustomDataPeriodList objects directly in the query
+    time_list = [
+        types.CustomDataPeriodList(value=time)
+        for time in data
+    ]
+
+    return time_list
+
+
+
+
+
+
+
+
+
+
+
+
 @strawberry.type
 class Query:  # camelCase
     # unit: list[types.Unit] = strawberry.django.field(resolver=get_unit)
@@ -197,7 +291,9 @@ class Query:  # camelCase
     indicatorsByCategory: JSON = strawberry.django.field(resolver=get_categories)
     data: list[types.Data] = strawberry.django.field()
     districtViewTableData: JSON = strawberry.django.field(resolver=get_district_data)
-    revCricleViewTableData: JSON = strawberry.django.field(resolver=get_revenue_data)
+    revCircleViewTableData: JSON = strawberry.django.field(resolver=get_revenue_data)
+    revCircleMapData: JSON = strawberry.django.field(resolver=get_revenue_map_data)
+    getDataTimePeriods: list[types.CustomDataPeriodList] = strawberry.django.field(resolver=get_timeperiod)
     # barChart: types.BarChart = strawberry.django.field(resolver=get_bar_data)
 
 
