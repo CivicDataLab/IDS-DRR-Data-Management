@@ -167,31 +167,49 @@ def get_revenue_map_data(
     geo_json = json.loads(serialize("geojson", Geography.objects.filter(type="REVENUE CIRCLE")))
     
     # Get Indicator Data for each RC.
-    rc_data = get_revenue_data(indc_filter=indc_filter, data_filter=data_filter, geo_filter=geo_filter, for_map=True)
-    # rc_data = Data.objects.filter(indicator__slug=indc_filter.slug, data_period=data_filter.data_period)
+    # rc_data = get_revenue_data(indc_filter=indc_filter, data_filter=data_filter, geo_filter=geo_filter, for_map=True)
+    rc_data = Data.objects.filter(indicator__slug=indc_filter.slug, data_period=data_filter.data_period)
+    print(len(rc_data))
     # Iterating over GeoJson and appending Indicator data for each RC.
-    for rc in geo_json["features"]:    
-        for data in rc_data["table_data"]:
-            if rc["properties"]["code"] == data['revenue-circle-code']:
+    for rc in geo_json["features"]:
+        for data in rc_data:
+            if rc["properties"]["code"] == data.geography.code:
                 
                 # Get RC details
-                geo_object = Geography.objects.get(code=data['revenue-circle-code'])
-                
-                # List the keys of Table Data.
-                key_list = list(data.keys())
+                geo_object = Geography.objects.get(code=data.geography.code)
                 
                 # Adding the District this RC belongs to.
                 rc["properties"][f"{geo_object.parentId.type.lower()}"] = geo_object.parentId.name
                 
-                # Remove the name of RC and add other keys(Indicators) and its value to GeoJson. 
-                key_list.remove('revenue-circle')
-                key_list.remove('revenue-circle-code')
-                for key in key_list:
-                    rc["properties"][f"{key}"] = data[f"{key}"]
+                # Add other keys(Indicators) and its value to GeoJson. 
+                rc["properties"][f"{data.indicator.slug}"] = data.value
                 
                 break
             else:
                 continue
+    
+    # for rc in geo_json["features"]:    
+    #     for data in rc_data["table_data"]:
+    #         if rc["properties"]["code"] == data['revenue-circle-code']:
+                
+    #             # Get RC details
+    #             geo_object = Geography.objects.get(code=data['revenue-circle-code'])
+                
+    #             # List the keys of Table Data.
+    #             key_list = list(data.keys())
+                
+    #             # Adding the District this RC belongs to.
+    #             rc["properties"][f"{geo_object.parentId.type.lower()}"] = geo_object.parentId.name
+                
+    #             # Remove the name of RC and add other keys(Indicators) and its value to GeoJson. 
+    #             key_list.remove('revenue-circle')
+    #             key_list.remove('revenue-circle-code')
+    #             for key in key_list:
+    #                 rc["properties"][f"{key}"] = data[f"{key}"]
+                
+    #             break
+    #         else:
+    #             continue
         
         # Removing unnecessary values.
         rc["properties"].pop('parentId', None)
