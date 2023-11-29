@@ -167,8 +167,8 @@ def get_revenue_map_data(
     geo_json = json.loads(serialize("geojson", Geography.objects.filter(type="REVENUE CIRCLE")))
     
     # Get Indicator Data for each RC.
-    rc_data = get_revenue_data(indc_filter=indc_filter, data_filter=data_filter, geo_filter=geo_filter)
-    
+    rc_data = get_revenue_data(indc_filter=indc_filter, data_filter=data_filter, geo_filter=geo_filter, for_map=True)
+    # rc_data = Data.objects.filter(indicator__slug=indc_filter.slug, data_period=data_filter.data_period)
     # Iterating over GeoJson and appending Indicator data for each RC.
     for rc in geo_json["features"]:    
         for data in rc_data["table_data"]:
@@ -248,7 +248,7 @@ def get_revenue_chart_data(
     data_dict = {}
     
     # Creating initial dict structure. 
-    # TODO: Optimise it for multiple timeperiods; not supported currently.
+    # TODO: Optimise it for multiple timeperiods; not supported currently. [Phase-2]
     # TODO: Optimise it for multiple indicators; not supported currently.
     data_dict[data_filter.data_period] = {}
     data_dict[data_filter.data_period][indc_filter.slug] = {}
