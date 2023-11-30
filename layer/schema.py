@@ -56,8 +56,8 @@ def get_district_data(
                 #     else:
                 #         filtered_queryset = filtered_queryset.filter(indicator__category=slug_catgry[0].indicator.category)
             for obj in filtered_queryset:
-                data_dict[obj.geography.type.lower()] = obj.geography.name
-                data_dict[obj.geography.type.lower()+ "-code"] = obj.geography.code
+                data_dict[obj.geography.type.lower().replace(" ", "-")] = obj.geography.name
+                data_dict[obj.geography.type.lower().replace(" ", "-")+ "-code"] = obj.geography.code
                 data_dict[obj.indicator.slug] = obj.value
             if data_dict:
                 data_list.append(data_dict)
