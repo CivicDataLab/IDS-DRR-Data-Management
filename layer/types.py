@@ -39,6 +39,7 @@ class Unit:
 class GeoFilter:
     name: Optional[str]
     code: Optional[strawberry.ID]
+    type: Optional[str]
 
 @strawberry.django.filter(models.Indicators)
 class IndicatorFilter:

@@ -41,9 +41,9 @@ def get_district_data(
     data_dict = {}
     
     if geo_filter:
-        geo_list = Geography.objects.filter(parentId__name=geo_filter.name)
+        geo_list = Geography.objects.filter(parentId__code=geo_filter.code)
         colated_queryset = Data.objects.filter(
-            geography__parentId__name=geo_filter.name,
+            geography__parentId__code=geo_filter.code,
             data_period=data_filter.data_period,
         )
         for geo in geo_list:
@@ -203,34 +203,62 @@ def get_district_map_data(
     
     starttime = timeit.default_timer()
     
-    # Convert geography objects to a GeoJson format.
-    geo_json = json.loads(serialize("geojson", Geography.objects.filter(type="DISTRICT")))
     
-    # Get Indicator Data for each District.
-    rc_data = get_district_data(indc_filter=indc_filter, data_filter=data_filter, geo_filter=geo_filter)
+    # If geo_filter is applied, get data on RC level.
+    if geo_filter:
+        geo_json = json.loads(serialize("geojson", Geography.objects.filter(parentId__code=geo_filter.code)))
+        rc_data = Data.objects.filter(indicator__slug=indc_filter.slug, data_period=data_filter.data_period, geography__parentId__code=geo_filter.code)
     
-    # Iterating over GeoJson and appending Indicator data for each RC.
-    for rc in geo_json["features"]:    
-        for data in rc_data["table_data"]:
-            if rc["properties"]["code"] == data['district-code']:
-                
-                # Get RC details
-                geo_object = Geography.objects.get(code=data['district-code'])
-                
-                # List the keys of Table Data.
-                key_list = list(data.keys())
-                
-                # Remove the name of District and add other keys(Indicators) and its value to GeoJson.
-                key_list.remove('district')
-                for key in key_list:
-                    rc["properties"][f"{key}"] = data[f"{key}"]
-                break
-            else:
-                continue
+        # Iterating over GeoJson and appending Indicator data for each RC.
+        for rc in geo_json["features"]:
+            for data in rc_data:
+                if rc["properties"]["code"] == data.geography.code:
+                    
+                    # Get RC details
+                    geo_object = Geography.objects.get(code=data.geography.code)
+                    
+                    # Adding the District this RC belongs to.
+                    rc["properties"][f"{geo_object.parentId.type.lower()}"] = geo_object.parentId.name
+                    
+                    # Add other keys(Indicators) and its value to GeoJson. 
+                    rc["properties"][f"{data.indicator.slug}"] = data.value
+                    
+                    break
+                else:
+                    continue
+            # Removing unnecessary values.
+            rc["properties"].pop('parentId', None)
+            rc["properties"].pop('pk', None)
         
-        # Removing unnecessary values.
-        rc["properties"].pop('parentId', None)
-        rc["properties"].pop('pk', None)
+    # else, get data on District level.
+    else:
+        # Get Indicator Data for each District.
+        rc_data = get_district_data(indc_filter=indc_filter, data_filter=data_filter, geo_filter=geo_filter)
+        geo_json = json.loads(serialize("geojson", Geography.objects.filter(type="DISTRICT")))
+        
+        # Iterating over GeoJson and appending Indicator data for each RC.
+        for rc in geo_json["features"]:    
+            for data in rc_data["table_data"]:
+                if rc["properties"]["code"] == data['district-code']:
+                    
+                    # Get RC details
+                    geo_object = Geography.objects.get(code=data['district-code'])
+                    
+                    # List the keys of Table Data.
+                    key_list = list(data.keys())
+                    
+                    # Remove the name of District and add other keys(Indicators) and its value to GeoJson.
+                    key_list.remove('district')
+                    key_list.remove('district-code')
+                    for key in key_list:
+                        rc["properties"][f"{key}"] = data[f"{key}"]
+                    break
+                else:
+                    continue
+        
+            # Removing unnecessary values.
+            rc["properties"].pop('parentId', None)
+            rc["properties"].pop('pk', None)
     
     print("The time difference is :", timeit.default_timer() - starttime)
     return geo_json
@@ -245,7 +273,7 @@ def get_revenue_chart_data(
     
     # Creating initial dict structure. 
     # TODO: Optimise it for multiple timeperiods; not supported currently. [Phase-2]
-    # TODO: Optimise it for multiple indicators; not supported currently.
+    # TODO: Optimise it for multiple indicators; not supported currently. [Phase-2]
     data_dict[data_filter.data_period] = {}
     data_dict[data_filter.data_period][indc_filter.slug] = {}
     
