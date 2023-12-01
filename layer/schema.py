@@ -180,7 +180,7 @@ def get_revenue_map_data(
                 geo_object = Geography.objects.get(code=data.geography.code)
                 
                 # Adding the District this RC belongs to.
-                rc["properties"][f"{geo_object.parentId.type.lower()}"] = geo_object.parentId.name
+                rc["properties"][f"{geo_object.parentId.type.lower().replace(' ', '-') + '-code'}"] = geo_object.parentId.code
                 
                 # Add other keys(Indicators) and its value to GeoJson. 
                 rc["properties"][f"{data.indicator.slug}"] = data.value
@@ -217,8 +217,8 @@ def get_district_map_data(
                     # Get RC details
                     geo_object = Geography.objects.get(code=data.geography.code)
                     
-                    # Adding the District this RC belongs to.
-                    rc["properties"][f"{geo_object.parentId.type.lower()}"] = geo_object.parentId.name
+                    # Adding the District code this RC belongs to.
+                    rc["properties"][f"{geo_object.parentId.type.lower().replace(' ', '-') + '-code'}"] = geo_object.parentId.code
                     
                     # Add other keys(Indicators) and its value to GeoJson. 
                     rc["properties"][f"{data.indicator.slug}"] = data.value
