@@ -287,27 +287,38 @@ def get_revenue_chart_data(
     print("The time difference is :", timeit.default_timer() - starttime)
     return data_dict
     
+
+def get_district_chart_data(
+    indc_filter: types.IndicatorFilter,
+    data_filter: types.DataFilter,
+    geo_filter: Optional[types.GeoFilter] = None):
+    
+    starttime = timeit.default_timer()
+    data_dict = {}
+    
+    # Creating initial dict structure. 
+    # TODO: Optimise it for multiple timeperiods; not supported currently. [Phase-2]
+    # TODO: Optimise it for multiple indicators; not supported currently. [Phase-2]
+    data_dict[data_filter.data_period] = {}
+    data_dict[data_filter.data_period][indc_filter.slug] = {}
+    
+    # Get Indicator Data for each District.
+    rc_data = get_district_data(indc_filter=indc_filter, data_filter=data_filter, geo_filter=geo_filter)
+    # print(rc_data)
+    for data in rc_data["table_data"]:
+        # print(data, data[f"{indc_filter.slug}"])
+        if not geo_filter:
+            data_dict[data_filter.data_period][indc_filter.slug][data["district"]] = data[f"{indc_filter.slug}"]
+        else:
+            data_dict[data_filter.data_period][indc_filter.slug][data["revenue-circle"]] = data[f"{indc_filter.slug}"]
+    
+    print("The time difference is :", timeit.default_timer() - starttime)
+    return data_dict
     
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+
 def get_categories() -> list:
     data_list = []
     data_dict = {}
@@ -391,6 +402,7 @@ class Query:  # camelCase
     data: list[types.Data] = strawberry.django.field()
     districtViewTableData: JSON = strawberry.django.field(resolver=get_district_data)
     districtMapData: JSON = strawberry.django.field(resolver=get_district_map_data)
+    districtChartData: JSON = strawberry.django.field(resolver=get_district_chart_data)
     revCircleViewTableData: JSON = strawberry.django.field(resolver=get_revenue_data)
     revCircleMapData: JSON = strawberry.django.field(resolver=get_revenue_map_data)
     revCircleChartData: JSON = strawberry.django.field(resolver=get_revenue_chart_data)
