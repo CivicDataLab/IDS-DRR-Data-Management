@@ -281,8 +281,8 @@ def get_revenue_chart_data(
     rc_data = get_revenue_data(indc_filter=indc_filter, data_filter=data_filter, geo_filter=geo_filter, for_map=True)
     
     for data in rc_data["table_data"]:
-        # print(data, data[f"{indc_filter.slug}"])
-        data_dict[data_filter.data_period][indc_filter.slug][data["revenue-circle"]] = data[f"{indc_filter.slug}"]
+        # print(data[f"{indc_filter.slug}"])
+        data_dict[data_filter.data_period][indc_filter.slug][data["revenue-circle-code"]] = {data["revenue-circle"]: data[f"{indc_filter.slug}"]}
     
     print("The time difference is :", timeit.default_timer() - starttime)
     return data_dict
