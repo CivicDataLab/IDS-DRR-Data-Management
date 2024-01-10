@@ -77,7 +77,7 @@ class Scheme(models.Model):
 class Indicators(models.Model):
     name = models.CharField(max_length=100, null=False)
     long_description = models.CharField(null=True, max_length=500, blank=True)
-    short_description = models.CharField(null=True, max_length=100, blank=True)
+    short_description = models.CharField(null=True, max_length=150, blank=True)
     category = models.CharField(null=True, max_length=100, blank=True, help_text="Describes the type sub-indicators")
     type = models.CharField(max_length=20, null=True, help_text="Defines the type of indicator that is Raw, Derived, etc.")
     slug = models.SlugField(max_length=50, null=True, blank=True)

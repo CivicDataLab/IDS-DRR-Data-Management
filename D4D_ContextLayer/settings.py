@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.gis",
     "layer",
 ]
 
@@ -100,9 +101,11 @@ WSGI_APPLICATION = "D4D_ContextLayer.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# django.contrib.gis.db.backends.postgis
+# django.db.backends.postgresql"
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
+        "ENGINE": "django.contrib.gis.db.backends.postgis",
         "NAME": "postgres",
         "USER": "postgres",
         "PASSWORD": "postgres",
