@@ -13,7 +13,7 @@ from django.core.serializers import serialize
 
 from . import types
 from .models import Geography, Data, Indicators
-
+# from .mutation import Mutation
 
 # def get_bar_data(self) -> str:
 #     data_obj = Data.objects.all().values("value", "data_period")
@@ -340,16 +340,14 @@ def get_categories() -> list:
     # print(data_list)
     return data_list
 
-def get_chart_indicators() -> list:
+def get_model_indicators() -> list:
     data_list = []
-    data_dict = {}
     
     indc_obj = Indicators.objects.filter(Q(parent__slug='composite-score') | Q(slug='composite-score'))
-    
     for data in indc_obj:
-        print(data.name)
-        data_dict[data.name] = data.slug
-    data_list.append(data_dict)
+        data_list.append({"name": data.name, "slug": data.slug})
+    #     data_dict[data.name] = data.slug
+    # data_list.append(data_dict)
     
     return data_list
 
@@ -376,13 +374,24 @@ def get_timeperiod():
         types.CustomDataPeriodList(value=time)
         for time in data
     ]
+    # for time in data:
+    #     time_list.append({"value":time})
 
     return time_list
 
 
 
-
-
+def get_district_rev_circle(geo_filter: types.GeoFilter):
+    data_dict = {}
+    rc_list = []
+    geo_object = Geography.objects.filter(code=geo_filter.code)
+    if geo_object.exists():
+        get_child_rc = Geography.objects.filter(parentId=geo_object[0].parentId)
+        for rc in get_child_rc:
+            rc_list.append({f"{geo_object[0].type.lower().replace(' ', '-')}":rc.name, f"{geo_object[0].type.lower().replace(' ', '-')}"+"-code":rc.code})
+        data_dict[geo_object[0].parentId.name] = rc_list
+    
+    return data_dict
 
 
 
@@ -398,7 +407,7 @@ class Query:  # camelCase
     scheme: list[types.Scheme] = strawberry.django.field()
     indicators: list[types.Indicators] = strawberry.django.field()
     indicatorsByCategory: JSON = strawberry.django.field(resolver=get_categories)
-    ChartIndicators: JSON = strawberry.django.field(resolver=get_chart_indicators)
+    getFactors: JSON = strawberry.django.field(resolver=get_model_indicators)
     data: list[types.Data] = strawberry.django.field()
     districtViewTableData: JSON = strawberry.django.field(resolver=get_district_data)
     districtMapData: JSON = strawberry.django.field(resolver=get_district_map_data)
@@ -406,12 +415,14 @@ class Query:  # camelCase
     revCircleViewTableData: JSON = strawberry.django.field(resolver=get_revenue_data)
     revCircleMapData: JSON = strawberry.django.field(resolver=get_revenue_map_data)
     revCircleChartData: JSON = strawberry.django.field(resolver=get_revenue_chart_data)
-    getDataTimePeriods: list[types.CustomDataPeriodList] = strawberry.django.field(resolver=get_timeperiod)
+    getDataTimePeriods: list[types.CustomDataPeriodList] = strawberry_django.field(resolver=get_timeperiod)
+    getDistrictRevCircle: JSON = strawberry.django.field(resolver=get_district_rev_circle)
     # barChart: types.BarChart = strawberry.django.field(resolver=get_bar_data)
 
 
 schema = strawberry.Schema(
     query=Query,
+    # mutation=Mutation,
     extensions=[
         DjangoOptimizerExtension,
     ],
