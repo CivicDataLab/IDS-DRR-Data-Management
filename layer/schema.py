@@ -384,7 +384,7 @@ def get_district_chart_data(
         data_dict[data_filter.data_period][indc_filter.slug]["district"] = {}
 
     for data in rc_data["table_data"]:
-        print(data, data[f"{indc_filter.slug}"])
+        # print(data, data[f"{indc_filter.slug}"])
         if geo_filter and len(geo_filter.code) <= 1:
             data_dict[data_filter.data_period][indc_filter.slug]["revenue-circle"][
                 data["revenue-circle"]
@@ -392,7 +392,7 @@ def get_district_chart_data(
         elif geo_filter and len(geo_filter.code) > 1:
             geo_obj = Geography.objects.filter(code__in=geo_filter.code).values("name")
             for geo in geo_obj:
-                print(geo, data["district"])
+                # print(geo, data["district"])
                 if geo["name"] == data["district"]:
                     print("Here")
                     data_dict[data_filter.data_period][indc_filter.slug]["district"][
