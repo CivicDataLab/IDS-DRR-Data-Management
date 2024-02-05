@@ -39,7 +39,7 @@ def get_district_data(
     data_list = []
     data_dict = {}
 
-    if geo_filter:
+    if geo_filter and len(geo_filter.code) <= 1:
         geo_list = Geography.objects.filter(parentId__code__in=geo_filter.code)
         colated_queryset = Data.objects.filter(
             geography__parentId__code__in=geo_filter.code,
@@ -354,7 +354,7 @@ def get_district_chart_data(
     )
     # print(rc_data)
 
-    if geo_filter:
+    if geo_filter and len(geo_filter.code) <= 1:
         data_dict[data_filter.data_period][indc_filter.slug]["revenue-circle"] = {}
         # Getting the values for the district.
         parent_queryset = (
@@ -384,14 +384,23 @@ def get_district_chart_data(
         data_dict[data_filter.data_period][indc_filter.slug]["district"] = {}
 
     for data in rc_data["table_data"]:
-        # print(data, data[f"{indc_filter.slug}"])
-        if not geo_filter:
-            data_dict[data_filter.data_period][indc_filter.slug]["district"][
-                data["district"]
-            ] = data[f"{indc_filter.slug}"]
-        else:
+        print(data, data[f"{indc_filter.slug}"])
+        if geo_filter and len(geo_filter.code) <= 1:
             data_dict[data_filter.data_period][indc_filter.slug]["revenue-circle"][
                 data["revenue-circle"]
+            ] = data
+        elif geo_filter and len(geo_filter.code) > 1:
+            geo_obj = Geography.objects.filter(code__in=geo_filter.code).values("name")
+            for geo in geo_obj:
+                print(geo, data["district"])
+                if geo["name"] == data["district"]:
+                    print("Here")
+                    data_dict[data_filter.data_period][indc_filter.slug]["district"][
+                        data["district"]
+                    ] = data[f"{indc_filter.slug}"]
+        else:
+            data_dict[data_filter.data_period][indc_filter.slug]["district"][
+                data["district"]
             ] = data[f"{indc_filter.slug}"]
 
     print("The time difference is :", timeit.default_timer() - starttime)
@@ -490,10 +499,14 @@ class Query:  # camelCase
     data: list[types.Data] = strawberry_django.field()
     districtViewTableData: JSON = strawberry_django.field(resolver=get_district_data)
     districtMapData: JSON = strawberry_django.field(resolver=get_district_map_data)
-    districtChartData: JSON = strawberry_django.field(resolver=get_district_chart_data)
+    districtViewChartData: JSON = strawberry_django.field(
+        resolver=get_district_chart_data
+    )
     revCircleViewTableData: JSON = strawberry_django.field(resolver=get_revenue_data)
     revCircleMapData: JSON = strawberry_django.field(resolver=get_revenue_map_data)
-    revCircleChartData: JSON = strawberry_django.field(resolver=get_revenue_chart_data)
+    revCircleViewChartData: JSON = strawberry_django.field(
+        resolver=get_revenue_chart_data
+    )
     getDataTimePeriods: list[types.CustomDataPeriodList] = strawberry_django.field(
         resolver=get_timeperiod
     )
