@@ -15,21 +15,6 @@ from .models import Data, Geography, Indicators
 # from .mutation import Mutation
 
 
-# def get_bar_data(self) -> str:
-#     data_obj = Data.objects.all().values("value", "data_period")
-#     # print(data_obj[0])
-#     return types.BarChart(
-#         x=[x.get("data_period") for x in data_obj], y=[y.get("value") for y in data_obj]
-#     )
-
-
-# def get_unit(filter:Optional[types.UnitFilter]=None):
-#     print(filter)
-#     obj = Unit.objects.all()
-#     obj = strawberry_django.filters.apply(filter, obj)
-#     return obj
-
-
 def get_district_data(
     indc_filter: types.IndicatorFilter,
     data_filter: types.DataFilter,
@@ -387,14 +372,13 @@ def get_district_chart_data(
         # print(data, data[f"{indc_filter.slug}"])
         if geo_filter and len(geo_filter.code) <= 1:
             data_dict[data_filter.data_period][indc_filter.slug]["revenue-circle"][
-                data["revenue-circle"]
+                data["revenue-circle-code"]
             ] = data
         elif geo_filter and len(geo_filter.code) > 1:
             geo_obj = Geography.objects.filter(code__in=geo_filter.code).values("name")
             for geo in geo_obj:
                 # print(geo, data["district"])
                 if geo["name"] == data["district"]:
-                    print("Here")
                     data_dict[data_filter.data_period][indc_filter.slug]["district"][
                         data["district"]
                     ] = data[f"{indc_filter.slug}"]
