@@ -24,91 +24,44 @@ def get_district_data(
     data_list = []
     data_dict = {}
 
-    if geo_filter and len(geo_filter.code) <= 1:
-        geo_list = Geography.objects.filter(parentId__code__in=geo_filter.code)
-        colated_queryset = Data.objects.filter(
-            geography__parentId__code__in=geo_filter.code,
-            data_period=data_filter.data_period,
+    # dataset_obj = Data.objects.all()  # filter(geography__type="DISTRICT")
+    if indc_filter:
+        dataset_obj = Data.objects.filter(
+            Q(indicator__slug=indc_filter.slug)
+            | Q(indicator__parent__slug=indc_filter.slug)
+        ).order_by("-value")
+    if data_filter:
+        dataset_obj = dataset_obj.filter(data_period=data_filter.data_period).order_by(
+            "-value"
         )
-        for geo in geo_list:
-            filtered_queryset = colated_queryset.filter(
-                geography=geo, data_period=data_filter.data_period
-            )
-            if indc_filter:
-                filtered_queryset = filtered_queryset.filter(
-                    Q(indicator__parent__slug=indc_filter.slug)
-                    | Q(indicator__slug=indc_filter.slug)
-                )
-                # if slug_catgry.exists():
-                #     if slug_catgry[0].indicator.category == "Composite Score":
-                #         filtered_queryset = filtered_queryset.filter(Q(indicator__parent__category=slug_catgry[0].indicator.category) | Q(indicator__category=slug_catgry[0].indicator.category))
-                #     else:
-                #         filtered_queryset = filtered_queryset.filter(indicator__category=slug_catgry[0].indicator.category)
-            for obj in filtered_queryset:
-                data_dict[
-                    obj.geography.type.lower().replace(" ", "-")
-                ] = obj.geography.name
-                data_dict[
-                    obj.geography.type.lower().replace(" ", "-") + "-code"
-                ] = obj.geography.code
-                data_dict[obj.indicator.slug] = obj.value
-            if data_dict:
-                data_list.append(data_dict)
-                data_dict = {}
 
+    if geo_filter:
+        if len(geo_filter.code) <= 1:
+            dataset_obj = dataset_obj.filter(
+                Q(geography__parentId__in=geo_filter.code)
+                | Q(geography__in=geo_filter.code)
+            ).order_by("-value")
+            geo_obj = Geography.objects.filter(
+                Q(code__in=geo_filter.code) | Q(parentId__code__in=geo_filter.code)
+            )
+        else:
+            geo_obj = Geography.objects.filter(code__in=geo_filter.code)
     else:
-        geo_list = Data.objects.values_list(
-            "geography__parentId__name", flat=True
-        ).distinct()
-        # a = Geography.objects.filter(type="DISTRICT")
-        # print(len(geo_list))
-        # for dis in a:
-        #     if dis.name not in geo_list:
-        #         print(dis.name)
-        data_queryset = Data.objects.all()
-        colated_queryset = (
-            data_queryset.values(
-                "indicator__slug",
-                "indicator__parent__slug",
-                "indicator__category",
-                "geography__parentId__name",
-                "geography__parentId__type",
-                "geography__parentId__code",
-                "indicator__data_source",
-            ).annotate(indc_avg=Max("value"))
-            # .order_by()
-        )
+        geo_obj = Geography.objects.filter(type="DISTRICT")
 
-        for geo in geo_list:
-            # print(geo)
-            filtered_queryset = colated_queryset.filter(
-                geography__parentId__name=f"{geo}",
-                data_period=data_filter.data_period,
-            )
-            if indc_filter:
-                filtered_queryset = filtered_queryset.filter(
-                    Q(indicator__parent__slug=indc_filter.slug)
-                    | Q(indicator__slug=indc_filter.slug)
-                )
-                # if slug_catgry.exists():
-                #     if slug_catgry[0]["indicator__category"] == "Main":
-                #         filtered_queryset = filtered_queryset.filter(Q(indicator__parent__category=slug_catgry[0]["indicator__category"]) | Q(indicator__category=slug_catgry[0]["indicator__category"]))
-                #     else:
-                #         filtered_queryset = filtered_queryset.filter(indicator__category=slug_catgry[0]["indicator__category"])
+    for geo in geo_obj:
+        for obj in dataset_obj.filter(geography=geo):
+            data_dict[obj.geography.type.lower()] = obj.geography.name
+            data_dict[
+                obj.geography.type.lower().replace(" ", "-") + "-code"
+            ] = obj.geography.code
+            data_dict[obj.indicator.slug] = obj.value
 
-            for obj in filtered_queryset:
-                # print(obj)
-                data_dict[obj["geography__parentId__type"].lower()] = obj[
-                    "geography__parentId__name"
-                ]
-                data_dict[obj["geography__parentId__type"].lower() + "-code"] = obj[
-                    "geography__parentId__code"
-                ]
-                data_dict[obj["indicator__slug"]] = round(obj["indc_avg"], 2)
-            if data_dict:
-                data_list.append(data_dict)
-                data_dict = {}
+        if data_dict:
+            data_list.append(data_dict)
+            data_dict = {}
 
+    # print(len(data_list))
     print("The time difference is :", timeit.default_timer() - starttime)
     return {"table_data": data_list}
 
@@ -481,7 +434,7 @@ class Query:  # camelCase
     indicatorsByCategory: JSON = strawberry_django.field(resolver=get_categories)
     getFactors: JSON = strawberry_django.field(resolver=get_model_indicators)
     data: list[types.Data] = strawberry_django.field()
-    districtViewTableData: JSON = strawberry_django.field(resolver=get_district_data)
+    districtViewData: JSON = strawberry_django.field(resolver=get_district_data)
     districtMapData: JSON = strawberry_django.field(resolver=get_district_map_data)
     districtViewChartData: JSON = strawberry_django.field(
         resolver=get_district_chart_data
