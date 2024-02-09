@@ -66,6 +66,39 @@ def get_district_data(
     return {"table_data": data_list}
 
 
+def get_district_chart_data(
+    indc_filter: types.IndicatorFilter,
+    data_filter: types.DataFilter,
+    geo_filter: Optional[types.GeoFilter] = None,
+):
+    starttime = timeit.default_timer()
+
+    # Creating initial dict structure.
+    data_dict = {}
+    data_dict[data_filter.data_period] = {}
+    data_dict[data_filter.data_period][indc_filter.slug] = {}
+
+    # Get the required data for all districts.
+    data_queryset = Data.objects.filter(
+        indicator__slug=indc_filter.slug,
+        data_period=data_filter.data_period,
+        geography__type="DISTRICT",
+    )
+    # Filter data based on the selected districts.
+    if geo_filter:
+        data_queryset = data_queryset.filter(geography__code__in=geo_filter.code)
+
+    # Iterate over each object.
+    # Using geo code as key and {geo name: indicator value} as value.
+    for data in data_queryset:
+        data_dict[data_filter.data_period][indc_filter.slug][data.geography.code] = {
+            data.geography.name: data.value
+        }
+
+    print("The time difference is :", timeit.default_timer() - starttime)
+    return data_dict
+
+
 def get_revenue_data(
     indc_filter: types.IndicatorFilter,
     data_filter: types.DataFilter,
@@ -267,78 +300,6 @@ def get_revenue_chart_data(
         data_dict[data_filter.data_period][indc_filter.slug][
             data["revenue-circle-code"]
         ] = {data["revenue-circle"]: data[f"{indc_filter.slug}"]}
-
-    print("The time difference is :", timeit.default_timer() - starttime)
-    return data_dict
-
-
-def get_district_chart_data(
-    indc_filter: types.IndicatorFilter,
-    data_filter: types.DataFilter,
-    geo_filter: Optional[types.GeoFilter] = None,
-):
-    starttime = timeit.default_timer()
-    data_dict = {}
-
-    # Creating initial dict structure.
-    # TODO: Optimise it for multiple timeperiods; not supported currently. [Phase-2]
-    # TODO: Optimise it for multiple indicators; not supported currently. [Phase-2]
-    data_dict[data_filter.data_period] = {}
-    data_dict[data_filter.data_period][indc_filter.slug] = {}
-
-    # Get Indicator Data for each District.
-    rc_data = get_district_data(
-        indc_filter=indc_filter, data_filter=data_filter, geo_filter=geo_filter
-    )
-    # print(rc_data)
-
-    if geo_filter and len(geo_filter.code) <= 1:
-        data_dict[data_filter.data_period][indc_filter.slug]["revenue-circle"] = {}
-        # Getting the values for the district.
-        parent_queryset = (
-            Data.objects.filter(
-                geography__parentId__in=geo_filter.code,
-                data_period=data_filter.data_period,
-                indicator__slug=indc_filter.slug,
-            )
-            .values(
-                "indicator__slug",
-                "geography__parentId__name",
-                "geography__parentId__type",
-                "geography__parentId__code",
-            )
-            .annotate(indc_avg=Max("value"))
-        )
-
-        # print(parent_queryset)
-        data_dict[data_filter.data_period][indc_filter.slug][
-            parent_queryset[0]["geography__parentId__type"].lower().replace(" ", "-")
-        ] = {
-            parent_queryset[0]["geography__parentId__name"]: parent_queryset[0][
-                "indc_avg"
-            ]
-        }
-    else:
-        data_dict[data_filter.data_period][indc_filter.slug]["district"] = {}
-
-    for data in rc_data["table_data"]:
-        # print(data, data[f"{indc_filter.slug}"])
-        if geo_filter and len(geo_filter.code) <= 1:
-            data_dict[data_filter.data_period][indc_filter.slug]["revenue-circle"][
-                data["revenue-circle"]
-            ] = data
-        elif geo_filter and len(geo_filter.code) > 1:
-            geo_obj = Geography.objects.filter(code__in=geo_filter.code).values("name")
-            for geo in geo_obj:
-                # print(geo, data["district"])
-                if geo["name"] == data["district"]:
-                    data_dict[data_filter.data_period][indc_filter.slug]["district"][
-                        data["district"]
-                    ] = data[f"{indc_filter.slug}"]
-        else:
-            data_dict[data_filter.data_period][indc_filter.slug]["district"][
-                data["district"]
-            ] = data[f"{indc_filter.slug}"]
 
     print("The time difference is :", timeit.default_timer() - starttime)
     return data_dict
