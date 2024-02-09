@@ -132,7 +132,7 @@ def migrate_data(filename="layer/MASTER_DATA_FRONTEND_2022onwards.csv"):
         print(f"Processing row - {i}")
         try:
             # Get the required geography object.
-            geography_obj = Geography.objects.get(code=row.object_id)
+            geography_obj = Geography.objects.get(code=row["object-id"])
             # Filter visible columns for Districts (Only factors, no variables).
             if geography_obj.type == "DISTRICT":
                 reqd_columns = reqd_columns.filter(
