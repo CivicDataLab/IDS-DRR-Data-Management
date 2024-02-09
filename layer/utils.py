@@ -2,6 +2,7 @@ import json
 
 import pandas as pd
 from django.contrib.gis.geos import GEOSGeometry, MultiPolygon, Polygon
+from django.db.models import Q
 from layer.models import Data, Geography, Indicators, Unit
 
 
@@ -121,42 +122,36 @@ def migrate_geojson(filename="layer/assam_revenue_circles_nov2022_4326.geojson")
 
 def migrate_data(filename="layer/MASTER_DATA_FRONTEND_2022onwards.csv"):
     df = pd.read_csv(filename)
-    print(df.shape)
-    # print(df.columns)
-    # df = df.drop(columns=['district', 'rc_area', 'year', 'month', 'rank', 'topsis-score'])
-    # data_columns = [cols for cols in df.columns] #.lower().replace("_", "-")
-    # print(data_columns)
 
-    # Get all columns from DB.
-    reqd_columns = Indicators.objects.filter(
-        is_visible=True
-    )  # .values_list("name", flat=True)
-    print(len(reqd_columns), reqd_columns[0])
-    # indicators = indicator_df.columns
-    # print(indicators)
-    i = 1
+    # Get all columns visible on the platform from DB.
+    reqd_columns = Indicators.objects.filter(is_visible=True)
+
+    i = 1  # Row counter.
+    # Iterate over each row and save the data in DB.
     for index, row in df.iterrows():
-        # print(row['timeperiod'])
         print(f"Processing row - {i}")
         try:
+            # Get the required geography object.
             geography_obj = Geography.objects.get(code=row.object_id)
+            # Filter visible columns for Districts (Only factors, no variables).
             if geography_obj.type == "DISTRICT":
-                reqd_columns = reqd_columns.filter(parent__slug="risk-score")
-                print(len(reqd_columns))
+                reqd_columns = reqd_columns.filter(
+                    Q(parent__slug="risk-score") | Q(slug="risk-score")
+                )
         except Exception as e:
             print(e)
-        # for indc in reqd_columns:
+            break
+
+        # Iterating over each indicator.
+        # Each row has data for every indicator(factors+variables) for a time period.
         for indc_obj in reqd_columns:
             print(f"Adding data for RC - {geography_obj.name}")
             print(f"Adding data for Indicator - {indc_obj.slug}")
-            # name = indc_obj
             data_obj = Data(
                 value=row[f"{indc_obj.slug}"],
                 indicator=indc_obj,
                 geography=geography_obj,
-                data_period="2023_08",
+                data_period=row.timeperiod,
             )
             data_obj.save()
         i += 1
-        # else:
-        #     continue
