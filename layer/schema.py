@@ -29,18 +29,18 @@ def get_district_data(
         dataset_obj = Data.objects.filter(
             Q(indicator__slug=indc_filter.slug)
             | Q(indicator__parent__slug=indc_filter.slug)
-        ).order_by("-value")
+        )  # .order_by("-value")
     if data_filter:
-        dataset_obj = dataset_obj.filter(data_period=data_filter.data_period).order_by(
-            "-value"
-        )
+        dataset_obj = dataset_obj.filter(
+            data_period=data_filter.data_period
+        )  # .order_by("-value")
 
     if geo_filter:
         if len(geo_filter.code) <= 1:
             dataset_obj = dataset_obj.filter(
-                Q(geography__parentId__in=geo_filter.code)
-                | Q(geography__in=geo_filter.code)
-            ).order_by("-value")
+                Q(geography__parentId__code__in=geo_filter.code)
+                | Q(geography__code__in=geo_filter.code)
+            )  # .order_by("-value")
             geo_obj = Geography.objects.filter(
                 Q(code__in=geo_filter.code) | Q(parentId__code__in=geo_filter.code)
             )
@@ -333,7 +333,7 @@ def get_model_indicators() -> list:
     data_list = []
 
     indc_obj = Indicators.objects.filter(
-        Q(parent__slug="composite-score") | Q(slug="composite-score")
+        Q(parent__slug="risk-score") | Q(slug="risk-score")
     )
     for data in indc_obj:
         data_list.append({"name": data.name, "slug": data.slug})
@@ -396,7 +396,7 @@ class Query:  # camelCase
     getFactors: JSON = strawberry_django.field(resolver=get_model_indicators)
     data: list[types.Data] = strawberry_django.field()
     districtViewData: JSON = strawberry_django.field(resolver=get_district_data)
-    districtMapData: JSON = strawberry_django.field(resolver=get_district_map_data)
+    # districtMapData: JSON = strawberry_django.field(resolver=get_district_map_data)
     districtViewChartData: JSON = strawberry_django.field(
         resolver=get_district_chart_data
     )
