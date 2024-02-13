@@ -61,7 +61,6 @@ def get_district_data(
             data_list.append(data_dict)
             data_dict = {}
 
-    # print(len(data_list))
     print("The time difference is :", timeit.default_timer() - starttime)
     return {"table_data": data_list}
 
@@ -342,8 +341,6 @@ def get_model_indicators() -> list:
     )
     for data in indc_obj:
         data_list.append({"name": data.name, "slug": data.slug})
-    #     data_dict[data.name] = data.slug
-    # data_list.append(data_dict)
 
     return data_list
 
@@ -372,28 +369,47 @@ def get_timeperiod():
 
 
 def get_district_rev_circle(geo_filter: types.GeoFilter):
+    starttime = timeit.default_timer()
     data_dict = {}
-    rc_list = []
+    data_list = []
 
-    geo_object = Geography.objects.filter(code=geo_filter.code)
+    geo_object = Geography.objects.filter(
+        type=geo_filter.type.upper().replace("-", " ")
+    )
     if geo_object.exists():
-        get_child_rc = Geography.objects.filter(parentId=geo_object[0].id)
-        for rc in get_child_rc:
-            rc_list.append(
-                {
-                    f"{rc.type.lower().replace(' ', '-')}": rc.name,
-                    f"{rc.type.lower().replace(' ', '-')}" + "-code": rc.code,
-                }
-            )
-        data_dict[geo_object[0].name] = rc_list
+        if geo_filter.type.upper() == "DISTRICT":
+            for data in geo_object:
+                data_list.append(
+                    {
+                        f"{data.type.lower().replace(' ', '-')}": data.name,
+                        "code": data.code,
+                    }
+                )
+            data_dict = data_list
+        elif geo_filter.type.upper().replace("-", " ") == "REVENUE CIRCLE":
+            for data in geo_object:
+                rc_obj = geo_object.filter(parentId=data.parentId)
+                if rc_obj.exists():
+                    for rc_data in rc_obj:
+                        data_list.append(
+                            {
+                                f"{data.type.lower().replace(' ', '-')}": rc_data.name,
+                                "code": rc_data.code,
+                            }
+                        )
+                    data_dict[f"{data.name}"] = data_list
+                    data_list = []
+        else:
+            pass
 
+    print("The time difference is :", timeit.default_timer() - starttime)
     return data_dict
 
 
 @strawberry.type
 class Query:  # camelCase
     # unit: list[types.Unit] = strawberry.django.field(resolver=get_unit)
-    geography: list[types.Geography] = strawberry_django.field()
+    # geography: list[types.Geography] = strawberry_django.field()
     # department: list[types.Department] = strawberry.django.field()
     scheme: list[types.Scheme] = strawberry_django.field()
     indicators: list[types.Indicators] = strawberry_django.field()
