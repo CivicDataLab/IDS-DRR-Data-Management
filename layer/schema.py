@@ -110,7 +110,8 @@ def get_revenue_data(
 
     geo_queryset = Geography.objects.filter(type="REVENUE CIRCLE")
     if geo_filter:
-        geo_queryset = strawberry_django.filters.apply(geo_filter, geo_queryset)
+        geo_queryset = geo_queryset.filter(code__in=geo_filter.code)
+        # geo_queryset = strawberry_django.filters.apply(geo_filter, geo_queryset)
     # print(geo_queryset)
     rc_data_queryset = Data.objects.all()
 
