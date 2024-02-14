@@ -334,6 +334,24 @@ def get_categories() -> list:
     return data_list
 
 
+def get_indicators(indc_filter: Optional[types.IndicatorFilter] = None) -> list:
+    data_list = []
+
+    indc_obj = Indicators.objects.filter(is_visible=True)
+    if indc_filter:
+        indc_obj = indc_obj.filter(
+            Q(slug=indc_filter.slug) | Q(parent__slug=indc_filter.slug)
+        )
+
+    data_queryset = indc_obj.values(
+        "name", "slug", "long_description", "short_description", "data_source"
+    )
+    for data in data_queryset:
+        data_list.append(data)
+
+    return data_list
+
+
 def get_model_indicators() -> list:
     data_list = []
 
@@ -412,11 +430,11 @@ class Query:  # camelCase
     # unit: list[types.Unit] = strawberry.django.field(resolver=get_unit)
     # geography: list[types.Geography] = strawberry_django.field()
     # department: list[types.Department] = strawberry.django.field()
-    scheme: list[types.Scheme] = strawberry_django.field()
-    indicators: list[types.Indicators] = strawberry_django.field()
-    indicatorsByCategory: JSON = strawberry_django.field(resolver=get_categories)
+    # scheme: list[types.Scheme] = strawberry_django.field()
+    indicators: JSON = strawberry_django.field(resolver=get_indicators)
+    # indicatorsByCategory: JSON = strawberry_django.field(resolver=get_categories)
     getFactors: JSON = strawberry_django.field(resolver=get_model_indicators)
-    data: list[types.Data] = strawberry_django.field()
+    # data: list[types.Data] = strawberry_django.field()
     districtViewData: JSON = strawberry_django.field(resolver=get_district_data)
     districtMapData: JSON = strawberry_django.field(resolver=get_district_map_data)
     districtViewChartData: JSON = strawberry_django.field(
