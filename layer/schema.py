@@ -356,7 +356,7 @@ def get_district_rev_circle(geo_filter: types.GeoFilter):
     data_list = []
 
     geo_object = Geography.objects.filter(
-        type=geo_filter.type.upper().replace("-", " ")
+        type=geo_filter.type.upper().strip().replace("-", " ")
     )
     if geo_object.exists():
         if geo_filter.type.upper() == "DISTRICT":
@@ -368,7 +368,7 @@ def get_district_rev_circle(geo_filter: types.GeoFilter):
                     }
                 )
             data_dict = data_list
-        elif geo_filter.type.upper().replace("-", " ") == "REVENUE CIRCLE":
+        elif geo_filter.type.upper().strip().replace("-", " ") == "REVENUE CIRCLE":
             for data in geo_object:
                 rc_obj = geo_object.filter(parentId=data.parentId)
                 if rc_obj.exists():
@@ -379,7 +379,7 @@ def get_district_rev_circle(geo_filter: types.GeoFilter):
                                 "code": rc_data.code,
                             }
                         )
-                    data_dict[f"{data.name}"] = data_list
+                    data_dict[f"{data.parentId.name}"] = data_list
                     data_list = []
         else:
             pass
