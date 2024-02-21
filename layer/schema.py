@@ -5,7 +5,7 @@ from typing import Optional
 import strawberry
 import strawberry_django
 from django.core.serializers import serialize
-from django.db.models import F, Max, Q
+from django.db.models import F, Q
 from strawberry.scalars import JSON
 from strawberry_django.optimizer import DjangoOptimizerExtension
 
@@ -52,9 +52,9 @@ def get_district_data(
     for geo in geo_obj:
         for obj in dataset_obj.filter(geography=geo):
             data_dict[obj.geography.type.lower()] = obj.geography.name
-            data_dict[
-                obj.geography.type.lower().replace(" ", "-") + "-code"
-            ] = obj.geography.code
+            data_dict[obj.geography.type.lower().replace(" ", "-") + "-code"] = (
+                obj.geography.code
+            )
             data_dict[obj.indicator.slug] = obj.value
 
         if data_dict:
@@ -133,12 +133,12 @@ def get_revenue_data(
                 )
         if filtered_queryset.exists():
             for obj in filtered_queryset:
-                data_dict[
-                    obj.geography.type.lower().replace(" ", "-")
-                ] = obj.geography.name
-                data_dict[
-                    (obj.geography.type + " code").lower().replace(" ", "-")
-                ] = obj.geography.code
+                data_dict[obj.geography.type.lower().replace(" ", "-")] = (
+                    obj.geography.name
+                )
+                data_dict[(obj.geography.type + " code").lower().replace(" ", "-")] = (
+                    obj.geography.code
+                )
                 data_dict[obj.indicator.slug] = round(obj.value, 3)
             if data_dict:
                 data_list.append(data_dict)
@@ -146,7 +146,7 @@ def get_revenue_data(
         else:
             break
 
-    # data_list = sorted(data_list, key=lambda d: d[indc_filter.slug], reverse=True)
+    data_list = sorted(data_list, key=lambda d: d[indc_filter.slug], reverse=True)
 
     print("The time difference is :", timeit.default_timer() - starttime)
     return {"table_data": data_list}
@@ -328,12 +328,6 @@ def get_model_indicators() -> list:
 
 
 def get_timeperiod():
-    # data = Data.objects.values_list("data_period", flat=True).distinct().order_by("-data_period")
-    # time_list = []
-    # for time in data:
-    #     time_list.append(types.CustomDataPeriodList(value=time))
-    # return time_list
-
     # Use annotation to create a custom field for sorting
     data = (
         Data.objects.values_list("data_period", flat=True)
