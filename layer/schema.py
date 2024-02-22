@@ -1,9 +1,11 @@
 import json
 import timeit
+from datetime import datetime
 from typing import Optional
 
 import strawberry
 import strawberry_django
+from dateutil.relativedelta import relativedelta
 from django.core.serializers import serialize
 from django.db.models import F, Q
 from strawberry.scalars import JSON
@@ -70,31 +72,60 @@ def get_district_data(
 def get_district_chart_data(
     indc_filter: types.IndicatorFilter,
     data_filter: types.DataFilter,
-    geo_filter: Optional[types.GeoFilter] = None,
+    geo_filter: types.GeoFilter,
 ):
     starttime = timeit.default_timer()
 
-    # Creating initial dict structure.
-    data_dict = {}
-    data_dict[data_filter.data_period] = {}
-    data_dict[data_filter.data_period][indc_filter.slug] = {}
+    # Parse the string into a datetime object.
+    date_format = "%Y_%m"
+    datetime_object = datetime.strptime(data_filter.data_period, date_format)
+    time_list = []
 
-    # Get the required data for all districts.
+    # Get the list of data periods for the required time range.
+    if data_filter.period == "3M":
+        for i in range(0, 4):
+            tme = datetime_object - relativedelta(months=i)
+            time_list.append(tme.strftime("%Y_%m"))
+    elif data_filter.period == "1Y":
+        for i in range(0, 13):
+            tme = datetime_object - relativedelta(months=i)
+            time_list.append(tme.strftime("%Y_%m"))
+    else:
+        list_queryset = (
+            Data.objects.values_list("data_period", flat=True)
+            .annotate(custom_ordering=F("data_period"))
+            .distinct()
+            .order_by("-custom_ordering")
+        )
+        time_list = [time for time in list_queryset]
+
+    # Filter the data.
     data_queryset = Data.objects.filter(
         indicator__slug=indc_filter.slug,
-        data_period=data_filter.data_period,
-        geography__type="DISTRICT",
+        geography__code__in=geo_filter.code,
+        data_period__in=time_list,
     )
-    # Filter data based on the selected districts.
-    if geo_filter:
-        data_queryset = data_queryset.filter(geography__code__in=geo_filter.code)
 
-    # Iterate over each object.
-    # Using geo code as key and {geo name: indicator value} as value.
-    for data in data_queryset:
-        data_dict[data_filter.data_period][indc_filter.slug][data.geography.code] = {
-            data.geography.name: data.value
-        }
+    # Creating initial dict structure.
+    data_dict = {}
+    data_dict[indc_filter.slug] = {}
+
+    # Iterating over each data period to create a list of dicts.
+    # Where each dict represents data for that district for that data period.
+    for time in time_list:
+        temp_dict = {}
+        data_list = []
+        filtered_queryset = data_queryset.filter(data_period=time)
+        for data in filtered_queryset:
+            temp_dict[data.geography.type.lower()] = data.geography.name
+            temp_dict[data.geography.type.lower().replace(" ", "-") + "-code"] = (
+                data.geography.code
+            )
+            temp_dict[indc_filter.slug] = data.value
+            data_list.append(temp_dict)
+            temp_dict = {}
+
+        data_dict[indc_filter.slug][time] = data_list
 
     print("The time difference is :", timeit.default_timer() - starttime)
     return data_dict
@@ -394,7 +425,7 @@ class Query:  # camelCase
     # data: list[types.Data] = strawberry_django.field()
     districtViewData: JSON = strawberry_django.field(resolver=get_district_data)
     districtMapData: JSON = strawberry_django.field(resolver=get_district_map_data)
-    districtViewChartData: JSON = strawberry_django.field(
+    districtViewTimeTrends: JSON = strawberry_django.field(
         resolver=get_district_chart_data
     )
     revCircleViewData: JSON = strawberry_django.field(resolver=get_revenue_data)
