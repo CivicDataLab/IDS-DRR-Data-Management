@@ -275,7 +275,7 @@ def get_district_map_data(
 def get_revenue_chart_data(
     indc_filter: types.IndicatorFilter,
     data_filter: types.DataFilter,
-    geo_filter: Optional[types.GeoFilter] = None,
+    geo_filter: types.GeoFilter,
 ):
     starttime = timeit.default_timer()
     data_dict = {}
@@ -425,14 +425,10 @@ class Query:  # camelCase
     # data: list[types.Data] = strawberry_django.field()
     districtViewData: JSON = strawberry_django.field(resolver=get_district_data)
     districtMapData: JSON = strawberry_django.field(resolver=get_district_map_data)
-    districtViewTimeTrends: JSON = strawberry_django.field(
-        resolver=get_district_chart_data
-    )
+    getTimeTrends: JSON = strawberry_django.field(resolver=get_district_chart_data)
     revCircleViewData: JSON = strawberry_django.field(resolver=get_revenue_data)
     revCircleMapData: JSON = strawberry_django.field(resolver=get_revenue_map_data)
-    revCircleViewChartData: JSON = strawberry_django.field(
-        resolver=get_revenue_chart_data
-    )
+    # revCircleTimeTrends: JSON = strawberry_django.field(resolver=get_revenue_chart_data)
     getDataTimePeriods: list[types.CustomDataPeriodList] = strawberry_django.field(
         resolver=get_timeperiod
     )
