@@ -43,16 +43,18 @@ def migrate_indicators(filename="layer/data_dict.csv"):
 
                 indicator_obj = Indicators(
                     name=row.indicatorTitle.strip(),
-                    slug=row.indicatorSlug.lower().strip()
-                    if row.indicatorSlug
-                    else None,
-                    long_description=row.indicatorDescription.strip()
-                    if row.indicatorDescription
-                    else None,
+                    slug=(
+                        row.indicatorSlug.lower().strip() if row.indicatorSlug else None
+                    ),
+                    long_description=(
+                        row.indicatorDescription.strip()
+                        if row.indicatorDescription
+                        else None
+                    ),
                     # short_description = row.indicatorDescription if row.indicatorDescription else None,
-                    category=row.indicatorCategory.strip()
-                    if row.indicatorCategory
-                    else None,
+                    category=(
+                        row.indicatorCategory.strip() if row.indicatorCategory else None
+                    ),
                     # type = row.indicatorType if row.indicatorType else None
                     unit=unit_obj,
                     data_source=row.dataSource.strip() if row.dataSource else None,
@@ -96,9 +98,8 @@ def migrate_geojson(filename="layer/assam_revenue_circles_nov2022_4326.geojson")
                 geo_type = "REVENUE CIRCLE"
                 code = ft["properties"]["object_id"]
                 name = ft["properties"]["revenue_ci"]
-                district = ft["properties"]["district_1"]
+                district = ft["properties"]["district_3"]
 
-                # print(district)
                 parent_geo_obj = Geography.objects.get(
                     name__iexact=district, type="DISTRICT"
                 )
