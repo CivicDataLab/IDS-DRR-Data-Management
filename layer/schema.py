@@ -86,16 +86,20 @@ def get_district_chart_data(
         for i in range(0, 4):
             tme = datetime_object - relativedelta(months=i)
             time_list.append(tme.strftime("%Y_%m"))
+        print(time_list)
+        time_list.reverse()
+        print(time_list)
     elif data_filter.period == "1Y":
         for i in range(0, 13):
             tme = datetime_object - relativedelta(months=i)
             time_list.append(tme.strftime("%Y_%m"))
+        time_list.reverse()
     else:
         list_queryset = (
             Data.objects.values_list("data_period", flat=True)
             .annotate(custom_ordering=F("data_period"))
             .distinct()
-            .order_by("-custom_ordering")
+            .order_by("custom_ordering")
         )
         time_list = [time for time in list_queryset]
 
