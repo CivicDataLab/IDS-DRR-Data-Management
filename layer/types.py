@@ -95,7 +95,6 @@ class Indicators:
     unit: Unit
     geography: Optional["Geography"] = None
     department: Optional["Department"] = None
-    # page: Optional[List[Page]] = None
     scheme: Optional["Scheme"] = None
     parent: Optional["Indicators"]
 

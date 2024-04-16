@@ -21,28 +21,39 @@ def get_district_data(
     indc_filter: types.IndicatorFilter,
     data_filter: types.DataFilter,
     geo_filter: Optional[types.GeoFilter] = None,
-) -> list:
+) -> list[dict]:
+    """Retrieve district-specific data based on specified filters.
+
+    Args:
+        indc_filter (types.IndicatorFilter): An IndicatorFilter object used
+        to filter data based on defined fields from types.py.
+        data_filter (types.DataFilter): An DataFilter object used
+        to filter data based on defined fields from types.py.
+        geo_filter (types.GeoFilter, optional): An GeoFilter object used
+        to filter data based on defined fields from types.py. Defaults to None.
+
+    Returns:
+        list[dict]: A list containing dictionary of districts
+            mapping each to it's relevant data fields.
+    """
     starttime = timeit.default_timer()
     data_list = []
     data_dict = {}
 
-    # dataset_obj = Data.objects.all()  # filter(geography__type="DISTRICT")
     if indc_filter:
         dataset_obj = Data.objects.filter(
             Q(indicator__slug=indc_filter.slug)
             | Q(indicator__parent__slug=indc_filter.slug)
-        )  # .order_by("-value")
+        )
     if data_filter:
-        dataset_obj = dataset_obj.filter(
-            data_period=data_filter.data_period
-        )  # .order_by("-value")
+        dataset_obj = dataset_obj.filter(data_period=data_filter.data_period)
 
     if geo_filter:
         if len(geo_filter.code) <= 1:
             dataset_obj = dataset_obj.filter(
                 Q(geography__parentId__code__in=geo_filter.code)
                 | Q(geography__code__in=geo_filter.code)
-            )  # .order_by("-value")
+            )
             geo_obj = Geography.objects.filter(
                 Q(code__in=geo_filter.code) | Q(parentId__code__in=geo_filter.code)
             )
@@ -66,16 +77,29 @@ def get_district_data(
     data_list = sorted(data_list, key=lambda d: d[indc_filter.slug], reverse=True)
 
     print("The time difference is :", timeit.default_timer() - starttime)
-    return {"table_data": data_list}
+    return data_list  # {"table_data": data_list}
 
 
-def get_district_chart_data(
+def get_time_trends(
     indc_filter: types.IndicatorFilter,
     data_filter: types.DataFilter,
     geo_filter: types.GeoFilter,
-):
+) -> dict:
     starttime = timeit.default_timer()
+    """Retrieve time trends data based on specified filters.
 
+    Args:
+        indc_filter (types.IndicatorFilter): An IndicatorFilter object used
+        to filter data based on defined fields from types.py.
+        data_filter (types.DataFilter): An DataFilter object used
+        to filter data based on defined fields from types.py.
+        geo_filter (types.GeoFilter, optional): An GeoFilter object used
+        to filter data based on defined fields from types.py.
+
+    Returns:
+        dict: A dictionary containing time trends data aggregated for each
+        timestamp based on the specified filters.
+    """
     # Parse the string into a datetime object.
     date_format = "%Y_%m"
     datetime_object = datetime.strptime(data_filter.data_period, date_format)
@@ -86,9 +110,7 @@ def get_district_chart_data(
         for i in range(0, 4):
             tme = datetime_object - relativedelta(months=i)
             time_list.append(tme.strftime("%Y_%m"))
-        print(time_list)
         time_list.reverse()
-        print(time_list)
     elif data_filter.period == "1Y":
         for i in range(0, 13):
             tme = datetime_object - relativedelta(months=i)
@@ -139,59 +161,85 @@ def get_revenue_data(
     indc_filter: types.IndicatorFilter,
     data_filter: types.DataFilter,
     geo_filter: Optional[types.GeoFilter] = None,
-    for_map: bool = False,
-) -> list:
+) -> list[dict]:
     starttime = timeit.default_timer()
     data_list = []
     data_dict = {}
+    """Retrieve revenue circle-specific data based on specified filters.
+
+    Args:
+        indc_filter (types.IndicatorFilter): An IndicatorFilter object used
+        to filter data based on defined fields from types.py.
+        data_filter (types.DataFilter): An DataFilter object used
+        to filter data based on defined fields from types.py.
+        geo_filter (types.GeoFilter, optional): An GeoFilter object used
+        to filter data based on defined fields from types.py. Defaults to None.
+
+    Returns:
+        list[dict]: A list containing dictionary of revenue circles
+            mapping each to it's relevant data fields.
+    """
 
     geo_queryset = Geography.objects.filter(type="REVENUE CIRCLE")
     if geo_filter:
         geo_queryset = geo_queryset.filter(code__in=geo_filter.code)
-        # geo_queryset = strawberry_django.filters.apply(geo_filter, geo_queryset)
-    # print(geo_queryset)
-    rc_data_queryset = Data.objects.all()
+
+    # rc_data_queryset = Data.objects.all()
+    rc_data_queryset = Data.objects.filter(
+        Q(indicator__parent__slug=indc_filter.slug)
+        | Q(indicator__slug=indc_filter.slug),
+        # data_period=data_filter.data_period,
+    )
+    rc_data_queryset = rc_data_queryset.filter(data_period=data_filter.data_period)
 
     for geo in geo_queryset:
-        filtered_queryset = rc_data_queryset.filter(
-            geography=geo, data_period=data_filter.data_period
-        )
-        if indc_filter:
-            if for_map:
-                filtered_queryset = filtered_queryset.filter(
-                    indicator__slug=indc_filter.slug
-                )
-            else:
-                filtered_queryset = filtered_queryset.filter(
-                    Q(indicator__parent__slug=indc_filter.slug)
-                    | Q(indicator__slug=indc_filter.slug)
-                )
-        if filtered_queryset.exists():
-            for obj in filtered_queryset:
-                data_dict[obj.geography.type.lower().replace(" ", "-")] = (
-                    obj.geography.name
-                )
-                data_dict[(obj.geography.type + " code").lower().replace(" ", "-")] = (
-                    obj.geography.code
-                )
-                data_dict[obj.indicator.slug] = round(obj.value, 3)
-            if data_dict:
-                data_list.append(data_dict)
-                data_dict = {}
-        else:
-            break
+        # filtered_queryset = rc_data_queryset.filter(
+        #     geography=geo, data_period=data_filter.data_period
+        # )
+        # if indc_filter:
+        #     filtered_queryset = filtered_queryset.filter(
+        #         Q(indicator__parent__slug=indc_filter.slug)
+        #         | Q(indicator__slug=indc_filter.slug)
+        #     )
+        # if filtered_queryset.exists():
+        for obj in rc_data_queryset.filter(geography=geo):
+            # for obj in filtered_queryset:
+            data_dict[obj.geography.type.lower().replace(" ", "-")] = obj.geography.name
+            data_dict[(obj.geography.type + " code").lower().replace(" ", "-")] = (
+                obj.geography.code
+            )
+            data_dict[obj.indicator.slug] = round(obj.value, 3)
+        if data_dict:
+            data_list.append(data_dict)
+            data_dict = {}
+    # else:
+    #     break
 
     data_list = sorted(data_list, key=lambda d: d[indc_filter.slug], reverse=True)
 
     print("The time difference is :", timeit.default_timer() - starttime)
-    return {"table_data": data_list}
+    return data_list  # {"table_data": data_list}
 
 
 def get_revenue_map_data(
     indc_filter: types.IndicatorFilter,
     data_filter: types.DataFilter,
     geo_filter: Optional[types.GeoFilter] = None,
-):
+) -> dict:
+    """Retrieve revenue-circle map data based on specified filters.
+
+    Args:
+        indc_filter (types.IndicatorFilter): An IndicatorFilter object used
+        to filter data based on defined fields from types.py.
+        data_filter (types.DataFilter): An DataFilter object used
+        to filter data based on defined fields from types.py.
+        geo_filter (types.GeoFilter, optional): An GeoFilter object used
+        to filter data based on defined fields from types.py. Defaults to None.
+
+    Returns:
+        dict: A GeoJSON-like dictionary representing revenue circle features with
+        associated indicator data.
+    """
     starttime = timeit.default_timer()
 
     # Convert geography objects to a GeoJson format.
@@ -199,40 +247,35 @@ def get_revenue_map_data(
         serialize("geojson", Geography.objects.filter(type="REVENUE CIRCLE"))
     )
 
-    # Get Indicator Data for each RC.
-    # rc_data = get_revenue_data(
-    #     indc_filter=indc_filter,
-    #     data_filter=data_filter,
-    #     geo_filter=geo_filter,
-    #     for_map=True,
-    # )
     rc_data = Data.objects.filter(
-        indicator__slug=indc_filter.slug, data_period=data_filter.data_period
-    )
-    # print(len(rc_data))
+        indicator__slug=indc_filter.slug,
+        data_period=data_filter.data_period,
+        geography__type="REVENUE CIRCLE",
+    ).select_related("geography")
 
-    # Iterating over GeoJson and appending Indicator data for each RC.
+    # Create a dictionary to store indicator data by geography code
+    rc_data_map = {data.geography.code: data for data in rc_data}
+
+    # Iterate over GeoJSON features and populate with indicator data
     for rc in geo_json["features"]:
-        for data in rc_data:
-            if rc["properties"]["code"] == data.geography.code:
-                # Get RC details
-                geo_object = Geography.objects.get(code=data.geography.code)
+        rc_code = rc["properties"]["code"]
+        if rc_code in rc_data_map:
+            data = rc_data_map[rc_code]
+            geo_object = data.geography
 
-                # Adding the District this RC belongs to.
-                rc["properties"][
-                    f"{geo_object.parentId.type.lower().replace(' ', '-') + '-code'}"
-                ] = geo_object.parentId.code
+            # Add parent district code to properties
+            parent_code_key = (
+                f"{geo_object.parentId.type.lower().replace(' ', '-')}-code"
+            )
+            rc["properties"][parent_code_key] = geo_object.parentId.code
 
-                # Add other keys(Indicators) and its value to GeoJson.
-                rc["properties"][f"{data.indicator.slug}"] = data.value
+            # Add indicator slug and value to properties
+            rc["properties"][data.indicator.slug] = data.value
 
-                break
-            else:
-                continue
-
-        # Removing unnecessary values.
-        rc["properties"].pop("parentId", None)
-        rc["properties"].pop("pk", None)
+            # Remove unnecessary keys
+            rc["properties"].pop("parentId", None)
+            rc["properties"].pop("pk", None)
+            rc.pop("id", None)
 
     print("The time difference is :", timeit.default_timer() - starttime)
     return geo_json
@@ -242,7 +285,21 @@ def get_district_map_data(
     indc_filter: types.IndicatorFilter,
     data_filter: types.DataFilter,
     geo_filter: Optional[types.GeoFilter] = None,
-):
+) -> dict:
+    """Retrieve district map data based on specified filters.
+
+    Args:
+        indc_filter (types.IndicatorFilter): An IndicatorFilter object used
+        to filter data based on defined fields from types.py.
+        data_filter (types.DataFilter): An DataFilter object used
+        to filter data based on defined fields from types.py.
+        geo_filter (types.GeoFilter, optional): An GeoFilter object used
+        to filter data based on defined fields from types.py. Defaults to None.
+
+    Returns:
+        dict: A GeoJSON-like dictionary representing district features with
+        associated indicator data.
+    """
     starttime = timeit.default_timer()
 
     # Convert geography objects to a GeoJson format.
@@ -251,88 +308,101 @@ def get_district_map_data(
     )
 
     # Get Indicator Data for each district.
-    rc_data = Data.objects.filter(
+    district_data = Data.objects.filter(
         indicator__slug=indc_filter.slug,
         data_period=data_filter.data_period,
         geography__type="DISTRICT",
-    )
+    ).select_related("geography")
 
-    # Iterating over GeoJson and appending Indicator data for each RC.
+    # Create a dictionary to store indicator data by geography code
+    district_data_map = {data.geography.code: data for data in district_data}
+
+    # Iterate over GeoJSON features and populate with indicator data
     for rc in geo_json["features"]:
-        for data in rc_data:
-            if rc["properties"]["code"] == data.geography.code:
-                # Add other keys(Indicators) and its value to GeoJson.
-                rc["properties"][f"{data.indicator.slug}"] = data.value
+        district_code = rc["properties"]["code"]
+        if district_code in district_data_map:
+            data = district_data_map[district_code]
 
-                break
-            else:
-                continue
-        # Removing unnecessary values.
-        rc["properties"].pop("parentId", None)
-        rc["properties"].pop("pk", None)
-        rc.pop("id", None)
+            # Add indicator slug and value to properties
+            rc["properties"][data.indicator.slug] = data.value
+
+            # Remove unnecessary keys
+            rc["properties"].pop("parentId", None)
+            rc["properties"].pop("pk", None)
+            rc.pop("id", None)
 
     print("The time difference is :", timeit.default_timer() - starttime)
     return geo_json
 
 
-def get_revenue_chart_data(
-    indc_filter: types.IndicatorFilter,
-    data_filter: types.DataFilter,
-    geo_filter: types.GeoFilter,
-):
-    starttime = timeit.default_timer()
-    data_dict = {}
+# def get_revenue_chart_data(
+#     indc_filter: types.IndicatorFilter,
+#     data_filter: types.DataFilter,
+#     geo_filter: types.GeoFilter,
+# ):
+#     starttime = timeit.default_timer()
+#     data_dict = {}
 
-    # Creating initial dict structure.
-    # TODO: Optimise it for multiple timeperiods; not supported currently. [Phase-2]
-    # TODO: Optimise it for multiple indicators; not supported currently. [Phase-2]
-    data_dict[data_filter.data_period] = {}
-    data_dict[data_filter.data_period][indc_filter.slug] = {}
+#     # Creating initial dict structure.
+#     # TODO: Optimise it for multiple timeperiods; not supported currently. [Phase-2]
+#     # TODO: Optimise it for multiple indicators; not supported currently. [Phase-2]
+#     data_dict[data_filter.data_period] = {}
+#     data_dict[data_filter.data_period][indc_filter.slug] = {}
 
-    # Get Indicator Data for each RC.
-    rc_data = get_revenue_data(
-        indc_filter=indc_filter,
-        data_filter=data_filter,
-        geo_filter=geo_filter,
-        for_map=True,
-    )
+#     # Get Indicator Data for each RC.
+#     rc_data = get_revenue_data(
+#         indc_filter=indc_filter,
+#         data_filter=data_filter,
+#         geo_filter=geo_filter,
+#         for_map=True,
+#     )
 
-    for data in rc_data["table_data"]:
-        # print(data[f"{indc_filter.slug}"])
-        data_dict[data_filter.data_period][indc_filter.slug][
-            data["revenue-circle-code"]
-        ] = {data["revenue-circle"]: data[f"{indc_filter.slug}"]}
+#     for data in rc_data["table_data"]:
+#         # print(data[f"{indc_filter.slug}"])
+#         data_dict[data_filter.data_period][indc_filter.slug][
+#             data["revenue-circle-code"]
+#         ] = {data["revenue-circle"]: data[f"{indc_filter.slug}"]}
 
-    print("The time difference is :", timeit.default_timer() - starttime)
-    return data_dict
+#     print("The time difference is :", timeit.default_timer() - starttime)
+#     return data_dict
 
 
-def get_categories() -> list:
-    data_list = []
-    data_dict = {}
+# def get_categories() -> list:
+#     data_list = []
+#     data_dict = {}
 
-    category_list = Indicators.objects.values_list("category", flat=True)
-    # print(category_list)
-    unqiue_categories = []
-    [unqiue_categories.append(x) for x in category_list if x not in unqiue_categories]
-    for catgry in unqiue_categories:
-        filtered_queryset = Indicators.objects.filter(
-            category=catgry, is_visible=True
-        )  # .order_by("display_order")
-        if filtered_queryset.exists():
-            data_dict[catgry] = {}
-            for obj in filtered_queryset:
-                data_dict[catgry][obj.name] = obj.slug
+#     category_list = Indicators.objects.values_list("category", flat=True)
+#     # print(category_list)
+#     unqiue_categories = []
+#     [unqiue_categories.append(x) for x in category_list if x not in unqiue_categories]
+#     for catgry in unqiue_categories:
+#         filtered_queryset = Indicators.objects.filter(
+#             category=catgry, is_visible=True
+#         )  # .order_by("display_order")
+#         if filtered_queryset.exists():
+#             data_dict[catgry] = {}
+#             for obj in filtered_queryset:
+#                 data_dict[catgry][obj.name] = obj.slug
 
-            data_list.append(data_dict)
-            data_dict = {}
+#             data_list.append(data_dict)
+#             data_dict = {}
 
-    # print(data_list)
-    return data_list
+#     # print(data_list)
+#     return data_list
 
 
 def get_indicators(indc_filter: Optional[types.IndicatorFilter] = None) -> list:
+    # TODO: Return obj rather than formatted dict. [Faster]
+    """Return a list of indicators and associated data from the 'indicator' table.
+
+    Args:
+        indc_filter (types.IndicatorFilter, optional): An IndicatorFilter object used
+        to filter data based on defined fields from types.py. Defaults to None.
+
+    Returns:
+        list: A list of dictionaries representing indicators and related data.
+    """
+    starttime = timeit.default_timer()
     data_list = []
 
     indc_obj = Indicators.objects.filter(is_visible=True)
@@ -347,6 +417,7 @@ def get_indicators(indc_filter: Optional[types.IndicatorFilter] = None) -> list:
     for data in data_queryset:
         data_list.append(data)
 
+    print("The time difference is :", timeit.default_timer() - starttime)
     return data_list
 
 
@@ -429,7 +500,7 @@ class Query:  # camelCase
     # data: list[types.Data] = strawberry_django.field()
     districtViewData: JSON = strawberry_django.field(resolver=get_district_data)
     districtMapData: JSON = strawberry_django.field(resolver=get_district_map_data)
-    getTimeTrends: JSON = strawberry_django.field(resolver=get_district_chart_data)
+    getTimeTrends: JSON = strawberry_django.field(resolver=get_time_trends)
     revCircleViewData: JSON = strawberry_django.field(resolver=get_revenue_data)
     revCircleMapData: JSON = strawberry_django.field(resolver=get_revenue_map_data)
     # revCircleTimeTrends: JSON = strawberry_django.field(resolver=get_revenue_chart_data)
