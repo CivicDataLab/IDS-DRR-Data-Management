@@ -57,7 +57,9 @@ def get_district_data(
             data_dict[obj.geography.type.lower().replace(" ", "-") + "-code"] = (
                 obj.geography.code
             )
-            data_dict[obj.indicator.slug] = obj.value
+            data_dict[obj.indicator.slug] = (
+                str(obj.value) + " " + obj.indicator.unit.name
+            )
 
         if data_dict:
             data_list.append(data_dict)
@@ -174,7 +176,9 @@ def get_revenue_data(
                 data_dict[(obj.geography.type + " code").lower().replace(" ", "-")] = (
                     obj.geography.code
                 )
-                data_dict[obj.indicator.slug] = round(obj.value, 3)
+                data_dict[obj.indicator.slug] = (
+                    str(round(obj.value, 3)) + " " + obj.indicator.unit.name
+                )
             if data_dict:
                 data_list.append(data_dict)
                 data_dict = {}
