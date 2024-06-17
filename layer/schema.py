@@ -68,9 +68,11 @@ def get_district_data(
             data_dict[obj.geography.type.lower().replace(" ", "-") + "-code"] = (
                 obj.geography.code
             )
-            data_dict[obj.indicator.name] = (
-                str(obj.value) + " " + obj.indicator.unit.name
-            )
+            if obj.indicator.unit:
+                unit = obj.indicator.unit.name
+                data_dict[obj.indicator.name] = str(obj.value) + " " + unit
+            else:
+                data_dict[obj.indicator.name] = str(obj.value)
 
         if data_dict:
             data_list.append(data_dict)
@@ -212,9 +214,11 @@ def get_revenue_data(
             data_dict[(obj.geography.type + " code").lower().replace(" ", "-")] = (
                 obj.geography.code
             )
-            data_dict[obj.indicator.name] = (
-                str(obj.value) + " " + obj.indicator.unit.name
-            )
+            if obj.indicator.unit:
+                unit = obj.indicator.unit.name
+                data_dict[obj.indicator.name] = str(obj.value) + " " + unit
+            else:
+                data_dict[obj.indicator.name] = str(obj.value)
         if data_dict:
             data_list.append(data_dict)
             data_dict = {}
