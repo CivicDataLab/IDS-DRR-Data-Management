@@ -63,12 +63,12 @@ def get_district_data(
         geo_obj = Geography.objects.filter(type="DISTRICT")
 
     for geo in geo_obj:
-        for obj in dataset_obj.filter(geography=geo):
+        for obj in dataset_obj.filter(geography=geo, indicator__is_visible=True):
             data_dict[obj.geography.type.lower()] = obj.geography.name
             data_dict[obj.geography.type.lower().replace(" ", "-") + "-code"] = (
                 obj.geography.code
             )
-            data_dict[obj.indicator.slug] = (
+            data_dict[obj.indicator.name] = (
                 str(obj.value) + " " + obj.indicator.unit.name
             )
 
@@ -76,7 +76,9 @@ def get_district_data(
             data_list.append(data_dict)
             data_dict = {}
 
-    data_list = sorted(data_list, key=lambda d: d[indc_filter.slug], reverse=True)
+    filter_key = Indicators.objects.get(slug=indc_filter.slug)
+    data_list = sorted(data_list, key=lambda d: d[filter_key.name], reverse=True)
+    # data_list = sorted(data_list, key=lambda d: d[indc_filter.slug], reverse=True)
 
     print("The time difference is :", timeit.default_timer() - starttime)
     return data_list  # {"table_data": data_list}
@@ -204,20 +206,24 @@ def get_revenue_data(
         #         | Q(indicator__slug=indc_filter.slug)
         #     )
         # if filtered_queryset.exists():
-        for obj in rc_data_queryset.filter(geography=geo):
+        for obj in rc_data_queryset.filter(geography=geo, indicator__is_visible=True):
             # for obj in filtered_queryset:
             data_dict[obj.geography.type.lower().replace(" ", "-")] = obj.geography.name
             data_dict[(obj.geography.type + " code").lower().replace(" ", "-")] = (
                 obj.geography.code
             )
-            data_dict[obj.indicator.slug] = round(obj.value, 3)
+            data_dict[obj.indicator.name] = (
+                str(obj.value) + " " + obj.indicator.unit.name
+            )
         if data_dict:
             data_list.append(data_dict)
             data_dict = {}
     # else:
     #     break
 
-    data_list = sorted(data_list, key=lambda d: d[indc_filter.slug], reverse=True)
+    filter_key = Indicators.objects.get(slug=indc_filter.slug)
+    data_list = sorted(data_list, key=lambda d: d[filter_key.name], reverse=True)
+    # data_list = sorted(data_list, key=lambda d: d[indc_filter.slug], reverse=True)
 
     print("The time difference is :", timeit.default_timer() - starttime)
     return data_list  # {"table_data": data_list}

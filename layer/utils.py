@@ -6,7 +6,7 @@ from django.db.models import Q
 from layer.models import Data, Geography, Indicators, Unit
 
 
-def migrate_indicators(filename="layer/data_dict.csv"):
+def migrate_indicators(filename="layer/data_dict_v2.csv"):
     df = pd.read_csv(filename)
     # print(df.shape)
     # print(df.columns)
@@ -28,8 +28,9 @@ def migrate_indicators(filename="layer/data_dict.csv"):
                         unit_obj.save()
                         print(f"Saved {unit_obj.name} to DB!")
                 else:
-                    print("Skipping Indicator as no Unit was provided!")
-                    continue
+                    # print("Skipping Indicator as no Unit was provided!")
+                    # continue
+                    unit_obj = None
                 parent_obj = None
                 try:
                     if row.parent and not isinstance(row.parent, float):
@@ -121,7 +122,7 @@ def migrate_geojson(filename="layer/assam_revenue_circles_nov2022_4326.geojson")
             # print(ft["geometry"]["coordinates"])
 
 
-def migrate_data(filename="layer/data.csv"):
+def migrate_data(filename="layer/data_v2.csv"):
     df = pd.read_csv(filename)
 
     # Get all columns visible on the platform from DB.
