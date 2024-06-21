@@ -1,69 +1,69 @@
 indicatorSlug,indicatorTitle,indicatorDescription,descriptionlen,indicatorCategory,parent,unit,dataSource,visible,updateFreq,used_for_model
 risk-score,Risk Score,"Risk of disasters is a function of - hazard, vulnerability, exposure, and coping capacity",89,Risk Score,,Score,MODEL,y,,
-flood-hazard,Flood Hazard,Hazards or Potential of a physical event that may cause loss of life or property,80,Hazard,Risk Score,Score,MODEL,y,,
-max-rain,Maximum rainfall value in the revenue circle,Maximum rainfall value in the revenue circle,44,Hazard,Hazard,mm,IMD,,,x
-mean-rain,Mean rainfall value in the revenue circle,Mean rainfall value in the revenue circle,41,Hazard,Hazard,mm,IMD,,,x
-sum-rain,Total Rainfall,Sum rainfall value in the revenue circle,40,Hazard,Flood Hazard,mm,IMD,y,,y
-mean-ndvi,Mean NDVI,Mean Normalised Difference Vegetation Index (NDVI) value for the revenue circle,79,Hazard,Hazard,Ratio,SENTINEL,,,n
-inundation-pct,Percentage area inundated,Percentage area of the revenue circle detected as inundated,59,Hazard,Hazard,Ratio,BHUVAN,,,x
-inundation-intensity-mean,Mean Intensity of Inundation,"Intensity is calculated by dividing number of times a pixel got inundated with the maximum number of times any pixel got inundated in the Revenue Circle. For instance, if a pixel A in Revenue Circle got inundated 5 times in a month and the pixel with maximum inundation saw 10 days of inundation. Then inundation intensity of pixel A is 5/10 = 0.5. This variable then calculates mean of inundation intensities of all pixels.",424,Hazard,Hazard,Ratio,BHUVAN,,,x
-inundation-intensity-mean-nonzero,Mean intensity of inundation (removing 0 intensity pixels),Mean of inundation intensities of all pixels which were inundated atleast once in the month,91,Hazard,Hazard,Ratio,BHUVAN,,,x
-inundation-intensity-sum,Sum of inundation intensities,Sum of inundation intensities of all pixels in the Revenue Circle,65,Hazard,Flood Hazard,Ratio,BHUVAN,y,,y
-riverlevel-mean,Mean River Water Level,Mean of river water levels from all Flood Forecasting Stations in the Revenue Circle,84,Hazard,Hazard,m,CWC,,,n
-riverlevel-min,Minimum river water level,Minimum river water levels from all Flood Forecasting Stations in the Revenue Circle,84,Hazard,Hazard,m,CWC,,,n
-riverlevel-max,Maximum river water level,Maximum river water levels from all Flood Forecasting Stations in the Revenue Circle,84,Hazard,Hazard,m,CWC,,,n
-water,Percentage of area under water,Percentage of area under water,30,Hazard,Hazard,Ratio,LANDUSE MAP,,,y
-trees,Percentage of area under trees,Percentage of area under trees,30,Hazard,Hazard,Ratio,LANDUSE MAP,,,y
-flooded-vegetation,Percentage of area under flooded vegetation,Percentage of area under flooded vegetation,43,Hazard,Hazard,Ratio,LANDUSE MAP,,,n
-crops,Percentage of area under crops,Percentage of area under crops,30,Hazard,Hazard,Ratio,LANDUSE MAP,,,y
-built-area,Percentage of area under buildings,Percentage of area under buildings,34,Hazard,Hazard,Ratio,LANDUSE MAP,,,y
-bare-ground,Percentage of area that is bare ground,Percentage of area that is bare ground,38,Hazard,Flood Hazard,Ratio,LANDUSE MAP,y,,y
-clouds,Percentage of area covered by clouds,Percentage of area covered by clouds,36,Hazard,Hazard,Ratio,LANDUSE MAP,,,n
-rangeland,Percentage of area defined as range lands,Percentage of area defined as range lands,41,Hazard,Hazard,Ratio,LANDUSE MAP,,,y
-mean-cn,Mean Curve Number,Curve Numbers help in estimation of Surface runoff,50,Hazard,Hazard,,GCN250,,,y
-elevation-mean,Mean Elevation,Mean elevation of the Revenue Circle,36,Hazard,Flood Hazard,m,NASADEM,y,,y
-slope-mean,Mean slope,Mean slope of the Revenue Circle,32,Hazard,Hazard,degrees,NASADEM,,,y
-drainage-density,Drainage density,Drainage density is a measurement of the sum of the channel lengths per unit area,81,Hazard,Flood Hazard,km / sq.km,derived from NASADEM,y,,y
-distance-from-river,Distance from the river,Average distance from river,27,Hazard,Hazard,km,WRIS,,,y
-exposure,Exposure,Exposures of vulnerable population and assets to hazards,56,Exposure,Risk Score,Score,MODEL,y,,
-sexratio,Sex Ratio,Total number of females per 1000 male population,48,Exposure,Exposure,Number,WORLDPOP,y,,y
-total-hhd,Total Number of Households*,Total number of households,26,Exposure,Exposure,Number,MISSION ANTYODAYA 2020,y,,y
-sum-population,Population*,Total number of people residing in the Revenue Circle,53,Exposure,Exposure,Number,WORLDPOP,y,,y
-vulnerability,Vulnerability,"Physical, Social, Economic, and Environmental vulnerabilities which increase susceptibility of an area or a community to impact of hazards",138,Vulnerability,Risk Score,Score,MODEL,y,,
-ndbi-mean,Mean NDBI,Mean Normalised Difference Building Index (NDBI) value for the revenue circle,77,Vulnerability,Vulnerability,Ratio,SENTINEL,,,n
-sum-aged-population,Elderly population*,Number of people of ages greater than or equal to 65,52,Exposure,Exposure,Number,WORLDPOP,,,y
-sum-young-population,Children population*,Number of people of ages less than or equal to 5,48,Exposure,Exposure,Number,WORLDPOP,,,y
-schools-count,Number of Schools,Number of Schools in the Revenue Circle,39,Vulnerability,Vulnerability,Number,BHARATMAPS,,,y
-health-centres-count,Number of Health Centres,Number of health centres in the Revenue Circle,46,Vulnerability,Vulnerability,Number,BHARATMAPS,y,,y
-rail-length,Length of rail in the Revenue Circle,Length of rail in the Revenue Circle,36,Vulnerability,Vulnerability,km,BHARATMAPS,,,y
-road-length,Length of Road,Length of road in the Revenue Circle,36,Vulnerability,Vulnerability,km,BHARATMAPS,,,y
-net-sown-area-in-hac,Net Sown Area,Net sown area in the Revenue Circle,35,Vulnerability,Vulnerability,hectares,MISSION ANTYODAYA 2020,,,y
-avg-electricity,Average availablity of domestic electricity,Average availablity of domestic electricity,43,Vulnerability,Vulnerability,hours,MISSION ANTYODAYA 2020,,,y
-avg-tele,Average availablity of telecom services,Average availablity of telecom services,39,Vulnerability,Vulnerability,category,MISSION ANTYODAYA 2020,,,n
-rc-piped-hhds-pct,Percentage of households with piped water connection,Percentage of households with piped water connection,52,Vulnerability,Vulnerability,Ratio,MISSION ANTYODAYA 2020,,,y
-rc-nosanitation-hhds-pct,Percentage of households without sanitation facilities,Percentage of households without sanitation facilities,54,Vulnerability,Vulnerability,Ratio,MISSION ANTYODAYA 2020,,,y
-mean-sexratio,Mean Sex Ratio*,Number females per 1000 males,29,Vulnerability,Vulnerability,Ratio,WORLDPOP,,,y
-total-animal-washed-away,Number of animals washed away,Number of animals washed away,29,Vulnerability,Vulnerability,Number,FRIMS,,,y
-total-animal-affected,Number of animals affected,Number of animals affected,26,Vulnerability,Vulnerability,Number,FRIMS,,,y
-population-affected-total,Population Affected,Population affected,19,Vulnerability,Vulnerability,Number,FRIMS,y,,y
-Relief-Camp-inmates,Relief camp inmates,Relief camp inmates,19,Vulnerability,Vulnerability,Number,FRIMS,,,x
-human-live-lost,Human Lives Lost,Human lives lost,16,Vulnerability,Vulnerability,Number,FRIMS,,,x
-crop-area,Crop Area Affected,Crop area affected,18,Vulnerability,Vulnerability,Hectares,FRIMS,y,,y
-total-house-fully-damaged,Number of Houses Damaged,Number of houses damaged,24,Vulnerability,Vulnerability,Number,FRIMS,,,y
-embankments-affected,Number of embankments affected,Number of embankments affected,30,Vulnerability,Vulnerability,Number,FRIMS,y,,y
-roads,Number of Roads damaged,Number of Roads damaged,23,Vulnerability,Vulnerability,Number,FRIMS,y,,y
-Bridge,Number of Bridges damaged,Number of Bridges damaged,25,Vulnerability,Vulnerability,Number,FRIMS,,,y
-Embankment breached,Number of embankments breached,Number of embankments breached,30,Vulnerability,Vulnerability,Number,FRIMS,,,y
-number-relief-camps,Number of Relief camps,Number of Relief camps,22,Vulnerability,Vulnerability,Number,FRIMS,,,x
-government-response,Coping Capacity - Government Response,"Capacities or resources that can reduce the level of risk, or the effects of disasters",86,Coping Capacity - Government Response,Risk Score,Score,MODEL,y,,
-total-tender-awarded-value,Total Value of Flood Related Tenders,Total value of flood related tenders,36,Government Response,Coping Capacity - Government Response,Rupees,assamtenders.gov.in,y,,y
-SOPD-tenders-awarded-value,Total value of flood related tenders granted under SOPD Scheme,SOPD Scheme is the State Owned Priority Development Scheme. This variable gives information of total value of tenders that were granted under SOPD Scheme,153,Government Response,Government Response,Rupees,assamtenders.gov.in,,,x
-sdrf-tenders-awarded-value,Total Value of Flood Related Tenders granted under SDRF Scheme,This variable gives information of total value of tenders that were granted under State Disaster Response Fund,110,Government Response,Coping Capacity - Government Response,Rupees,assamtenders.gov.in,y,,x
-RIDF-tenders-awarded-value,Total value of flood related tenders granted under RIDF Scheme,RIDF is the Rural Infrastructure Development Fund maintained by NABARD. This variable gives information of total value of tenders that were granted under RIDF.,159,Government Response,Government Response,Rupees,assamtenders.gov.in,,,x
-CIDF-tenders-awarded-value,Total value of flood related tenders granted under CIDF Scheme,CIDF City Infra Development Fund is maintained by Assam Government for urban development. This variable gives information of total value of tenders that were granted under CIDF,176,Government Response,Government Response,Rupees,assamtenders.gov.in,,,x
-restoration-measures-tenders-awarded-value,Total Value of Flood Related Tenders related to Preparedness,This variable gives sum of all tenders that are flagged as Restoration Measures,79,Government Response,Coping Capacity - Government Response,Rupees,assamtenders.gov.in,y,,x
-immediate-measures-tenders-awarded-value,Total Value of Flood Related Tenders related to Immediate Measures,This variable gives sum of all tenders that are flagged as Immediate Measures,77,Government Response,Coping Capacity - Government Response,Rupees,assamtenders.gov.in,y,,x
-Others-tenders-awarded-value,Total value of flood related tenders related to Others,"Every flood related tender is flagged as either ""Preparedness"", ""Immediate Measure"" or ""Other"" based on key words. This column gives sum of all tenders that are flagged as Other",177,Government Response,Government Response,Rupees,assamtenders.gov.in,,,x
+flood-hazard,Flood Hazard Score,Hazards or Potential of a physical event that may cause loss of life or property,80,Hazard,Risk Score,Score,MODEL,y,,
+max-rain,Maximum rainfall value in the revenue circle,Maximum rainfall value in the revenue circle,44,Hazard,Flood Hazard Score,mm,IMD,,,x
+mean-rain,Mean rainfall value in the revenue circle,Mean rainfall value in the revenue circle,41,Hazard,Flood Hazard Score,mm,IMD,,,x
+sum-rain,Total Rainfall,Sum rainfall value in the revenue circle,40,Hazard,Flood Hazard Score,mm,IMD,y,,y
+mean-ndvi,Mean NDVI,Mean Normalised Difference Vegetation Index (NDVI) value for the revenue circle,79,Hazard,Flood Hazard Score,Ratio,SENTINEL,,,n
+inundation-pct,Percentage area inundated,Percentage area of the revenue circle detected as inundated,59,Hazard,Flood Hazard Score,Ratio,BHUVAN,,,x
+inundation-intensity-mean,Mean Intensity of Inundation,"Intensity is calculated by dividing number of times a pixel got inundated with the maximum number of times any pixel got inundated in the Revenue Circle. For instance, if a pixel A in Revenue Circle got inundated 5 times in a month and the pixel with maximum inundation saw 10 days of inundation. Then inundation intensity of pixel A is 5/10 = 0.5. This variable then calculates mean of inundation intensities of all pixels.",424,Hazard,Flood Hazard Score,Ratio,BHUVAN,,,x
+inundation-intensity-mean-nonzero,Mean intensity of inundation (removing 0 intensity pixels),Mean of inundation intensities of all pixels which were inundated atleast once in the month,91,Hazard,Flood Hazard Score,Ratio,BHUVAN,,,x
+inundation-intensity-sum,Sum of inundation intensities,Sum of inundation intensities of all pixels in the Revenue Circle,65,Hazard,Flood Hazard Score,Ratio,BHUVAN,y,,y
+riverlevel-mean,Mean River Water Level,Mean of river water levels from all Flood Forecasting Stations in the Revenue Circle,84,Hazard,Flood Hazard Score,m,CWC,,,n
+riverlevel-min,Minimum river water level,Minimum river water levels from all Flood Forecasting Stations in the Revenue Circle,84,Hazard,Flood Hazard Score,m,CWC,,,n
+riverlevel-max,Maximum river water level,Maximum river water levels from all Flood Forecasting Stations in the Revenue Circle,84,Hazard,Flood Hazard Score,m,CWC,,,n
+water,Percentage of area under water,Percentage of area under water,30,Hazard,Flood Hazard Score,Ratio,LANDUSE MAP,,,y
+trees,Percentage of area under trees,Percentage of area under trees,30,Hazard,Flood Hazard Score,Ratio,LANDUSE MAP,,,y
+flooded-vegetation,Percentage of area under flooded vegetation,Percentage of area under flooded vegetation,43,Hazard,Flood Hazard Score,Ratio,LANDUSE MAP,,,n
+crops,Percentage of area under crops,Percentage of area under crops,30,Hazard,Flood Hazard Score,Ratio,LANDUSE MAP,,,y
+built-area,Percentage of area under buildings,Percentage of area under buildings,34,Hazard,Flood Hazard Score,Ratio,LANDUSE MAP,,,y
+bare-ground,Percentage of area that is bare ground,Percentage of area that is bare ground,38,Hazard,Flood Hazard Score,Ratio,LANDUSE MAP,,,y
+clouds,Percentage of area covered by clouds,Percentage of area covered by clouds,36,Hazard,Flood Hazard Score,Ratio,LANDUSE MAP,,,n
+rangeland,Percentage of area defined as range lands,Percentage of area defined as range lands,41,Hazard,Flood Hazard Score,Ratio,LANDUSE MAP,,,y
+mean-cn,Mean Curve Number,Curve Numbers help in estimation of Surface runoff,50,Hazard,Flood Hazard Score,,GCN250,,,y
+elevation-mean,Mean Elevation,Mean elevation of the Revenue Circle,36,Hazard,Flood Hazard Score,m,NASADEM,y,,y
+slope-mean,Mean slope,Mean slope of the Revenue Circle,32,Hazard,Flood Hazard Score,degrees,NASADEM,,,y
+drainage-density,Drainage density,Drainage density is a measurement of the sum of the channel lengths per unit area,81,Hazard,Flood Hazard Score,km / sq.km,derived from NASADEM,,,y
+distance-from-river,Distance from the river,Average distance from river,27,Hazard,Flood Hazard Score,km,WRIS,,,y
+exposure,Exposure Score,Exposures of vulnerable population and assets to hazards,56,Exposure,Risk Score,Score,MODEL,y,,
+sexratio,Sex Ratio,Total number of females per 1000 male population,48,Exposure,Exposure Score,,WORLDPOP,y,,y
+total-hhd,Total Number of Households*,Total number of households,26,Exposure,Exposure Score,,MISSION ANTYODAYA 2020,y,,y
+sum-population,Population*,Total number of people residing in the Revenue Circle,53,Exposure,Exposure Score,,WORLDPOP,,,y
+vulnerability,Vulnerability Score,"Physical, Social, Economic, and Environmental vulnerabilities which increase susceptibility of an area or a community to impact of hazards",138,Vulnerability,Risk Score,Score,MODEL,y,,
+ndbi-mean,Mean NDBI,Mean Normalised Difference Building Index (NDBI) value for the revenue circle,77,Vulnerability,Vulnerability Score,Ratio,SENTINEL,,,n
+sum-aged-population,Elderly population*,Number of people of ages greater than or equal to 65,52,Exposure,Exposure Score,,WORLDPOP,,,y
+sum-young-population,Children population*,Number of people of ages less than or equal to 5,48,Exposure,Exposure Score,,WORLDPOP,,,y
+schools-count,Number of Schools,Number of Schools in the Revenue Circle,39,Vulnerability,Vulnerability Score,,BHARATMAPS,,,y
+health-centres-count,Number of Health Centres,Number of health centres in the Revenue Circle,46,Vulnerability,Vulnerability Score,,BHARATMAPS,y,,y
+rail-length,Length of rail in the Revenue Circle,Length of rail in the Revenue Circle,36,Vulnerability,Vulnerability Score,km,BHARATMAPS,,,y
+road-length,Length of Road,Length of road in the Revenue Circle,36,Vulnerability,Vulnerability Score,km,BHARATMAPS,,,y
+net-sown-area-in-hac,Net Sown Area,Net sown area in the Revenue Circle,35,Vulnerability,Vulnerability Score,hectares,MISSION ANTYODAYA 2020,,,y
+avg-electricity,Average availablity of domestic electricity,Average availablity of domestic electricity,43,Vulnerability,Vulnerability Score,hours,MISSION ANTYODAYA 2020,,,y
+avg-tele,Average availablity of telecom services,Average availablity of telecom services,39,Vulnerability,Vulnerability Score,category,MISSION ANTYODAYA 2020,,,n
+rc-piped-hhds-pct,Percentage of households with piped water connection,Percentage of households with piped water connection,52,Vulnerability,Vulnerability Score,Ratio,MISSION ANTYODAYA 2020,,,y
+rc-nosanitation-hhds-pct,Percentage of households without sanitation facilities,Percentage of households without sanitation facilities,54,Vulnerability,Vulnerability Score,Ratio,MISSION ANTYODAYA 2020,,,y
+mean-sexratio,Mean Sex Ratio*,Number females per 1000 males,29,Vulnerability,Vulnerability Score,Ratio,WORLDPOP,,,y
+total-animal-washed-away,Number of animals washed away,Number of animals washed away,29,Vulnerability,Vulnerability Score,,FRIMS,,,y
+total-animal-affected,Number of animals affected,Number of animals affected,26,Vulnerability,Vulnerability Score,,FRIMS,,,y
+population-affected-total,Population Affected,Population affected,19,Vulnerability,Vulnerability Score,,FRIMS,y,,y
+Relief-Camp-inmates,Relief camp inmates,Relief camp inmates,19,Vulnerability,Vulnerability Score,,FRIMS,,,x
+human-live-lost,Human Lives Lost,Human lives lost,16,Vulnerability,Vulnerability Score,,FRIMS,,,x
+crop-area,Crop Area Affected,Crop area affected,18,Vulnerability,Vulnerability Score,Hectares,FRIMS,y,,y
+total-house-fully-damaged,Number of Houses Damaged,Number of houses damaged,24,Vulnerability,Vulnerability Score,,FRIMS,,,y
+embankments-affected,Number of embankments affected,Number of embankments affected,30,Vulnerability,Vulnerability Score,,FRIMS,y,,y
+roads,Number of Roads damaged,Number of Roads damaged,23,Vulnerability,Vulnerability Score,,FRIMS,y,,y
+Bridge,Number of Bridges damaged,Number of Bridges damaged,25,Vulnerability,Vulnerability Score,,FRIMS,,,y
+Embankment breached,Number of embankments breached,Number of embankments breached,30,Vulnerability,Vulnerability Score,,FRIMS,,,y
+number-relief-camps,Number of Relief camps,Number of Relief camps,22,Vulnerability,Vulnerability Score,,FRIMS,,,x
+government-response,Government Response Score,"Capacities or resources that can reduce the level of risk, or the effects of disasters",86,Government Response,Risk Score,Score,MODEL,y,,
+total-tender-awarded-value,Total Value of Flood Related Tenders,Total value of flood related tenders,36,Government Response,Government Response Score,Rupees,assamtenders.gov.in,y,,y
+SOPD-tenders-awarded-value,Total value of flood related tenders granted under SOPD Scheme,SOPD Scheme is the State Owned Priority Development Scheme. This variable gives information of total value of tenders that were granted under SOPD Scheme,153,Government Response,Government Response Score,Rupees,assamtenders.gov.in,,,x
+sdrf-tenders-awarded-value,Total Value of Flood Related Tenders granted under SDRF Scheme,This variable gives information of total value of tenders that were granted under State Disaster Response Fund,110,Government Response,Government Response Score,Rupees,assamtenders.gov.in,y,,x
+RIDF-tenders-awarded-value,Total value of flood related tenders granted under RIDF Scheme,RIDF is the Rural Infrastructure Development Fund maintained by NABARD. This variable gives information of total value of tenders that were granted under RIDF.,159,Government Response,Government Response Score,Rupees,assamtenders.gov.in,,,x
+CIDF-tenders-awarded-value,Total value of flood related tenders granted under CIDF Scheme,CIDF City Infra Development Fund is maintained by Assam Government for urban development. This variable gives information of total value of tenders that were granted under CIDF,176,Government Response,Government Response Score,Rupees,assamtenders.gov.in,,,x
+restoration-measures-tenders-awarded-value,Total Value of Flood Tenders for Preparedness,This variable gives sum of all tenders that are flagged as Restoration Measures,79,Government Response,Government Response Score,Rupees,assamtenders.gov.in,y,,x
+immediate-measures-tenders-awarded-value,Total Value of Flood Related Tenders related to Immediate Measures,This variable gives sum of all tenders that are flagged as Immediate Measures,77,Government Response,Government Response Score,Rupees,assamtenders.gov.in,y,,x
+Others-tenders-awarded-value,Total value of flood related tenders related to Others,"Every flood related tender is flagged as either ""Preparedness"", ""Immediate Measure"" or ""Other"" based on key words. This column gives sum of all tenders that are flagged as Other",177,Government Response,Government Response Score,Rupees,assamtenders.gov.in,,,x
 releif and prep,,,0,,,,,,,
 repair restoration improvmment,,,0,,,,,,,
 erosion,,,0,,,,,,,

@@ -28,8 +28,9 @@ def migrate_indicators(filename="layer/data_dict.csv"):
                         unit_obj.save()
                         print(f"Saved {unit_obj.name} to DB!")
                 else:
-                    print("Skipping Indicator as no Unit was provided!")
-                    continue
+                    # print("Skipping Indicator as no Unit was provided!")
+                    # continue
+                    unit_obj = None
                 parent_obj = None
                 try:
                     if row.parent and not isinstance(row.parent, float):
