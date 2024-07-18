@@ -1,4 +1,7 @@
+import glob
 import json
+import os
+import time
 
 import pandas as pd
 from django.contrib.gis.geos import GEOSGeometry, MultiPolygon, Polygon
@@ -6,10 +9,8 @@ from django.db.models import Q
 from layer.models import Data, Geography, Indicators, Unit
 
 
-def migrate_indicators(filename="layer/data_dict.csv"):
+def migrate_indicators(filename="layer/assets/data_dict.csv"):
     df = pd.read_csv(filename)
-    # print(df.shape)
-    # print(df.columns)
 
     for row in df.itertuples(index=False):
         try:
@@ -84,11 +85,11 @@ def update_indicators(filename="layer/data_dict.csv"):
         print("Processing Indicator -", slug)
         try:
             indicator = Indicators.objects.get(slug=slug.lower())
-            indicator.name=row.indicatorTitle.strip()
-            indicator.long_description=row.indicatorDescription.strip()
-            indicator.category=row.indicatorCategory.strip()
-            indicator.unit= _get_indicator_unit_form_row(row)
-            indicator.data_source=row.dataSource.strip() if row.dataSource else None
+            indicator.name = row.indicatorTitle.strip()
+            indicator.long_description = row.indicatorDescription.strip()
+            indicator.category = row.indicatorCategory.strip()
+            indicator.unit = _get_indicator_unit_form_row(row)
+            indicator.data_source = row.dataSource.strip() if row.dataSource else None
             indicator.parent = _get_indicator_parent_from_row(row)
             indicator.is_visible = True if row.visible == "y" else False
             indicator.save()
@@ -98,49 +99,79 @@ def update_indicators(filename="layer/data_dict.csv"):
             print(f"Indicator with slug {slug} does not exist. ")
 
 
-def migrate_geojson(filename="layer/assam_district_35.geojson"):
-    with open(filename) as f:
-        data = json.load(f)
+def migrate_geojson():
+    files = sorted(glob.glob(os.getcwd() + "/layer/assets/*.geojson"))
+    sorted_files = sorted(
+        files,
+        key=lambda x: ("_district" not in os.path.basename(x), os.path.basename(x)),
+    )
 
-        file_name = data["name"]
-        for ft in data["features"]:
-            # print(type(ft))
-            geom_str = json.dumps(ft["geometry"])
-            # print(type(geom_str))
-            geom = GEOSGeometry(geom_str)
-            # print(type(geom))
+    for filename in sorted_files:
+        with open(filename) as f:
+            print(f"Addind data from {os.path.basename(filename)} to database....")
+            data = json.load(f)
 
-            # try:
-            if isinstance(geom, MultiPolygon):
-                pass
-            elif isinstance(geom, Polygon):
-                geom = MultiPolygon([geom])
+            file_name = data["name"]
+            for ft in data["features"]:
+                # print(type(ft))
+                geom_str = json.dumps(ft["geometry"])
+                # print(type(geom_str))
+                geom = GEOSGeometry(geom_str)
+                # print(type(geom))
 
-            if file_name == "assam_district_35":
-                geo_type = "DISTRICT"
-                code = ft["properties"]["ID"]
-                name = ft["properties"]["district"]
-                try:
-                    existing = Geography.objects.filter(name=name.capitalize(), type=geo_type)
-                    for e in existing:
-                        print(f"deleting{e.name}")
-                        e.delete()
-                except Exception as ex:
-                    print(ex)
+                # try:
+                if isinstance(geom, MultiPolygon):
                     pass
-                geo_object = Geography(
-                    name=name.capitalize(), code=code, type=geo_type, geom=geom
-                )
-                geo_object.save()
-            elif file_name == "assam_revenue_circles_nov2022":
-                geo_type = "REVENUE CIRCLE"
-                code = ft["properties"]["object_id"]
-                name = ft["properties"]["revenue_ci"]
-                district = ft["properties"]["district_3"]
+                elif isinstance(geom, Polygon):
+                    geom = MultiPolygon([geom])
 
-                parent_geo_obj = Geography.objects.get(
-                    name__iexact=district, type="DISTRICT"
-                )
+                if file_name == "assam_district_35":
+                    geo_type = "DISTRICT"
+                    code = ft["properties"]["ID"]
+                    name = ft["properties"]["district"]
+                    state = ft["properties"]["state"]
+                    try:
+                        parent_geo_obj = Geography.objects.get(
+                            name__iexact=state, type="STATE"
+                        )
+                    except Geography.DoesNotExist:
+                        parent_geo_obj = Geography(
+                            name=state.capitalize(), code="18", type="STATE"
+                        )
+                        parent_geo_obj.save()
+
+                elif file_name == "assam_revenue_circles_nov2022":
+                    geo_type = "REVENUE CIRCLE"
+                    code = ft["properties"]["object_id"]
+                    name = ft["properties"]["revenue_ci"]
+                    district = ft["properties"]["district_3"]
+
+                    parent_geo_obj = Geography.objects.get(
+                        name__iexact=district, type="DISTRICT"
+                    )
+                elif file_name == "BharatMaps_HP_district":
+                    geo_type = "DISTRICT"
+                    code = ft["properties"]["dtcode11"]
+                    name = ft["properties"]["dtname"]
+                    state = ft["properties"]["stname"]
+                    state_code = ft["properties"]["stcode11"]
+                    try:
+                        parent_geo_obj = Geography.objects.get(
+                            name__iexact=state, type="STATE"
+                        )
+                    except Geography.DoesNotExist:
+                        parent_geo_obj = Geography(
+                            name=state.capitalize(), code=state_code, type="STATE"
+                        )
+                        parent_geo_obj.save()
+
+                elif file_name == "bharatmaps_HP_subdistricts":
+                    geo_type = "SUB DISTRICT"
+                    code = ft["properties"]["sdtcode11"]
+                    name = ft["properties"]["sdtname"]
+                    dtcode = ft["properties"]["dtcode11"]
+                    parent_geo_obj = Geography.objects.get(code=dtcode, type="DISTRICT")
+
                 geo_object = Geography(
                     name=name.capitalize(),
                     code=code,
@@ -149,37 +180,38 @@ def migrate_geojson(filename="layer/assam_district_35.geojson"):
                     parentId=parent_geo_obj,
                 )
                 geo_object.save()
-            # else:
-            #     raise TypeError(
-            #         '{} not acceptable for this model'.format(geom.geom_type)
-            #     )
-
-            # except TypeError as e:
-            #     print(e)
-            # print(ft["geometry"]["coordinates"])
 
 
-def migrate_data(filename="layer/risk_score_final_district.csv"):
-    df = pd.read_csv(filename)
+def migrate_data(filename=None):
+    # Get all the data files from the directory.
+    files = glob.glob(os.getcwd() + "/layer/assets/*_data.csv")
+    # Iterate over all the files.
+    for filename in files:
+        print("--------")
+        print(f"Addind data from {os.path.basename(filename)} to database....")
+        print("--------")
+        time.sleep(5)
 
-    # Get all columns visible on the platform from DB.
-    reqd_columns = Indicators.objects.filter(is_visible=True)
+        # Using object-id as index, so they can be used as str and not int or float.
+        df = pd.read_csv(filename, index_col="object-id", dtype={"object-id": str})
+        # Get all columns visible on the platform from DB.
+        reqd_columns = Indicators.objects.filter(is_visible=True)
 
-    i = 1  # Row counter.
-    # Iterate over each row and save the data in DB.
-    for index, row in df.iterrows():
-        print(f"Processing row - {i}")
-        try:
-            # Get the required geography object.
-            geography_obj = Geography.objects.get(code=row["object-id"])
-            # Filter visible columns for Districts (Only factors, no variables).
-            # if geography_obj.type == "DISTRICT":
-            #     reqd_columns = reqd_columns.filter(
-            #         Q(parent__slug="risk-score") | Q(slug="risk-score")
-            #     )
-        except Exception as e:
-            print(e, row)
-            break
+        i = 1  # Row counter.
+        # Iterate over each row and save the data in DB.
+        for index, row in df.iterrows():
+            print(f"Processing row - {i}")
+            try:
+                # Get the required geography object.
+                geography_obj = Geography.objects.get(Q(code=index), ~Q(type="STATE"))
+                # Filter visible columns for Districts (Only factors, no variables).
+                # if geography_obj.type == "DISTRICT":
+                #     reqd_columns = reqd_columns.filter(
+                #         Q(parent__slug="risk-score") | Q(slug="risk-score")
+                #     )
+            except Exception as e:
+                print(e, row)
+                break
 
         # Iterating over each indicator.
         # Each row has data for every indicator(factors+variables) for a time period.
@@ -189,15 +221,20 @@ def migrate_data(filename="layer/risk_score_final_district.csv"):
             existing = Data.objects.filter(indicator__slug=indc_obj.slug, geography__code=geography_obj.code,
                                            data_period=row.timeperiod)
             if existing.exists():
-                print(f"Deleting existing objects for {indc_obj.slug} in {geography_obj.name} for period {row.timeperiod}")
+                print(
+                    f"Deleting existing objects for {indc_obj.slug} in {geography_obj.name} for period {row.timeperiod}")
                 [e.delete() for e in existing]
-            data_obj = Data(
-                value=row[f"{indc_obj.slug}"],
-                indicator=indc_obj,
-                geography=geography_obj,
-                data_period=row.timeperiod,
-            )
-            data_obj.save()
+            try:
+                data_obj = Data(
+                    value=row[f"{indc_obj.slug}"],
+                    indicator=indc_obj,
+                    geography=geography_obj,
+                    data_period=row.timeperiod,
+                )
+                data_obj.save()
+            # In-case of data not available for an indicator - we skip it.
+            except KeyError:
+                continue
         i += 1
 
 
@@ -208,6 +245,7 @@ def bounding_box(coord_list):
         box.append((res[0][i], res[-1][i]))
     ret = [[box[1][0], box[0][0]], [box[1][1], box[0][1]]]
     return ret
+
 
 if __name__ == '__main__':
     migrate_geojson("layer/assam_district_35.geojson")
