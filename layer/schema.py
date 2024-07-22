@@ -9,6 +9,7 @@ import strawberry_django
 from dateutil.relativedelta import relativedelta
 from django.core.serializers import serialize
 from django.db.models import F, Q
+from graphql import GraphQLError
 from strawberry.scalars import JSON
 from strawberry_django.optimizer import DjangoOptimizerExtension
 import geojson
@@ -382,14 +383,21 @@ def get_revenue_map_data(
     starttime = timeit.default_timer()
 
     # Convert geography objects to a GeoJson format.
-    geo_json = json.loads(
-        serialize("geojson", Geography.objects.filter(type="REVENUE CIRCLE"))
-    )
+    try:
+        geo_object = Geography.objects.get(code__in=geo_filter.code, type="STATE")
+        if geo_object.name.title() == "Himachal Pradesh":
+            geo_type = "SUB DISTRICT"
+        else:
+            geo_type = "REVENUE CIRCLE"
+    except Geography.DoesNotExist:
+        raise GraphQLError("Invalid state code!!")
+
+    geo_json = json.loads(serialize("geojson", Geography.objects.filter(type=geo_type)))
 
     rc_data = Data.objects.filter(
         indicator__slug=indc_filter.slug,
         data_period=data_filter.data_period,
-        geography__type="REVENUE CIRCLE",
+        geography__type=geo_type,
     ).select_related("geography")
 
     # Create a dictionary to store indicator data by geography code
@@ -443,7 +451,12 @@ def get_district_map_data(
 
     # Convert geography objects to a GeoJson format.
     geo_json = json.loads(
-        serialize("geojson", Geography.objects.filter(type="DISTRICT"))
+        serialize(
+            "geojson",
+            Geography.objects.filter(
+                type="DISTRICT", parentId__code__in=geo_filter.code
+            ),
+        )
     )
 
     # Get Indicator Data for each district.
@@ -451,6 +464,7 @@ def get_district_map_data(
         indicator__slug=indc_filter.slug,
         data_period=data_filter.data_period,
         geography__type="DISTRICT",
+        geography__parentId__code__in=geo_filter.code,
     ).select_related("geography")
 
     # Create a dictionary to store indicator data by geography code

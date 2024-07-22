@@ -19,6 +19,7 @@ class Geography(models.Model):
         BLOCK = "BLOCK"
         VILLAGE = "VILLAGE"
         REVENUE_CIRCLE = "REVENUE CIRCLE"
+        SUBDISTRICT = "SUB DISTRICT"
         # LA_CONSTITUTENCY = "LA_CONSTITUTENCY"
         # PA_CONSTITUTANCY = "PA_CONSTITUTANCY"
 
