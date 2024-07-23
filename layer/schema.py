@@ -492,75 +492,6 @@ def get_district_map_data(
     return geo_json
 
 
-# def get_revenue_chart_data(
-#     indc_filter: types.IndicatorFilter,
-#     data_filter: types.DataFilter,
-#     geo_filter: types.GeoFilter,
-# ):
-#     starttime = timeit.default_timer()
-#     data_dict = {}
-
-#     # Creating initial dict structure.
-#     # TODO: Optimise it for multiple timeperiods; not supported currently. [Phase-2]
-#     # TODO: Optimise it for multiple indicators; not supported currently. [Phase-2]
-#     data_dict[data_filter.data_period] = {}
-#     data_dict[data_filter.data_period][indc_filter.slug] = {}
-
-#     # Get Indicator Data for each RC.
-#     rc_data = get_revenue_data(
-#         indc_filter=indc_filter,
-#         data_filter=data_filter,
-#         geo_filter=geo_filter,
-#         for_map=True,
-#     )
-
-#     for data in rc_data["table_data"]:
-#         # print(data[f"{indc_filter.slug}"])
-#         data_dict[data_filter.data_period][indc_filter.slug][
-#             data["revenue-circle-code"]
-#         ] = {data["revenue-circle"]: data[f"{indc_filter.slug}"]}
-
-#     print("The time difference is :", timeit.default_timer() - starttime)
-#     return data_dict
-
-
-def get_categories() -> list:
-    data_list = []
-    data_dict = {}
-
-    category_list = Indicators.objects.values_list("category", flat=True)
-    # print(category_list)
-    unique_categories = []
-    [unique_categories.append(x) for x in category_list if x not in unique_categories]
-    for category in unique_categories:
-        filtered_queryset = Indicators.objects.filter(
-            category=category, is_visible=True
-        )  # .order_by("display_order")
-        if filtered_queryset.exists():
-            data_dict[category] = {}
-            for obj in filtered_queryset:
-                data_dict[category][obj.name] = {
-                    "slug": obj.slug,
-                    "description": obj.long_description
-                }
-
-            data_list.append(data_dict)
-            data_dict = {}
-
-    # print(data_list)
-    return data_list
-
-
-def get_child_indicators(parent_id: Optional[int] = None) -> typing.List:
-    indicator_list = []
-    indicators = Indicators.objects.filter(parent__id=parent_id, is_visible=True)
-    for indicator in indicators:
-        indicator_list.append(
-            {"slug": indicator.slug, "name": indicator.name, "description": indicator.long_description,
-             "children": get_child_indicators(indicator.id)})
-    return indicator_list
-
-
 def get_indicators(indc_filter: Optional[types.IndicatorFilter] = None) -> list:
     # TODO: Return obj rather than formatted dict. [Faster]
     """Return a list of indicators and associated data from the 'indicator' table.
@@ -625,35 +556,39 @@ def get_district_rev_circle(geo_filter: types.GeoFilter):
     data_dict = {}
     data_list = []
 
-    geo_object = Geography.objects.filter(
-        type=geo_filter.type.upper().strip().replace("-", " ")
-    )
-    if geo_object.exists():
-        if geo_filter.type.upper() == "DISTRICT":
-            for data in geo_object:
-                data_list.append(
-                    {
-                        f"{data.type.lower().replace(' ', '-')}": data.name,
-                        "code": data.code,
-                    }
-                )
-            data_dict = data_list
-        elif geo_filter.type.upper().strip().replace("-", " ") == "REVENUE CIRCLE":
-            for data in geo_object:
-                rc_obj = geo_object.filter(parentId=data.parentId)
-                if rc_obj.exists():
-                    for rc_data in rc_obj:
-                        data_list.append(
-                            {
-                                f"{data.type.lower().replace(' ', '-')}": rc_data.name,
-                                "code": rc_data.code,
-                                "district_code": data.parentId.code,
-                            }
-                        )
-                    data_dict[f"{data.parentId.name}"] = data_list
-                    data_list = []
-        else:
-            pass
+    if geo_filter.type.upper() == "DISTRICT":
+        geo_object = Geography.objects.filter(
+            type=geo_filter.type.upper().strip().replace("-", " "),
+            parentId__code__in=geo_filter.code,
+        )
+        for data in geo_object:
+            data_list.append(
+                {
+                    f"{data.type.lower().replace(' ', '-')}": data.name,
+                    "code": data.code,
+                }
+            )
+        data_dict = data_list
+    elif geo_filter.type.upper().strip().replace("-", " ") in [
+        "REVENUE CIRCLE",
+        "SUB DISTRICT",
+    ]:
+        geo_object = Geography.objects.filter(
+            type=geo_filter.type.upper().strip().replace("-", " ")
+        )
+        for data in geo_object:
+            rc_obj = geo_object.filter(parentId=data.parentId)
+            if rc_obj.exists():
+                for rc_data in rc_obj:
+                    data_list.append(
+                        {
+                            f"{data.type.lower().replace(' ', '-')}": rc_data.name,
+                            "code": rc_data.code,
+                            "district_code": data.parentId.code,
+                        }
+                    )
+                data_dict[f"{data.parentId.name}"] = data_list
+                data_list = []
 
     print("The time difference is :", timeit.default_timer() - starttime)
     return data_dict
