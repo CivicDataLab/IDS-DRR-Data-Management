@@ -248,4 +248,4 @@ def bounding_box(coord_list):
 
 
 if __name__ == '__main__':
-    migrate_geojson("layer/assam_district_35.geojson")
+    migrate_geojson()
