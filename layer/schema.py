@@ -392,12 +392,20 @@ def get_revenue_map_data(
     except Geography.DoesNotExist:
         raise GraphQLError("Invalid state code!!")
 
-    geo_json = json.loads(serialize("geojson", Geography.objects.filter(type=geo_type)))
+    geo_json = json.loads(
+        serialize(
+            "geojson",
+            Geography.objects.filter(
+                type=geo_type, parentId__parentId__code__in=geo_filter.code
+            ),
+        )
+    )
 
     rc_data = Data.objects.filter(
         indicator__slug=indc_filter.slug,
         data_period=data_filter.data_period,
         geography__type=geo_type,
+        geography__parentId__parentId__code__in=geo_filter.code,
     ).select_related("geography")
 
     # Create a dictionary to store indicator data by geography code
@@ -419,10 +427,10 @@ def get_revenue_map_data(
             # Add indicator slug and value to properties
             rc["properties"][data.indicator.slug] = data.value
 
-            # Remove unnecessary keys
-            rc["properties"].pop("parentId", None)
-            rc["properties"].pop("pk", None)
-            rc.pop("id", None)
+        # Remove unnecessary keys
+        rc["properties"].pop("parentId", None)
+        rc["properties"].pop("pk", None)
+        rc.pop("id", None)
 
     print("The time difference is :", timeit.default_timer() - starttime)
     return geo_json
@@ -522,16 +530,16 @@ def get_indicators(indc_filter: Optional[types.IndicatorFilter] = None) -> list:
     return data_list
 
 
-def get_model_indicators() -> list:
-    data_list = []
+# def get_model_indicators() -> list:
+#     data_list = []
 
-    indc_obj = Indicators.objects.filter(
-        Q(parent__slug="risk-score") | Q(slug="risk-score")
-    )
-    for data in indc_obj:
-        data_list.append({"name": data.name, "slug": data.slug})
+#     indc_obj = Indicators.objects.filter(
+#         Q(parent__slug="risk-score") | Q(slug="risk-score")
+#     )
+#     for data in indc_obj:
+#         data_list.append({"name": data.name, "slug": data.slug})
 
-    return data_list
+#     return data_list
 
 
 def get_timeperiod():
@@ -601,8 +609,8 @@ class Query:  # camelCase
     # department: list[types.Department] = strawberry.django.field()
     # scheme: list[types.Scheme] = strawberry_django.field()
     indicators: JSON = strawberry_django.field(resolver=get_indicators)
-    indicatorsByCategory: JSON = strawberry_django.field(resolver=get_child_indicators)
-    getFactors: JSON = strawberry_django.field(resolver=get_model_indicators)
+    # indicatorsByCategory: JSON = strawberry_django.field(resolver=get_categories)
+    # getFactors: JSON = strawberry_django.field(resolver=get_model_indicators)
     # data: list[types.Data] = strawberry_django.field()
     districtViewData: JSON = strawberry_django.field(resolver=get_district_data)
     tableData: JSON = strawberry_django.field(resolver=get_table_data)
