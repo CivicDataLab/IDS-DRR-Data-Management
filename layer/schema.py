@@ -54,7 +54,7 @@ def get_district_data(
     if data_filter:
         dataset_obj = dataset_obj.filter(data_period=data_filter.data_period)
 
-    if geo_filter:
+    if geo_filter and geo_filter.code:
         if len(geo_filter.code) <= 1:
             dataset_obj = dataset_obj.filter(
                 Q(geography__parentId__code__in=geo_filter.code)
@@ -66,7 +66,9 @@ def get_district_data(
         else:
             geo_obj = Geography.objects.filter(code__in=geo_filter.code)
     else:
-        geo_obj = Geography.objects.filter(type="DISTRICT")
+        geo_obj = Geography.objects.filter(
+            type="DISTRICT", parentId__code__in=geo_filter.state_code
+        )
 
     for geo in geo_obj:
         for obj in dataset_obj.filter(geography=geo, indicator__is_visible=True):
@@ -74,11 +76,6 @@ def get_district_data(
             data_dict[obj.geography.type.lower().replace(" ", "-") + "-code"] = (
                 obj.geography.code
             )
-            # if obj.indicator.unit:
-            #     unit = obj.indicator.unit.name
-            #     data_dict[obj.indicator.name] = str(obj.value) + " " + unit
-            # else:
-            #     data_dict[obj.indicator.name] = str(obj.value)
             if obj.indicator.unit:
                 unit = obj.indicator.unit.name
                 data_dict[obj.indicator.slug] = {
@@ -95,9 +92,6 @@ def get_district_data(
             data_list.append(data_dict)
             data_dict = {}
 
-    # filter_key = Indicators.objects.get(slug=indc_filter.slug)
-    # data_list = sorted(data_list, key=lambda d: d[filter_key.name], reverse=True)
-    # data_list = sorted(data_list, key=lambda d: d[indc_filter.slug], reverse=True)
     data_list = sorted(
         data_list,
         key=lambda d: float(d[indc_filter.slug]["value"].split()[0]),
@@ -105,7 +99,7 @@ def get_district_data(
     )
 
     print("The time difference is :", timeit.default_timer() - starttime)
-    return data_list  # {"table_data": data_list}
+    return data_list
 
 
 def get_table_data(
@@ -245,8 +239,10 @@ def get_time_trends(
 
     # Filter the data.
     data_queryset = Data.objects.filter(
-        indicator__slug=indc_filter.slug,
+        Q(geography__parentId__code__in=geo_filter.state_code)
+        | Q(geography__parentId__parentId__code__in=geo_filter.state_code),
         geography__code__in=geo_filter.code,
+        indicator__slug=indc_filter.slug,
         data_period__in=time_list,
     )
 
@@ -298,30 +294,30 @@ def get_revenue_data(
             mapping each to it's relevant data fields.
     """
 
-    geo_queryset = Geography.objects.filter(type="REVENUE CIRCLE")
-    if geo_filter:
+    try:
+        # Set the type filter based on state.
+        geo_obj = Geography.objects.get(code__in=geo_filter.state_code, type="STATE")
+        if geo_obj.name.title() == "Himachal Pradesh":
+            geo_type = "SUB DISTRICT"
+        else:
+            geo_type = "REVENUE CIRCLE"
+
+        # Geo object to iterate over.
+        geo_queryset = Geography.objects.filter(type=geo_type)
+    except Geography.DoesNotExist:
+        raise GraphQLError("Invalid state code!!")
+
+    if geo_filter.code:
         geo_queryset = geo_queryset.filter(code__in=geo_filter.code)
 
-    # rc_data_queryset = Data.objects.all()
     rc_data_queryset = Data.objects.filter(
         Q(indicator__parent__slug=indc_filter.slug)
         | Q(indicator__slug=indc_filter.slug),
-        # data_period=data_filter.data_period,
     )
     rc_data_queryset = rc_data_queryset.filter(data_period=data_filter.data_period)
 
     for geo in geo_queryset:
-        # filtered_queryset = rc_data_queryset.filter(
-        #     geography=geo, data_period=data_filter.data_period
-        # )
-        # if indc_filter:
-        #     filtered_queryset = filtered_queryset.filter(
-        #         Q(indicator__parent__slug=indc_filter.slug)
-        #         | Q(indicator__slug=indc_filter.slug)
-        #     )
-        # if filtered_queryset.exists():
         for obj in rc_data_queryset.filter(geography=geo, indicator__is_visible=True):
-            # for obj in filtered_queryset:
             data_dict[obj.geography.type.lower().replace(" ", "-")] = obj.geography.name
             data_dict[(obj.geography.type + " code").lower().replace(" ", "-")] = (
                 obj.geography.code
@@ -343,14 +339,10 @@ def get_revenue_data(
                     "value": str(obj.value),
                     "title": obj.indicator.name,
                 }
-                # data_dict[obj.indicator.name] = str(obj.value)
         if data_dict:
             data_list.append(data_dict)
             data_dict = {}
 
-    # filter_key = Indicators.objects.get(slug=indc_filter.slug)
-    # data_list = sorted(data_list, key=lambda d: d[filter_key.name], reverse=True)
-    # data_list = sorted(data_list, key=lambda d: d[indc_filter.slug], reverse=True)
     data_list = sorted(
         data_list,
         key=lambda d: float(d[indc_filter.slug]["value"].split()[0]),
@@ -358,7 +350,7 @@ def get_revenue_data(
     )
 
     print("The time difference is :", timeit.default_timer() - starttime)
-    return data_list  # {"table_data": data_list}
+    return data_list
 
 
 def get_revenue_map_data(
@@ -604,28 +596,19 @@ def get_district_rev_circle(geo_filter: types.GeoFilter):
 
 @strawberry.type
 class Query:  # camelCase
-    # unit: list[types.Unit] = strawberry.django.field(resolver=get_unit)
-    # geography: list[types.Geography] = strawberry_django.field()
-    # department: list[types.Department] = strawberry.django.field()
-    # scheme: list[types.Scheme] = strawberry_django.field()
     indicators: JSON = strawberry_django.field(resolver=get_indicators)
-    # indicatorsByCategory: JSON = strawberry_django.field(resolver=get_categories)
-    # getFactors: JSON = strawberry_django.field(resolver=get_model_indicators)
-    # data: list[types.Data] = strawberry_django.field()
     districtViewData: JSON = strawberry_django.field(resolver=get_district_data)
     tableData: JSON = strawberry_django.field(resolver=get_table_data)
     districtMapData: JSON = strawberry_django.field(resolver=get_district_map_data)
     getTimeTrends: JSON = strawberry_django.field(resolver=get_time_trends)
     revCircleViewData: JSON = strawberry_django.field(resolver=get_revenue_data)
     revCircleMapData: JSON = strawberry_django.field(resolver=get_revenue_map_data)
-    # revCircleTimeTrends: JSON = strawberry_django.field(resolver=get_revenue_chart_data)
     getDataTimePeriods: list[types.CustomDataPeriodList] = strawberry_django.field(
         resolver=get_timeperiod
     )
     getDistrictRevCircle: JSON = strawberry_django.field(
         resolver=get_district_rev_circle
     )
-    # barChart: types.BarChart = strawberry.django.field(resolver=get_bar_data)
 
 
 schema = strawberry.Schema(

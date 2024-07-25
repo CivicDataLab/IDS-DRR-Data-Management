@@ -40,6 +40,7 @@ class Unit:
 class GeoFilter:
     name: Optional[str]
     code: Optional[list[strawberry.ID]]
+    state_code: Optional[list[strawberry.ID]]
     type: Optional[str]
 
 
@@ -52,6 +53,7 @@ class IndicatorFilter:
 @strawberry_django.filter(models.Data)
 class DataFilter:
     data_period: Optional[str]
+    period: Optional[str]  # Required for time trends.
 
 
 @strawberry_django.type(models.Geography, filters=GeoFilter)
