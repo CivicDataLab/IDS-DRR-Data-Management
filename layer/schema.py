@@ -257,7 +257,9 @@ def get_time_trends(
         data_list = []
         filtered_queryset = data_queryset.filter(data_period=time)
         for data in filtered_queryset:
-            temp_dict[data.geography.type.lower()] = data.geography.name
+            temp_dict[data.geography.type.lower().replace(" ", "-")] = (
+                data.geography.name
+            )
             temp_dict[data.geography.type.lower().replace(" ", "-") + "-code"] = (
                 data.geography.code
             )
