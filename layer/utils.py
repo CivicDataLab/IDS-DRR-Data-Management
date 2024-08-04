@@ -190,10 +190,11 @@ def migrate_data(filename=None):
         print("--------")
         print(f"Addind data from {os.path.basename(filename)} to database....")
         print("--------")
-        time.sleep(5)
+        time.sleep(3)
 
         # Using object-id as index, so they can be used as str and not int or float.
         df = pd.read_csv(filename, index_col="object-id", dtype={"object-id": str})
+        print(f"Total no of rows available - {df.shape[0]}")
         # Get all columns visible on the platform from DB.
         reqd_columns = Indicators.objects.filter(is_visible=True)
 
@@ -213,29 +214,30 @@ def migrate_data(filename=None):
                 print(e, row)
                 break
 
-        # Iterating over each indicator.
-        # Each row has data for every indicator(factors+variables) for a time period.
-        for indc_obj in reqd_columns:
-            print(f"Adding data for RC - {geography_obj.name}")
-            print(f"Adding data for Indicator - {indc_obj.slug}")
-            existing = Data.objects.filter(indicator__slug=indc_obj.slug, geography__code=geography_obj.code,
-                                           data_period=row.timeperiod)
-            if existing.exists():
-                print(
-                    f"Deleting existing objects for {indc_obj.slug} in {geography_obj.name} for period {row.timeperiod}")
-                [e.delete() for e in existing]
-            try:
-                data_obj = Data(
-                    value=row[f"{indc_obj.slug}"],
-                    indicator=indc_obj,
-                    geography=geography_obj,
-                    data_period=row.timeperiod,
-                )
-                data_obj.save()
-            # In-case of data not available for an indicator - we skip it.
-            except KeyError:
-                continue
-        i += 1
+            # Iterating over each indicator.
+            # Each row has data for every indicator(factors+variables) for a time period.
+            for indc_obj in reqd_columns:
+                print(f"Adding data for RC - {geography_obj.name}")
+                print(f"Adding data for Indicator - {indc_obj.slug}")
+                existing = Data.objects.filter(indicator__slug=indc_obj.slug, geography__code=geography_obj.code,
+                                               data_period=row.timeperiod)
+                if existing.exists():
+                    print(
+                        f"Deleting existing objects for {indc_obj.slug} in {geography_obj.name} for period {row.timeperiod}")
+                    [e.delete() for e in existing]
+                try:
+                    data_obj = Data(
+                        value=row[f"{indc_obj.slug}"],
+                        indicator=indc_obj,
+                        geography=geography_obj,
+                        data_period=row.timeperiod,
+                    )
+                    data_obj.save()
+                # In-case of data not available for an indicator - we skip it.
+                except KeyError:
+                    continue
+            i += 1
+        print(f"Total rows added to DB - {i}")
 
 
 def bounding_box(coord_list):
