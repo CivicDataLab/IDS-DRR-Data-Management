@@ -100,7 +100,7 @@ def update_indicators(filename="layer/data_dict.csv"):
 
 
 def migrate_geojson():
-    files = sorted(glob.glob(os.getcwd() + "/layer/assets/*.geojson"))
+    files = sorted(glob.glob(os.getcwd() + "/layer/assets/geojson/*.geojson"))
     sorted_files = sorted(
         files,
         key=lambda x: ("_district" not in os.path.basename(x), os.path.basename(x)),
@@ -184,7 +184,7 @@ def migrate_geojson():
 
 def migrate_data(filename=None):
     # Get all the data files from the directory.
-    files = glob.glob(os.getcwd() + "/layer/assets/*_data.csv")
+    files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
     # Iterate over all the files.
     for filename in files:
         print("--------")
