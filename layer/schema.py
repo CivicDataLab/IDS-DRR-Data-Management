@@ -405,28 +405,28 @@ def get_district_map_data(
 #     return data_dict
 
 
-# def get_categories() -> list:
-#     data_list = []
-#     data_dict = {}
+def get_categories() -> list:
+    data_list = []
+    data_dict = {}
 
-#     category_list = Indicators.objects.values_list("category", flat=True)
-#     # print(category_list)
-#     unqiue_categories = []
-#     [unqiue_categories.append(x) for x in category_list if x not in unqiue_categories]
-#     for catgry in unqiue_categories:
-#         filtered_queryset = Indicators.objects.filter(
-#             category=catgry, is_visible=True
-#         )  # .order_by("display_order")
-#         if filtered_queryset.exists():
-#             data_dict[catgry] = {}
-#             for obj in filtered_queryset:
-#                 data_dict[catgry][obj.name] = obj.slug
+    category_list = Indicators.objects.values_list("category", flat=True)
+    # print(category_list)
+    unqiue_categories = []
+    [unqiue_categories.append(x) for x in category_list if x not in unqiue_categories]
+    for catgry in unqiue_categories:
+        filtered_queryset = Indicators.objects.filter(
+            category=catgry, is_visible=True
+        )  # .order_by("display_order")
+        if filtered_queryset.exists():
+            data_dict[catgry] = {}
+            for obj in filtered_queryset:
+                data_dict[catgry][obj.name] = obj.slug
 
-#             data_list.append(data_dict)
-#             data_dict = {}
+            data_list.append(data_dict)
+            data_dict = {}
 
-#     # print(data_list)
-#     return data_list
+    # print(data_list)
+    return data_list
 
 
 def get_indicators(indc_filter: Optional[types.IndicatorFilter] = None) -> list:
@@ -533,7 +533,7 @@ class Query:  # camelCase
     # department: list[types.Department] = strawberry.django.field()
     # scheme: list[types.Scheme] = strawberry_django.field()
     indicators: JSON = strawberry_django.field(resolver=get_indicators)
-    # indicatorsByCategory: JSON = strawberry_django.field(resolver=get_categories)
+    indicatorsByCategory: JSON = strawberry_django.field(resolver=get_categories)
     getFactors: JSON = strawberry_django.field(resolver=get_model_indicators)
     # data: list[types.Data] = strawberry_django.field()
     districtViewData: JSON = strawberry_django.field(resolver=get_district_data)
