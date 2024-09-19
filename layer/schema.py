@@ -12,7 +12,7 @@ from strawberry.scalars import JSON
 from strawberry_django.optimizer import DjangoOptimizerExtension
 
 from . import types
-from models import Data, Geography, Indicators
+from .models import Data, Geography, Indicators
 
 # from .mutation import Mutation
 
