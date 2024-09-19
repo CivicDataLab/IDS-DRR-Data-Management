@@ -12,7 +12,7 @@ from strawberry.scalars import JSON
 from strawberry_django.optimizer import DjangoOptimizerExtension
 
 from . import types
-from .models import Data, Geography, Indicators
+from models import Data, Geography, Indicators
 
 # from .mutation import Mutation
 
@@ -411,16 +411,16 @@ def get_categories() -> list:
 
     category_list = Indicators.objects.values_list("category", flat=True)
     # print(category_list)
-    unqiue_categories = []
-    [unqiue_categories.append(x) for x in category_list if x not in unqiue_categories]
-    for catgry in unqiue_categories:
+    unique_categories = []
+    [unique_categories.append(x) for x in category_list if x not in unique_categories]
+    for category in unique_categories:
         filtered_queryset = Indicators.objects.filter(
-            category=catgry, is_visible=True
+            category=category, is_visible=True
         )  # .order_by("display_order")
         if filtered_queryset.exists():
-            data_dict[catgry] = {}
+            data_dict[category] = {}
             for obj in filtered_queryset:
-                data_dict[catgry][obj.name] = obj.slug
+                data_dict[category][obj.name] = obj.slug
 
             data_list.append(data_dict)
             data_dict = {}
@@ -517,7 +517,7 @@ def get_district_rev_circle(geo_filter: types.GeoFilter):
                                 "code": rc_data.code,
                             }
                         )
-                    data_dict[f"{data.parentId.name}"] = data_list
+                    data_dict[f"{data.parentId.code}"] = data_list
                     data_list = []
         else:
             pass
