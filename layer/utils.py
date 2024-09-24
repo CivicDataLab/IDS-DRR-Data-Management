@@ -91,6 +91,11 @@ def migrate_geojson(filename="layer/assam_revenue_circles_nov2022_4326.geojson")
                 geo_type = "DISTRICT"
                 code = ft["properties"]["ID"]
                 name = ft["properties"]["district"]
+                try:
+                    existing = Geography.objects.filter(code=code)
+                    [e.delete() for e in existing]
+                except Exception as e:
+                    pass
                 geo_object = Geography(
                     name=name.capitalize(), code=code, type=geo_type, geom=geom
                 )
