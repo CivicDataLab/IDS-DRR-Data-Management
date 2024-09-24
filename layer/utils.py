@@ -174,7 +174,7 @@ def bounding_box(coord_list):
     for i in (0, 1):
         res = sorted(coord_list, key=lambda x: x[i])
         box.append((res[0][i], res[-1][i]))
-    ret = [[box[0][0], box[1][0]], [box[0][1], box[1][1]]]
+    ret = [[box[1][0], box[0][0]], [box[1][1], box[0][1]]]
     return ret
 
 if __name__ == '__main__':
