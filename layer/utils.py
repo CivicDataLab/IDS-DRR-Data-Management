@@ -162,3 +162,15 @@ def migrate_data(filename="layer/data.csv"):
             )
             data_obj.save()
         i += 1
+
+
+def bounding_box(coord_list):
+    box = []
+    for i in (0, 1):
+        res = sorted(coord_list, key=lambda x: x[i])
+        box.append((res[0][i], res[-1][i]))
+    ret = [[box[0][0], box[1][0]], [box[0][1], box[1][1]]]
+    return ret
+
+if __name__ == '__main__':
+    migrate_data()

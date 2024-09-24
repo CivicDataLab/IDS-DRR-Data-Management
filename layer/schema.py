@@ -10,9 +10,12 @@ from django.core.serializers import serialize
 from django.db.models import F, Q
 from strawberry.scalars import JSON
 from strawberry_django.optimizer import DjangoOptimizerExtension
+import geojson
 
 from . import types
 from .models import Data, Geography, Indicators
+from .utils import bounding_box
+
 
 # from .mutation import Mutation
 
@@ -356,18 +359,22 @@ def get_district_map_data(
     district_data_map = {data.geography.code: data for data in district_data}
 
     # Iterate over GeoJSON features and populate with indicator data
-    for rc in geo_json["features"]:
-        district_code = rc["properties"]["code"]
+    for district in geo_json["features"]:
+        district_code = district["properties"]["code"]
         if district_code in district_data_map:
             data = district_data_map[district_code]
 
+            # Add bounding box of district
+            poly = geojson.Polygon(district["geometry"]["coordinates"])
+            district["properties"]["bounds"] = bounding_box(list(geojson.utils.coords(poly)))
+
             # Add indicator slug and value to properties
-            rc["properties"][data.indicator.slug] = data.value
+            district["properties"][data.indicator.slug] = data.value
 
             # Remove unnecessary keys
-            rc["properties"].pop("parentId", None)
-            rc["properties"].pop("pk", None)
-            rc.pop("id", None)
+            district["properties"].pop("parentId", None)
+            district["properties"].pop("pk", None)
+            district.pop("id", None)
 
     print("The time difference is :", timeit.default_timer() - starttime)
     return geo_json
