@@ -154,6 +154,11 @@ def migrate_data(filename="layer/data.csv"):
         for indc_obj in reqd_columns:
             print(f"Adding data for RC - {geography_obj.name}")
             print(f"Adding data for Indicator - {indc_obj.slug}")
+            existing = Data.objects.filter(indicator__slug=indc_obj.slug, geography__code=geography_obj.code,
+                                           data_period=row.timeperiod)
+            if existing.exists():
+                print(f"Deleting existing objects for {indc_obj.slug} in {geography_obj.name} for period {row.timeperiod}")
+                [e.delete() for e in existing]
             data_obj = Data(
                 value=row[f"{indc_obj.slug}"],
                 indicator=indc_obj,
