@@ -141,12 +141,12 @@ def migrate_data(filename="layer/data.csv"):
             # Get the required geography object.
             geography_obj = Geography.objects.get(code=row["object-id"])
             # Filter visible columns for Districts (Only factors, no variables).
-            if geography_obj.type == "DISTRICT":
-                reqd_columns = reqd_columns.filter(
-                    Q(parent__slug="risk-score") | Q(slug="risk-score")
-                )
+            # if geography_obj.type == "DISTRICT":
+            #     reqd_columns = reqd_columns.filter(
+            #         Q(parent__slug="risk-score") | Q(slug="risk-score")
+            #     )
         except Exception as e:
-            print(e)
+            print(e, row)
             break
 
         # Iterating over each indicator.
