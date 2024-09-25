@@ -429,7 +429,7 @@ def get_categories() -> list:
             for obj in filtered_queryset:
                 data_dict[category][obj.name] = {
                     "slug": obj.slug,
-                    "description": obj.long_descriptions
+                    "description": obj.long_description
                 }
 
             data_list.append(data_dict)
