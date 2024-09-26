@@ -1,5 +1,6 @@
 import json
 import timeit
+import typing
 from datetime import datetime
 from typing import Optional
 
@@ -439,6 +440,16 @@ def get_categories() -> list:
     return data_list
 
 
+def get_child_indicators(parent_id: Optional[int] = None) -> typing.List:
+    indicator_list = []
+    indicators = Indicators.objects.filter(parent__id=parent_id, is_visible=True)
+    for indicator in indicators:
+        indicator_list.append(
+            [{"slug": indicator.slug, "name": indicator.name, "description": indicator.long_description,
+              "children": get_child_indicators(indicator.id)}])
+    return indicator_list
+
+
 def get_indicators(indc_filter: Optional[types.IndicatorFilter] = None) -> list:
     # TODO: Return obj rather than formatted dict. [Faster]
     """Return a list of indicators and associated data from the 'indicator' table.
@@ -544,7 +555,7 @@ class Query:  # camelCase
     # department: list[types.Department] = strawberry.django.field()
     # scheme: list[types.Scheme] = strawberry_django.field()
     indicators: JSON = strawberry_django.field(resolver=get_indicators)
-    indicatorsByCategory: JSON = strawberry_django.field(resolver=get_categories)
+    indicatorsByCategory: JSON = strawberry_django.field(resolver=get_child_indicators)
     getFactors: JSON = strawberry_django.field(resolver=get_model_indicators)
     # data: list[types.Data] = strawberry_django.field()
     districtViewData: JSON = strawberry_django.field(resolver=get_district_data)
