@@ -69,7 +69,7 @@ def migrate_indicators(filename="layer/data_dict.csv"):
             print("Process Failed with error -", e)
 
 
-def migrate_geojson(filename="layer/assam_revenue_circles_nov2022_4326.geojson"):
+def migrate_geojson(filename="layer/assam_district_35.geojson"):
     with open(filename) as f:
         data = json.load(f)
 
@@ -92,9 +92,12 @@ def migrate_geojson(filename="layer/assam_revenue_circles_nov2022_4326.geojson")
                 code = ft["properties"]["ID"]
                 name = ft["properties"]["district"]
                 try:
-                    existing = Geography.objects.filter(code=code)
-                    [e.delete() for e in existing]
-                except Exception as e:
+                    existing = Geography.objects.filter(name=name.capitalize(), type=geo_type)
+                    for e in existing:
+                        print(f"deleting{e.name}")
+                        e.delete()
+                except Exception as ex:
+                    print(ex)
                     pass
                 geo_object = Geography(
                     name=name.capitalize(), code=code, type=geo_type, geom=geom
@@ -127,7 +130,7 @@ def migrate_geojson(filename="layer/assam_revenue_circles_nov2022_4326.geojson")
             # print(ft["geometry"]["coordinates"])
 
 
-def migrate_data(filename="layer/data.csv"):
+def migrate_data(filename="layer/risk_score_final_district.csv"):
     df = pd.read_csv(filename)
 
     # Get all columns visible on the platform from DB.
