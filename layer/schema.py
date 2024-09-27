@@ -471,7 +471,7 @@ def get_indicators(indc_filter: Optional[types.IndicatorFilter] = None) -> list:
         )
 
     data_queryset = indc_obj.values(
-        "name", "slug", "long_description", "short_description", "data_source"
+        "name", "slug", "long_description", "short_description", "data_source", "unit"
     )
     for data in data_queryset:
         data_list.append(data)
