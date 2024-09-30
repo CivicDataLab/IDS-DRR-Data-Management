@@ -1,71 +1,69 @@
-indicatorSlug,indicatorTitle,indicatorDescription,descriptionlen,indicatorCategory,parent,unit,dataSource,visible,updateFreq,used_for_model
-risk-score,Risk Score,"Risk of disasters is a function of - hazard, vulnerability, exposure, and coping capacity",89,Risk Score,,Score,MODEL,y,,
-flood-hazard,Flood Hazard Score,Hazards or Potential of a physical event that may cause loss of life or property,80,Hazard,Risk Score,Score,MODEL,y,,
-max-rain,Maximum rainfall value in the revenue circle,Maximum rainfall value in the revenue circle,44,Hazard,Flood Hazard Score,mm,IMD,,,x
-mean-rain,Mean rainfall value in the revenue circle,Mean rainfall value in the revenue circle,41,Hazard,Flood Hazard Score,mm,IMD,,,x
-sum-rain,Total Rainfall,Sum rainfall value in the revenue circle,40,Hazard,Flood Hazard Score,mm,IMD,y,,y
-mean-ndvi,Mean NDVI,Mean Normalised Difference Vegetation Index (NDVI) value for the revenue circle,79,Hazard,Flood Hazard Score,Ratio,SENTINEL,,,n
-inundation-pct,Percentage area inundated,Percentage area of the revenue circle detected as inundated,59,Hazard,Flood Hazard Score,Ratio,BHUVAN,,,x
-inundation-intensity-mean,Mean Intensity of Inundation,"Intensity is calculated by dividing number of times a pixel got inundated with the maximum number of times any pixel got inundated in the Revenue Circle. For instance, if a pixel A in Revenue Circle got inundated 5 times in a month and the pixel with maximum inundation saw 10 days of inundation. Then inundation intensity of pixel A is 5/10 = 0.5. This variable then calculates mean of inundation intensities of all pixels.",424,Hazard,Flood Hazard Score,Ratio,BHUVAN,,,x
-inundation-intensity-mean-nonzero,Mean intensity of inundation (removing 0 intensity pixels),Mean of inundation intensities of all pixels which were inundated atleast once in the month,91,Hazard,Flood Hazard Score,Ratio,BHUVAN,,,x
-inundation-intensity-sum,Sum of inundation intensities,Sum of inundation intensities of all pixels in the Revenue Circle,65,Hazard,Flood Hazard Score,Ratio,BHUVAN,y,,y
-riverlevel-mean,Mean River Water Level,Mean of river water levels from all Flood Forecasting Stations in the Revenue Circle,84,Hazard,Flood Hazard Score,m,CWC,,,n
-riverlevel-min,Minimum river water level,Minimum river water levels from all Flood Forecasting Stations in the Revenue Circle,84,Hazard,Flood Hazard Score,m,CWC,,,n
-riverlevel-max,Maximum river water level,Maximum river water levels from all Flood Forecasting Stations in the Revenue Circle,84,Hazard,Flood Hazard Score,m,CWC,,,n
-water,Percentage of area under water,Percentage of area under water,30,Hazard,Flood Hazard Score,Ratio,LANDUSE MAP,,,y
-trees,Percentage of area under trees,Percentage of area under trees,30,Hazard,Flood Hazard Score,Ratio,LANDUSE MAP,,,y
-flooded-vegetation,Percentage of area under flooded vegetation,Percentage of area under flooded vegetation,43,Hazard,Flood Hazard Score,Ratio,LANDUSE MAP,,,n
-crops,Percentage of area under crops,Percentage of area under crops,30,Hazard,Flood Hazard Score,Ratio,LANDUSE MAP,,,y
-built-area,Percentage of area under buildings,Percentage of area under buildings,34,Hazard,Flood Hazard Score,Ratio,LANDUSE MAP,,,y
-bare-ground,Percentage of area that is bare ground,Percentage of area that is bare ground,38,Hazard,Flood Hazard Score,Ratio,LANDUSE MAP,,,y
-clouds,Percentage of area covered by clouds,Percentage of area covered by clouds,36,Hazard,Flood Hazard Score,Ratio,LANDUSE MAP,,,n
-rangeland,Percentage of area defined as range lands,Percentage of area defined as range lands,41,Hazard,Flood Hazard Score,Ratio,LANDUSE MAP,,,y
-mean-cn,Mean Curve Number,Curve Numbers help in estimation of Surface runoff,50,Hazard,Flood Hazard Score,,GCN250,,,y
-elevation-mean,Mean Elevation,Mean elevation of the Revenue Circle,36,Hazard,Flood Hazard Score,m,NASADEM,y,,y
-slope-mean,Mean slope,Mean slope of the Revenue Circle,32,Hazard,Flood Hazard Score,degrees,NASADEM,,,y
-drainage-density,Drainage density,Drainage density is a measurement of the sum of the channel lengths per unit area,81,Hazard,Flood Hazard Score,km / sq.km,derived from NASADEM,,,y
-distance-from-river,Distance from the river,Average distance from river,27,Hazard,Flood Hazard Score,km,WRIS,,,y
-exposure,Exposure Score,Exposures of vulnerable population and assets to hazards,56,Exposure,Risk Score,Score,MODEL,y,,
-sexratio,Sex Ratio,Total number of females per 1000 male population,48,Exposure,Exposure Score,,WORLDPOP,y,,y
-total-hhd,Total Number of Households*,Total number of households,26,Exposure,Exposure Score,,MISSION ANTYODAYA 2020,y,,y
-sum-population,Population*,Total number of people residing in the Revenue Circle,53,Exposure,Exposure Score,,WORLDPOP,,,y
-vulnerability,Vulnerability Score,"Physical, Social, Economic, and Environmental vulnerabilities which increase susceptibility of an area or a community to impact of hazards",138,Vulnerability,Risk Score,Score,MODEL,y,,
-ndbi-mean,Mean NDBI,Mean Normalised Difference Building Index (NDBI) value for the revenue circle,77,Vulnerability,Vulnerability Score,Ratio,SENTINEL,,,n
-sum-aged-population,Elderly population*,Number of people of ages greater than or equal to 65,52,Exposure,Exposure Score,,WORLDPOP,,,y
-sum-young-population,Children population*,Number of people of ages less than or equal to 5,48,Exposure,Exposure Score,,WORLDPOP,,,y
-schools-count,Number of Schools,Number of Schools in the Revenue Circle,39,Vulnerability,Vulnerability Score,,BHARATMAPS,,,y
-health-centres-count,Number of Health Centres,Number of health centres in the Revenue Circle,46,Vulnerability,Vulnerability Score,,BHARATMAPS,y,,y
-rail-length,Length of rail in the Revenue Circle,Length of rail in the Revenue Circle,36,Vulnerability,Vulnerability Score,km,BHARATMAPS,,,y
-road-length,Length of Road,Length of road in the Revenue Circle,36,Vulnerability,Vulnerability Score,km,BHARATMAPS,,,y
-net-sown-area-in-hac,Net Sown Area,Net sown area in the Revenue Circle,35,Vulnerability,Vulnerability Score,hectares,MISSION ANTYODAYA 2020,,,y
-avg-electricity,Average availablity of domestic electricity,Average availablity of domestic electricity,43,Vulnerability,Vulnerability Score,hours,MISSION ANTYODAYA 2020,,,y
-avg-tele,Average availablity of telecom services,Average availablity of telecom services,39,Vulnerability,Vulnerability Score,category,MISSION ANTYODAYA 2020,,,n
-rc-piped-hhds-pct,Percentage of households with piped water connection,Percentage of households with piped water connection,52,Vulnerability,Vulnerability Score,Ratio,MISSION ANTYODAYA 2020,,,y
-rc-nosanitation-hhds-pct,Percentage of households without sanitation facilities,Percentage of households without sanitation facilities,54,Vulnerability,Vulnerability Score,Ratio,MISSION ANTYODAYA 2020,,,y
-mean-sexratio,Mean Sex Ratio*,Number females per 1000 males,29,Vulnerability,Vulnerability Score,Ratio,WORLDPOP,,,y
-total-animal-washed-away,Number of animals washed away,Number of animals washed away,29,Vulnerability,Vulnerability Score,,FRIMS,,,y
-total-animal-affected,Number of animals affected,Number of animals affected,26,Vulnerability,Vulnerability Score,,FRIMS,,,y
-population-affected-total,Population Affected,Population affected,19,Vulnerability,Vulnerability Score,,FRIMS,y,,y
-Relief-Camp-inmates,Relief camp inmates,Relief camp inmates,19,Vulnerability,Vulnerability Score,,FRIMS,,,x
-human-live-lost,Human Lives Lost,Human lives lost,16,Vulnerability,Vulnerability Score,,FRIMS,,,x
-crop-area,Crop Area Affected,Crop area affected,18,Vulnerability,Vulnerability Score,Hectares,FRIMS,y,,y
-total-house-fully-damaged,Number of Houses Damaged,Number of houses damaged,24,Vulnerability,Vulnerability Score,,FRIMS,,,y
-embankments-affected,Number of embankments affected,Number of embankments affected,30,Vulnerability,Vulnerability Score,,FRIMS,y,,y
-roads,Number of Roads damaged,Number of Roads damaged,23,Vulnerability,Vulnerability Score,,FRIMS,y,,y
-Bridge,Number of Bridges damaged,Number of Bridges damaged,25,Vulnerability,Vulnerability Score,,FRIMS,,,y
-Embankment breached,Number of embankments breached,Number of embankments breached,30,Vulnerability,Vulnerability Score,,FRIMS,,,y
-number-relief-camps,Number of Relief camps,Number of Relief camps,22,Vulnerability,Vulnerability Score,,FRIMS,,,x
-government-response,Government Response Score,"Capacities or resources that can reduce the level of risk, or the effects of disasters",86,Government Response,Risk Score,Score,MODEL,y,,
-total-tender-awarded-value,Total Value of Flood Related Tenders,Total value of flood related tenders,36,Government Response,Government Response Score,Rupees,assamtenders.gov.in,y,,y
-SOPD-tenders-awarded-value,Total value of flood related tenders granted under SOPD Scheme,SOPD Scheme is the State Owned Priority Development Scheme. This variable gives information of total value of tenders that were granted under SOPD Scheme,153,Government Response,Government Response Score,Rupees,assamtenders.gov.in,,,x
-sdrf-tenders-awarded-value,Total Value of Flood Related Tenders granted under SDRF Scheme,This variable gives information of total value of tenders that were granted under State Disaster Response Fund,110,Government Response,Government Response Score,Rupees,assamtenders.gov.in,y,,x
-RIDF-tenders-awarded-value,Total value of flood related tenders granted under RIDF Scheme,RIDF is the Rural Infrastructure Development Fund maintained by NABARD. This variable gives information of total value of tenders that were granted under RIDF.,159,Government Response,Government Response Score,Rupees,assamtenders.gov.in,,,x
-CIDF-tenders-awarded-value,Total value of flood related tenders granted under CIDF Scheme,CIDF City Infra Development Fund is maintained by Assam Government for urban development. This variable gives information of total value of tenders that were granted under CIDF,176,Government Response,Government Response Score,Rupees,assamtenders.gov.in,,,x
-restoration-measures-tenders-awarded-value,Total Value of Flood Tenders for Preparedness,This variable gives sum of all tenders that are flagged as Restoration Measures,79,Government Response,Government Response Score,Rupees,assamtenders.gov.in,y,,x
-immediate-measures-tenders-awarded-value,Total Value of Flood Related Tenders related to Immediate Measures,This variable gives sum of all tenders that are flagged as Immediate Measures,77,Government Response,Government Response Score,Rupees,assamtenders.gov.in,y,,x
-Others-tenders-awarded-value,Total value of flood related tenders related to Others,"Every flood related tender is flagged as either ""Preparedness"", ""Immediate Measure"" or ""Other"" based on key words. This column gives sum of all tenders that are flagged as Other",177,Government Response,Government Response Score,Rupees,assamtenders.gov.in,,,x
-releif and prep,,,0,,,,,,,
-repair restoration improvmment,,,0,,,,,,,
-erosion,,,0,,,,,,,
-embankments,,,0,,,,,,,
-resilient budget to government response,,,,,,,,,,
+indicatorSlug,indicatorTitle,indicatorDescription,descriptionlen,indicatorCategory,parent,unit,dataSource,visible,updateFreq,used_for_model,License,State (Owned),Comments
+risk-score,Overall Flood Risk,"Risk of disasters is a function of - hazard, vulnerability, exposure, and coping capacity (government response)",111,Overall Flood Risk,,Score,MODEL,y,,,,,
+flood-hazard,Hazard,Hazards or Potential of a physical event that may cause loss of life or property,80,Hazard,Overall Flood Risk,Score,MODEL,y,,,,,"30-May: Add ""Score"""
+max-rain,Maximum rainfall value in the region,Maximum rainfall value in the region,36,Hazard,Hazard,mm,IMD,,,y,GODL,,
+mean-rain,Mean rainfall value in the region,Mean rainfall value in the region,33,Hazard,Hazard,mm,IMD,,,y,GODL,,
+sum-rain,Monthly Rainfall,Sum rainfall value in the region during the given month,55,Hazard,Hazard,mm,IMD,y,,,GODL,,30-May: Round off (no decimal)
+mean-ndvi,Mean NDVI,Mean Normalised Difference Vegetation Index (NDVI) value for the region,71,Hazard,Hazard,Ratio,SENTINEL,,,,Creative Commons CC BY-SA 3.0 IGO,,
+inundation-pct,Percentage area inundated,Percentage area of the region detected as inundated,51,Hazard,Hazard,Ratio,BHUVAN,,,,GNU General Public License,,
+inundation-intensity-mean,Mean Intensity of Inundation,"Intensity is calculated by dividing number of times a pixel got inundated with the maximum number of times any pixel got inundated in the region. For instance, if a pixel A in region got inundated 5 times in a month and the pixel with maximum inundation saw 10 days of inundation. Then inundation intensity of pixel A is 5/10 = 0.5. This variable then calculates mean of inundation intensities of all pixels.",408,Hazard,Hazard,Ratio,BHUVAN,,,,GNU General Public License,,
+inundation-intensity-mean-nonzero,Mean intensity of inundation (removing 0 intensity pixels),Mean of inundation intensities of all pixels which were inundated atleast once in the month,91,Hazard,Hazard,Ratio,BHUVAN,,,y,GNU General Public License,,
+inundation-intensity-sum,Sum of inundation intensities,Sum of inundation intensities of all pixels in the region,57,Hazard,Hazard,Ratio,BHUVAN,y,,y,GNU General Public License,,"30-May: Percentage of Inundated Area, unit - %
+Upto 2 decimal points
+Work with data team for calculation"
+riverlevel-mean,Mean River Water Level,Mean of river water levels from all Flood Forecasting Stations in the region,76,Hazard,Hazard,m,CWC,,,,,,
+riverlevel-min,Minimum river water level,Minimum river water levels from all Flood Forecasting Stations in the region,76,Hazard,Hazard,m,CWC,,,,,,
+riverlevel-max,Maximum river water level,Maximum river water levels from all Flood Forecasting Stations in the region,76,Hazard,Hazard,m,CWC,,,,,,
+water,Percentage of area under water,Percentage of area under water,30,Hazard,Hazard,Ratio,SENTINEL-2 Land Cover,,,,Creative Commons CC BY-SA 3.0 IGO,,
+trees,Percentage of area under trees,Percentage of area under trees,30,Hazard,Hazard,Ratio,SENTINEL-2 Land Cover,,,,Creative Commons CC BY-SA 3.0 IGO,,
+flooded-vegetation,Percentage of area under flooded vegetation,Percentage of area under flooded vegetation,43,Hazard,Hazard,Ratio,SENTINEL-2 Land Cover,,,,Creative Commons CC BY-SA 3.0 IGO,,
+crops,Percentage of area under crops,Percentage of area under crops,30,Hazard,Hazard,Ratio,SENTINEL-2 Land Cover,,,,Creative Commons CC BY-SA 3.0 IGO,,
+built-area,Percentage of area under buildings,Percentage of area under buildings,34,Hazard,Hazard,Ratio,SENTINEL-2 Land Cover,,,,Creative Commons CC BY-SA 3.0 IGO,,
+bare-ground,Percentage of area that is bare ground,Percentage of area that is bare ground,38,Hazard,Hazard,Ratio,SENTINEL-2 Land Cover,y,,,Creative Commons CC BY-SA 3.0 IGO,,30-May: Remove the variable (needed in calculation but not  on platform)
+clouds,Percentage of area covered by clouds,Percentage of area covered by clouds,36,Hazard,Hazard,Ratio,SENTINEL-2 Land Cover,,,,Creative Commons CC BY-SA 3.0 IGO,,
+rangeland,Percentage of area defined as range lands,Percentage of area defined as range lands,41,Hazard,Hazard,Ratio,SENTINEL-2 Land Cover,,,,Creative Commons CC BY-SA 3.0 IGO,,
+mean-cn,Mean Curve Number,Curve Numbers help in estimation of Surface runoff,50,Hazard,Hazard,,GCN250,,,,MIT License,,
+elevation-mean,Mean Elevation,Mean elevation of the region,28,Hazard,Hazard,m,NASADEM,y,,,,,30-May: Round off 2 decimal points
+slope-mean,Mean slope,Mean slope of the region,24,Hazard,Hazard,degrees,NASADEM,,,,,,
+drainage-density,Drainage density,Drainage density is a measurement of the sum of the channel lengths per unit area,81,Hazard,Hazard,km / sq.km,NASADEM,y,,y,,,"30-May: Remove variable from platform (may be used for model, but not shown on platform)"
+distance-from-river,Distance from the river,Average distance from river,27,Hazard,Hazard,km,WRIS,,,,,,
+exposure,Exposure,Exposures of vulnerable population and assets to hazards,56,Exposure,Risk Score,Score,MODEL,y,,,,,"30-May: Add ""Score"""
+total-hhd,Total Number of Households*,Total number of households,26,Exposure,Exposure,,MISSION ANTYODAYA 2020,y,,y,GODL,,"30-May: no unit, round off (no decimals)"
+sum-population,Population*,Total number of people residing in the region,45,Exposure,Exposure,Number,WORLDPOP,y,,y,Creative Commons Attribution 4.0 International License,,"30-May: Remove population (not necessary since households number takes care of it)
+Keep sex ratio: add a row for this - no unit, round off to 2 decimal points"
+vulnerability,Vulnerability,"Physical, Social, Economic, and Environmental vulnerabilities which increase susceptibility of an area or a community to impact of hazards",138,Vulnerability,Risk Score,Score,MODEL,y,,,,,"30-May: Add ""Score"""
+ndbi-mean,Mean NDBI,Mean Normalised Difference Building Index (NDBI) value for the region,69,Vulnerability,Vulnerability,Ratio,SENTINEL,,,,Creative Commons CC BY-SA 3.0 IGO,,
+sum-aged-population,Elderly population*,Number of people of ages greater than or equal to 65,52,Exposure,Exposure,Number,WORLDPOP,,,y,Creative Commons Attribution 4.0 International License,,
+sum-young-population,Children population*,Number of people of ages less than or equal to 5,48,Exposure,Exposure,Number,WORLDPOP,,,,Creative Commons Attribution 4.0 International License,,
+schools-count,Number of Schools,Number of Schools in the region,31,Vulnerability,Vulnerability,Number,BHARATMAPS,,,y,,,
+health-centres-count,Number of Health Centres,Number of health centres in the region,38,Vulnerability,Vulnerability,,BHARATMAPS,y,,y,,,"30-May: no units, round off - no decimal point"
+rail-length,Length of rail in the region,Length of rail in the region,28,Vulnerability,Vulnerability,km,BHARATMAPS,,,y,,,
+road-length,Length of Road,Length of road in the region,28,Vulnerability,Vulnerability,km,BHARATMAPS,,,y,,,
+net-sown-area-in-hac,Net Sown Area,Net sown area in the region,27,Vulnerability,Vulnerability,hectares,MISSION ANTYODAYA 2020,,,y,GODL,,
+avg-electricity,Average availablity of domestic electricity,Average availablity of domestic electricity,43,Vulnerability,Vulnerability,hours,MISSION ANTYODAYA 2020,,,y,GODL,,
+avg-tele,Average availablity of telecom services,Average availablity of telecom services,39,Vulnerability,Vulnerability,category,MISSION ANTYODAYA 2020,,,,GODL,,
+rc-piped-hhds-pct,Percentage of households with piped water connection,Percentage of households with piped water connection,52,Vulnerability,Vulnerability,Ratio,MISSION ANTYODAYA 2020,,,y,GODL,,
+rc-nosanitation-hhds-pct,Percentage of households without sanitation facilities,Percentage of households without sanitation facilities,54,Vulnerability,Vulnerability,Ratio,MISSION ANTYODAYA 2020,,,y,GODL,,
+mean-sexratio,Mean Sex Ratio*,Number females per 1000 males,29,Vulnerability,Vulnerability,Ratio,WORLDPOP,,,y,Creative Commons Attribution 4.0 International License,,
+total-animal-washed-away,Number of animals washed away,Number of animals washed away,29,Vulnerability,Vulnerability,Number,FRIMS,,,,,,
+total-animal-affected,Number of animals affected,Number of animals affected,26,Vulnerability,Vulnerability,Number,FRIMS,,,y,,,
+population-affected-total,Total Population Affected,Population affected,19,Vulnerability,Vulnerability,,FRIMS,y,,y,,y,"30-May: no units, round off - no decimal point"
+Relief-Camp-inmates,Relief camp inmates,Relief camp inmates,19,Vulnerability,Vulnerability,Number,FRIMS,,,,,,
+human-live-lost,Human Lives Lost,Human lives lost,16,Vulnerability,Vulnerability,Number,FRIMS,,,,,,
+crop-area,Total Crop Area Affected,Crop area affected,18,Vulnerability,Vulnerability,Hectares,FRIMS,y,,y,,y,"30-May: no units, round off - 2 decimal points"
+total-house-fully-damaged,Number of Houses Damaged,Number of houses damaged,24,Vulnerability,Vulnerability,Number,FRIMS,,,y,,,
+embankments-affected,Total Number of Embankments Affected,Number of embankments affected,30,Vulnerability,Vulnerability,,FRIMS,y,,y,,y,"30-May: no units, round off - no decimal point"
+roads,Total Number of Roads Damaged,Number of Roads damaged,23,Vulnerability,Vulnerability,,FRIMS,y,,y,,y,"30-May: no units, round off - no decimal point"
+Bridge,Number of Bridges damaged,Number of Bridges damaged,25,Vulnerability,Vulnerability,Number,FRIMS,,,y,,,
+Embankment breached,Number of embankments breached,Number of embankments breached,30,Vulnerability,Vulnerability,Number,FRIMS,,,y,,,
+number-relief-camps,Number of Relief camps,Number of Relief camps,22,Vulnerability,Vulnerability,Number,FRIMS,,,,,,
+government-response,Government Response,"Government Response with respect to capacities or resources that can reduce the level of risk, or the effects of disasters",122,Government Response,Overall Flood Risk,Score,MODEL,y,,,,,"30-May: Add ""Score"""
+total-tender-awarded-value,Total Value of Flood Tenders,Total value of flood related tenders,36,Government Response,Government Response,INR,assamtenders.gov.in,y,,y,,,"30-May: Add Total Number of Flood Related Tenders above
+No unit"
+SOPD-tenders-awarded-value,Total value of flood related tenders granted under SOPD Scheme,SOPD Scheme is the State Owned Priority Development Scheme. This variable gives information of total value of tenders that were granted under SOPD Scheme,153,Government Response,Government Response,Rupees,assamtenders.gov.in,,,,,,
+sdrf-tenders-awarded-value,Total Value of Flood Tenders Under SDRF,This variable gives information of total value of tenders that were granted under State Disaster Response Fund,110,Government Response,Government Response,INR,assamtenders.gov.in,y,,y,,,
+RIDF-tenders-awarded-value,Total value of flood related tenders granted under RIDF Scheme,RIDF is the Rural Infrastructure Development Fund maintained by NABARD. This variable gives information of total value of tenders that were granted under RIDF.,159,Government Response,Government Response,Rupees,assamtenders.gov.in,,,,,,
+CIDF-tenders-awarded-value,Total value of flood related tenders granted under CIDF Scheme,CIDF City Infra Development Fund is maintained by Assam Government for urban development. This variable gives information of total value of tenders that were granted under CIDF,176,Government Response,Government Response,Rupees,assamtenders.gov.in,,,,,,
+restoration-measures-tenders-awarded-value,Total Value of Flood Tenders for Repairs and Restoration,This variable gives sum of all tenders that are flagged as Restoration Measures,79,Government Response,Government Response,INR,assamtenders.gov.in,y,,,,,"30-May: Add ""Total Value of Flood Tenders for Preparedness"""
+immediate-measures-tenders-awarded-value,Total Value of Flood Tenders for Immediate Measures,This variable gives sum of all tenders that are flagged as Immediate Measures,77,Government Response,Government Response,INR,assamtenders.gov.in,y,,,,,
+Others-tenders-awarded-value,Total value of flood related tenders related to Others,"Every flood related tender is flagged as either ""Preparedness"", ""Immediate Measure"" or ""Other"" based on key words. This column gives sum of all tenders that are flagged as Other",177,Government Response,Government Response,Rupees,assamtenders.gov.in,,,,,,
