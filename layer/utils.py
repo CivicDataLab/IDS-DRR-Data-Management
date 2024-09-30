@@ -19,28 +19,8 @@ def migrate_indicators(filename="layer/data_dict.csv"):
                 print("Already Exists!")
             except Indicators.DoesNotExist:
                 print("Processing Unit -", row.unit)
-                if row.unit and not isinstance(row.unit, float):
-                    try:
-                        unit_obj = Unit.objects.get(name=row.unit.lower())
-                        print(f"Hey! Unit {unit_obj.name} already exists!")
-                    except Unit.DoesNotExist:
-                        unit_obj = Unit(name=row.unit.lower())
-                        unit_obj.save()
-                        print(f"Saved {unit_obj.name} to DB!")
-                else:
-                    # print("Skipping Indicator as no Unit was provided!")
-                    # continue
-                    unit_obj = None
-                parent_obj = None
-                try:
-                    if row.parent and not isinstance(row.parent, float):
-                        parent_obj = Indicators.objects.get(name=row.parent.strip())
-                    else:
-                        pass
-                except Indicators.DoesNotExist:
-                    print(
-                        f"Failed to get the parent indicator for {row.indicatorSlug.lower()}"
-                    )
+                unit_obj = _get_indicator_unit_form_row(row)
+                parent_obj = _get_indicator_parent_from_row(row)
 
                 indicator_obj = Indicators(
                     name=row.indicatorTitle.strip(),
@@ -67,6 +47,55 @@ def migrate_indicators(filename="layer/data_dict.csv"):
             print("---------------------------")
         except Exception as e:
             print("Process Failed with error -", e)
+
+
+def _get_indicator_parent_from_row(row):
+    parent_obj = None
+    try:
+        if row.parent and not isinstance(row.parent, float):
+            parent_obj = Indicators.objects.get(name=row.parent.strip())
+        else:
+            pass
+    except Indicators.DoesNotExist:
+        print(
+            f"Failed to get the parent indicator for {row.indicatorSlug.lower()}"
+        )
+    return parent_obj
+
+
+def _get_indicator_unit_form_row(row):
+    if row.unit and not isinstance(row.unit, float):
+        try:
+            unit_obj = Unit.objects.get(name=row.unit.lower())
+            # print(f"Hey! Unit {unit_obj.name} already exists!")
+        except Unit.DoesNotExist:
+            unit_obj = Unit(name=row.unit.lower())
+            unit_obj.save()
+            print(f"Saved {unit_obj.name} to DB!")
+    else:
+        unit_obj = None
+    return unit_obj
+
+
+def update_indicators(filename="layer/data_dict.csv"):
+    df = pd.read_csv(filename)
+    for row in df.itertuples(index=False):
+        slug = row.indicatorSlug
+        print("Processing Indicator -", slug)
+        try:
+            indicator = Indicators.objects.get(slug=slug.lower())
+            indicator.name=row.indicatorTitle.strip()
+            indicator.long_description=row.indicatorDescription.strip()
+            indicator.category=row.indicatorCategory.strip()
+            indicator.unit= _get_indicator_unit_form_row(row)
+            indicator.data_source=row.dataSource.strip() if row.dataSource else None
+            indicator.parent = _get_indicator_parent_from_row(row)
+            indicator.is_visible = True if row.visible == "y" else False
+            indicator.save()
+            print(f"updated Indicator - {slug}")
+
+        except Indicators.DoesNotExist:
+            print(f"Indicator with slug {slug} does not exist. ")
 
 
 def migrate_geojson(filename="layer/assam_district_35.geojson"):
@@ -181,4 +210,4 @@ def bounding_box(coord_list):
     return ret
 
 if __name__ == '__main__':
-    migrate_data()
+    migrate_geojson("layer/assam_district_35.geojson")
