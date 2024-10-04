@@ -13,6 +13,7 @@ from strawberry.scalars import JSON
 from strawberry_django.optimizer import DjangoOptimizerExtension
 import geojson
 
+from D4D_ContextLayer.settings import DEFAULT_TIME_PERIOD
 from . import types
 from .models import Data, Geography, Indicators
 from .utils import bounding_box
@@ -101,6 +102,89 @@ def get_district_data(
         key=lambda d: float(d[indc_filter.slug]["value"].split()[0]),
         reverse=True,
     )
+
+    print("The time difference is :", timeit.default_timer() - starttime)
+    return data_list  # {"table_data": data_list}
+
+def get_table_data(
+    indc_filter: Optional[types.IndicatorFilter]= None,
+    data_filter: Optional[types.DataFilter] = None,
+    geo_filter: Optional[types.GeoFilter] = None,
+) -> list[dict]:
+    """Retrieve data to be displayed on table based on specified filters.
+
+    Args:
+        indc_filter (types.IndicatorFilter, Optional): An IndicatorFilter object used
+        to filter data based on defined fields from types.py.
+        data_filter (types.DataFilter, Optional): An DataFilter object used
+        to filter data based on defined fields from types.py.
+        geo_filter (types.GeoFilter, optional): An GeoFilter object used
+        to filter data based on defined fields from types.py. Defaults to None.
+
+    Returns:
+        list[dict]: A list containing dictionary of districts
+            mapping each to it's relevant data fields.
+    """
+    starttime = timeit.default_timer()
+    data_list = []
+    data_dict = {}
+    data_obj = Data.objects.filter(indicator__is_visible=True)
+    if data_filter:
+        data_obj = data_obj.filter(data_period=data_filter.data_period)
+    else:
+        data_obj = data_obj.filter(data_period=DEFAULT_TIME_PERIOD)
+    if indc_filter:
+        data_obj = data_obj.filter(
+            Q(indicator__slug=indc_filter.slug)
+            | Q(indicator__parent__slug=indc_filter.slug)
+        )
+    else:
+        data_obj = data_obj.filter(indicator__parent__parent=None)
+
+    if geo_filter:
+        if len(geo_filter.code) <= 1:
+            data_obj = data_obj.filter(
+                Q(geography__parentId__code__in=geo_filter.code)
+                | Q(geography__code__in=geo_filter.code)
+            )
+            geo_obj = Geography.objects.filter(
+                Q(code__in=geo_filter.code) | Q(parentId__code__in=geo_filter.code)
+            )
+        else:
+            geo_obj = Geography.objects.filter(code__in=geo_filter.code)
+    else:
+        geo_obj = Geography.objects.filter(type="DISTRICT")
+
+    for geo in geo_obj:
+        for obj in data_obj.filter(geography=geo):
+            data_dict[obj.geography.type.lower()] = obj.geography.name
+            data_dict[obj.geography.type.lower().replace(" ", "-") + "-code"] = (
+                obj.geography.code
+            )
+            if obj.indicator.unit:
+                unit = obj.indicator.unit.name
+                data_dict[obj.indicator.slug] = {
+                    "value": str(obj.value) + " " + unit,
+                    "title": obj.indicator.name,
+                }
+            else:
+                data_dict[obj.indicator.slug] = {
+                    "value": str(obj.value),
+                    "title": obj.indicator.name,
+                }
+
+        if data_dict:
+            data_list.append(data_dict)
+            data_dict = {}
+
+    # filter_key = Indicators.objects.get(slug=indc_filter.slug)
+    # data_list = sorted(data_list, key=lambda d: d[filter_key.name], reverse=True)
+    # data_list = sorted(data_list, key=lambda d: d[indc_filter.slug], reverse=True)
+    # data_list = sorted(
+    #     data_list,
+    #     key=lambda d: float(d[indc_filter.slug]["value"].split()[0]),
+    #     reverse=True,
+    # )
 
     print("The time difference is :", timeit.default_timer() - starttime)
     return data_list  # {"table_data": data_list}
@@ -559,6 +643,7 @@ class Query:  # camelCase
     getFactors: JSON = strawberry_django.field(resolver=get_model_indicators)
     # data: list[types.Data] = strawberry_django.field()
     districtViewData: JSON = strawberry_django.field(resolver=get_district_data)
+    tableData: JSON = strawberry_django.field(resolver=get_table_data)
     districtMapData: JSON = strawberry_django.field(resolver=get_district_map_data)
     getTimeTrends: JSON = strawberry_django.field(resolver=get_time_trends)
     revCircleViewData: JSON = strawberry_django.field(resolver=get_revenue_data)
