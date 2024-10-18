@@ -158,7 +158,7 @@ def get_table_data(
     for geo in geo_obj:
         for obj in data_obj.filter(geography=geo):
             data_dict["region-name"] = obj.geography.name
-            data_dict["region-code"] = (
+            data_dict[obj.geography.type.lower().replace(" ", "-") + "-code"] = (
                 obj.geography.code
             )
             if obj.indicator.unit:
