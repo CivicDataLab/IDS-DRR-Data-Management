@@ -291,7 +291,9 @@ def get_revenue_data(
     """
 
     geo_queryset = Geography.objects.filter(type="REVENUE CIRCLE")
+    parent = None
     if geo_filter:
+        parent = Geography.objects.filter(code=geo_filter.code)
         geo_queryset = geo_queryset.filter(code__in=geo_filter.code)
 
     # rc_data_queryset = Data.objects.all()
@@ -318,6 +320,11 @@ def get_revenue_data(
             data_dict[(obj.geography.type + " code").lower().replace(" ", "-")] = (
                 obj.geography.code
             )
+            if parent:
+                data_dict[parent.type.lower().replace(" ", "-")] = parent.name
+                data_dict[(parent.type.lower() + " code").lower().replace(" ", "-")] = (
+                    parent.code
+                )
             if obj.indicator.unit:
                 unit = obj.indicator.unit.name
                 data_dict[obj.indicator.slug] = {
