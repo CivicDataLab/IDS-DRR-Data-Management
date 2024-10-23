@@ -106,6 +106,7 @@ def get_district_data(
     print("The time difference is :", timeit.default_timer() - starttime)
     return data_list  # {"table_data": data_list}
 
+
 def get_table_data(
     indc_filter: Optional[types.IndicatorFilter]= None,
     data_filter: Optional[types.DataFilter] = None,
@@ -129,10 +130,14 @@ def get_table_data(
     data_list = []
     data_dict = {}
     data_obj = Data.objects.filter(indicator__is_visible=True)
+
+    # Filter by time period
     if data_filter:
         data_obj = data_obj.filter(data_period=data_filter.data_period)
     else:
         data_obj = data_obj.filter(data_period=DEFAULT_TIME_PERIOD)
+
+    # Filter by indicator
     if indc_filter:
         data_obj = data_obj.filter(
             Q(indicator__slug=indc_filter.slug)
@@ -141,6 +146,7 @@ def get_table_data(
     else:
         data_obj = data_obj.filter(indicator__parent__parent=None)
 
+    # Filter by geography
     if geo_filter:
         if len(geo_filter.code) <= 1:
             data_obj = data_obj.filter(
@@ -155,8 +161,10 @@ def get_table_data(
     else:
         geo_obj = Geography.objects.filter(type="DISTRICT")
 
+    # Process geography and data for each region
     for geo in geo_obj:
         for obj in data_obj.filter(geography=geo):
+            data_dict["type"] = geo.type
             data_dict["region-name"] = obj.geography.name
             data_dict[obj.geography.type.lower().replace(" ", "-") + "-code"] = (
                 obj.geography.code
@@ -177,17 +185,19 @@ def get_table_data(
             data_list.append(data_dict)
             data_dict = {}
 
-    # filter_key = Indicators.objects.get(slug=indc_filter.slug)
-    # data_list = sorted(data_list, key=lambda d: d[filter_key.name], reverse=True)
-    # data_list = sorted(data_list, key=lambda d: d[indc_filter.slug], reverse=True)
-    # data_list = sorted(
-    #     data_list,
-    #     key=lambda d: float(d[indc_filter.slug]["value"].split()[0]),
-    #     reverse=True,
-    # )
+    # Sort the data list with selected indicator first
+    if indc_filter:
+        data_list = sorted(
+            data_list,
+            key=lambda d: float(d.get(indc_filter.slug, {}).get("value", "0").split()[0]),
+            reverse=True
+        )
+
+    # Prioritize district values at the top
+    data_list = sorted(data_list, key=lambda d: d.get("type") != "DISTRICT")
 
     print("The time difference is :", timeit.default_timer() - starttime)
-    return data_list  # {"table_data": data_list}
+    return data_list
 
 
 def get_time_trends(
