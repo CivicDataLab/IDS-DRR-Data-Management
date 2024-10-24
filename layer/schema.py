@@ -182,16 +182,13 @@ def get_table_data(
                 }
 
         if data_dict:
+            # Reorder data_dict so that the selected indicator is first
+            if indc_filter and indc_filter.slug in data_dict:
+                selected_indicator = {indc_filter.slug: data_dict.pop(indc_filter.slug)}
+                data_dict = {**selected_indicator, **data_dict}
+
             data_list.append(data_dict)
             data_dict = {}
-
-    # Sort the data list with selected indicator first
-    if indc_filter:
-        data_list = sorted(
-            data_list,
-            key=lambda d: float(d.get(indc_filter.slug, {}).get("value", "0").split()[0]),
-            reverse=True
-        )
 
     # Prioritize district values at the top
     data_list = sorted(data_list, key=lambda d: d.get("type") != "DISTRICT")
