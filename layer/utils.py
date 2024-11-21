@@ -193,7 +193,7 @@ def migrate_data(filename=None):
         time.sleep(3)
 
         # Using object-id as index, so they can be used as str and not int or float.
-        df = pd.read_csv(filename, index_col="object-id", dtype={"object-id": str})
+        df = pd.read_csv(filename, dtype={"object-id": str, "stdcode11": str})
         print(f"Total no of rows available - {df.shape[0]}")
         # Get all columns visible on the platform from DB.
         reqd_columns = Indicators.objects.filter(is_visible=True)
@@ -204,7 +204,10 @@ def migrate_data(filename=None):
             print(f"Processing row - {i}")
             try:
                 # Get the required geography object.
-                geography_obj = Geography.objects.get(Q(code=index), ~Q(type="STATE"))
+                if pd.isna(row["district-name"]):
+                    geography_obj = Geography.objects.get(Q(code=str(row.sdtcode11).zfill(3)), ~Q(type="STATE"))
+                else:
+                    geography_obj = Geography.objects.get(Q(code=str(row.sdtcode11).zfill(5)), ~Q(type="STATE"))
                 # Filter visible columns for Districts (Only factors, no variables).
                 # if geography_obj.type == "DISTRICT":
                 #     reqd_columns = reqd_columns.filter(
