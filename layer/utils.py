@@ -262,3 +262,5 @@ def bounding_box(coord_list):
 
 if __name__ == '__main__':
     migrate_geojson()
+    migrate_indicators()
+    migrate_data()
