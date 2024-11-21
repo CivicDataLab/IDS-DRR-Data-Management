@@ -171,14 +171,22 @@ def migrate_geojson():
                     name = ft["properties"]["sdtname"]
                     dtcode = ft["properties"]["dtcode11"]
                     parent_geo_obj = Geography.objects.get(code=dtcode, type="DISTRICT")
-
-                geo_object = Geography(
-                    name=name.capitalize(),
-                    code=code,
-                    type=geo_type,
-                    geom=geom,
-                    parentId=parent_geo_obj,
-                )
+                try:
+                    geo_object = Geography.objects.get(name=name.capitalize(),
+                                                       code=code,
+                                                       type=geo_type,
+                                                       geom=geom,
+                                                       parentId=parent_geo_obj)
+                    geo_object.name = name.capitlize()
+                    geo_object.geom = geom
+                except Geography.DoesNotExist:
+                    geo_object = Geography(
+                        name=name.capitalize(),
+                        code=code,
+                        type=geo_type,
+                        geom=geom,
+                        parentId=parent_geo_obj,
+                    )
                 geo_object.save()
 
 
