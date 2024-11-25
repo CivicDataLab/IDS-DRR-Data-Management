@@ -14,41 +14,38 @@ def migrate_indicators(filename="layer/assets/data_dict.csv"):
     df = pd.read_csv(filename)
 
     for row in df.itertuples(index=False):
+        print("Processing Indicator -", row.indicatorSlug)
         try:
-            print("Processing Indicator -", row.indicatorSlug)
-            try:
-                Indicators.objects.get(slug=row.indicatorSlug.lower())
-                print("Already Exists!")
-            except Indicators.DoesNotExist:
-                print("Processing Unit -", row.unit)
-                unit_obj = _get_indicator_unit_form_row(row)
-                parent_obj = _get_indicator_parent_from_row(row)
+            Indicators.objects.get(slug=row.indicatorSlug.lower())
+            print("Already Exists!")
+        except Indicators.DoesNotExist:
+            print("Processing Unit -", row.unit)
+            unit_obj = _get_indicator_unit_form_row(row)
+            parent_obj = _get_indicator_parent_from_row(row)
 
-                indicator_obj = Indicators(
-                    name=row.indicatorTitle.strip(),
-                    slug=(
-                        row.indicatorSlug.lower().strip() if row.indicatorSlug else None
-                    ),
-                    long_description=(
-                        row.indicatorDescription.strip()
-                        if row.indicatorDescription
-                        else None
-                    ),
-                    # short_description = row.indicatorDescription if row.indicatorDescription else None,
-                    category=(
-                        row.indicatorCategory.strip() if row.indicatorCategory else None
-                    ),
-                    # type = row.indicatorType if row.indicatorType else None
-                    unit=unit_obj,
-                    data_source=row.dataSource.strip() if row.dataSource else None,
-                    parent=parent_obj,
-                    is_visible=True if row.visible == "y" else False,
-                )
-                indicator_obj.save()
-                print("Added indicator to the database.")
-            print("---------------------------")
-        except Exception as e:
-            print("Process Failed with error -", e)
+            indicator_obj = Indicators(
+                name=row.indicatorTitle.strip(),
+                slug=(
+                    row.indicatorSlug.lower().strip() if row.indicatorSlug else None
+                ),
+                long_description=(
+                    row.indicatorDescription.strip()
+                    if row.indicatorDescription
+                    else None
+                ),
+                # short_description = row.indicatorDescription if row.indicatorDescription else None,
+                category=(
+                    row.indicatorCategory.strip() if row.indicatorCategory else None
+                ),
+                # type = row.indicatorType if row.indicatorType else None
+                unit=unit_obj,
+                data_source=row.dataSource.strip() if row.dataSource else None,
+                parent=parent_obj,
+                is_visible=True if row.visible == "y" else False,
+            )
+            indicator_obj.save()
+            print("Added indicator to the database.")
+        print("---------------------------")
 
 
 def _get_indicator_parent_from_row(row):
@@ -109,7 +106,7 @@ def migrate_geojson():
 
     for filename in sorted_files:
         with open(filename) as f:
-            print(f"Addind data from {os.path.basename(filename)} to database....")
+            print(f"Adding data from {os.path.basename(filename)} to database....")
             data = json.load(f)
 
             file_name = data["name"]
@@ -152,7 +149,7 @@ def migrate_geojson():
                     )
                 elif file_name == "BharatMaps_HP_district":
                     geo_type = "DISTRICT"
-                    code = ft["properties"]["dtcode11"]
+                    code = ft["properties"]["objectid"]
                     name = ft["properties"]["dtname"]
                     state = ft["properties"]["stname"]
                     state_code = ft["properties"]["stcode11"]
@@ -172,13 +169,16 @@ def migrate_geojson():
                     name = ft["properties"]["sdtname"]
                     dtcode = ft["properties"]["dtcode11"]
                     parent_geo_obj = Geography.objects.get(code=dtcode, type="DISTRICT")
+                elif file_name == "hp_tehsil_temp":
+                    geo_type = "TEHSIL"
+                    code = ft["properties"]["object_id"]
+                    name = ft["properties"]["TEHSIL"]
+                    dtcode = f'02-{ft["properties"]["dtcode11"]}'
+                    parent_geo_obj = Geography.objects.get(code=dtcode, type="DISTRICT")
                 try:
-                    geo_object = Geography.objects.get(name=name.capitalize(),
-                                                       code=code,
-                                                       type=geo_type,
-                                                       geom=geom,
+                    geo_object = Geography.objects.get(code=code,
                                                        parentId=parent_geo_obj)
-                    geo_object.name = name.capitlize()
+                    geo_object.name = name.capitalize()
                     geo_object.geom = geom
                 except Geography.DoesNotExist:
                     geo_object = Geography(
@@ -229,7 +229,7 @@ def migrate_data(filename=None):
         time.sleep(3)
 
         # Using object-id as index, so they can be used as str and not int or float.
-        df = pd.read_csv(filename, index_col="object-id", dtype={"object-id": str, "sdtcode11": str})
+        df = pd.read_csv(filename, index_col="object-id", dtype={"object-id": str, "sdtcode11": str, "objectid": str})
         print(f"Total no of rows available - {df.shape[0]}")
         # Get all columns visible on the platform from DB.
         reqd_columns = Indicators.objects.filter(is_visible=True)
@@ -243,10 +243,11 @@ def migrate_data(filename=None):
                 if "assam" in filename.lower():
                     geography_obj = Geography.objects.get(Q(code=index), ~Q(type="STATE"))
                 else:
-                    if pd.isna(row["district-name"]):
-                        geography_obj = Geography.objects.get(Q(code=str(row.sdtcode11).zfill(3)), ~Q(type="STATE"))
-                    else:
-                        geography_obj = Geography.objects.get(Q(code=str(row.sdtcode11).zfill(5)), ~Q(type="STATE"))
+                    geography_obj = Geography.objects.get(Q(code=index), ~Q(type="STATE"))
+                    # if pd.isna(row["district"]):
+                    #     geography_obj = Geography.objects.get(Q(code=str(row.sdtcode11).zfill(3)), ~Q(type="STATE"))
+                    # else:
+                    #     geography_obj = Geography.objects.get(Q(code=str(row.sdtcode11).zfill(5)), ~Q(type="STATE"))
                 # Filter visible columns for Districts (Only factors, no variables).
                 # if geography_obj.type == "DISTRICT":
                 #     reqd_columns = reqd_columns.filter(
