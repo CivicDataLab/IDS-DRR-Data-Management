@@ -5,6 +5,7 @@ import time
 
 import pandas as pd
 from django.contrib.gis.geos import GEOSGeometry, MultiPolygon, Polygon
+from django.core.management.base import BaseCommand, CommandError
 from django.db.models import Q
 from layer.models import Data, Geography, Indicators, Unit
 
@@ -189,6 +190,33 @@ def migrate_geojson():
                     )
                 geo_object.save()
 
+def addDataRow(row, state="assam"):
+    try:
+        if "assam" in filename.lower():
+            geography_obj = Geography.objects.get(Q(code=row.name), ~Q(type="STATE"))
+        else:
+            if pd.isna(row["district-name"]):
+                geography_obj = Geography.objects.get(Q(code=str(row.sdtcode11).zfill(3)), ~Q(type="STATE"))
+            else:
+                geography_obj = Geography.objects.get(Q(code=str(row.sdtcode11).zfill(5)), ~Q(type="STATE"))
+    except:
+        print(f"Failed to find geography for: {row}")
+    else:
+        for indc_obj in reqd_columns:
+            existing = Data.objects.filter(indicator__slug=indc_obj.slug, geography__code=geography_obj.code,
+                                           data_period=row.timeperiod)
+            if existing.exists():
+                [e.delete() for e in existing]
+            data_obj = Data(
+                    pk=pk,
+                    value=row[f"{indc_obj.slug}"],
+                    indicator=indc_obj,
+                    geography=geography_obj,
+                    data_period=row.timeperiod,
+            )
+            return data_obj
+            pk += 1
+
 
 def migrate_data(filename=None):
     # Get all the data files from the directory.
@@ -247,23 +275,14 @@ def migrate_data(filename=None):
                         data_period=row.timeperiod,
                     )
                     data_obj.save()
-                # In-case of data not available for an indicator - we skip it.
                 except KeyError:
                     continue
             i += 1
         print(f"Total rows added to DB - {i}")
 
 
-def bounding_box(coord_list):
-    box = []
-    for i in (0, 1):
-        res = sorted(coord_list, key=lambda x: x[i])
-        box.append((res[0][i], res[-1][i]))
-    ret = [[box[1][0], box[0][0]], [box[1][1], box[0][1]]]
-    return ret
-
-
-if __name__ == '__main__':
-    migrate_geojson()
-    migrate_indicators()
-    migrate_data()
+class Command(BaseCommand):
+    def handle(self, *args, **options):
+        migrate_geojson()
+        migrate_indicators()
+        migrate_data()
