@@ -20,6 +20,7 @@ class Geography(models.Model):
         VILLAGE = "VILLAGE"
         REVENUE_CIRCLE = "REVENUE CIRCLE"
         SUBDISTRICT = "SUB DISTRICT"
+        TEHSIL = "TEHSIL"
         # LA_CONSTITUTENCY = "LA_CONSTITUTENCY"
         # PA_CONSTITUTANCY = "PA_CONSTITUTANCY"
 
