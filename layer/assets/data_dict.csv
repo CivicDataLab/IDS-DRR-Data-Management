@@ -27,11 +27,11 @@ elevation-mean,Mean Elevation,Mean elevation of the region,28,Hazard,Hazard,m,NA
 slope-mean,Mean slope,Mean slope of the region,24,Hazard,Hazard,degrees,NASADEM,,,,,,
 drainage-density,Drainage density,Drainage density is a measurement of the sum of the channel lengths per unit area,81,Hazard,Hazard,km / sq.km,NASADEM,y,,y,,,"30-May: Remove variable from platform (may be used for model, but not shown on platform)"
 distance-from-river,Distance from the river,Average distance from river,27,Hazard,Hazard,km,WRIS,,,,,,
-exposure,Exposure,Exposures of vulnerable population and assets to hazards,56,Exposure,Risk Score,Score,MODEL,y,,,,,"30-May: Add ""Score"""
+exposure,Exposure,Exposures of vulnerable population and assets to hazards,56,Exposure,Overall Flood Risk,Score,MODEL,y,,,,,"30-May: Add ""Score"""
 total-hhd,Total Number of Households*,Total number of households,26,Exposure,Exposure,,MISSION ANTYODAYA 2020,y,,y,GODL,,"30-May: no unit, round off (no decimals)"
 sum-population,Population*,Total number of people residing in the region,45,Exposure,Exposure,Number,WORLDPOP,y,,y,Creative Commons Attribution 4.0 International License,,"30-May: Remove population (not necessary since households number takes care of it)
 Keep sex ratio: add a row for this - no unit, round off to 2 decimal points"
-vulnerability,Vulnerability,"Physical, Social, Economic, and Environmental vulnerabilities which increase susceptibility of an area or a community to impact of hazards",138,Vulnerability,Risk Score,Score,MODEL,y,,,,,"30-May: Add ""Score"""
+vulnerability,Vulnerability,"Physical, Social, Economic, and Environmental vulnerabilities which increase susceptibility of an area or a community to impact of hazards",138,Vulnerability,Overall Flood Risk,Score,MODEL,y,,,,,"30-May: Add ""Score"""
 ndbi-mean,Mean NDBI,Mean Normalised Difference Building Index (NDBI) value for the region,69,Vulnerability,Vulnerability,Ratio,SENTINEL,,,,Creative Commons CC BY-SA 3.0 IGO,,
 sum-aged-population,Elderly population*,Number of people of ages greater than or equal to 65,52,Exposure,Exposure,Number,WORLDPOP,,,y,Creative Commons Attribution 4.0 International License,,
 sum-young-population,Children population*,Number of people of ages less than or equal to 5,48,Exposure,Exposure,Number,WORLDPOP,,,,Creative Commons Attribution 4.0 International License,,
