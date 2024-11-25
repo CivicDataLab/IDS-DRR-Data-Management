@@ -16,11 +16,19 @@ import geojson
 
 from D4D_ContextLayer.settings import DEFAULT_TIME_PERIOD
 from . import types
-from .models import Data, Geography, Indicators
-from .utils import bounding_box
+from layer.models import Data, Geography, Indicators
 
 
 # from .mutation import Mutation
+
+
+def bounding_box(coord_list):
+    box = []
+    for i in (0, 1):
+        res = sorted(coord_list, key=lambda x: x[i])
+        box.append((res[0][i], res[-1][i]))
+    ret = [[box[1][0], box[0][0]], [box[1][1], box[0][1]]]
+    return ret
 
 
 def get_district_data(
