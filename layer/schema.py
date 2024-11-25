@@ -32,9 +32,9 @@ def bounding_box(coord_list):
 
 
 def get_district_data(
-    indc_filter: types.IndicatorFilter,
-    data_filter: types.DataFilter,
-    geo_filter: Optional[types.GeoFilter] = None,
+        indc_filter: types.IndicatorFilter,
+        data_filter: types.DataFilter,
+        geo_filter: Optional[types.GeoFilter] = None,
 ) -> list[dict]:
     """Retrieve district-specific data based on specified filters.
 
@@ -111,9 +111,9 @@ def get_district_data(
 
 
 def get_table_data(
-    indc_filter: Optional[types.IndicatorFilter]= None,
-    data_filter: Optional[types.DataFilter] = None,
-    geo_filter: Optional[types.GeoFilter] = None,
+        indc_filter: Optional[types.IndicatorFilter] = None,
+        data_filter: Optional[types.DataFilter] = None,
+        geo_filter: Optional[types.GeoFilter] = None,
 ) -> list[dict]:
     """Retrieve data to be displayed on table based on specified filters.
 
@@ -201,9 +201,9 @@ def get_table_data(
 
 
 def get_time_trends(
-    indc_filter: types.IndicatorFilter,
-    data_filter: types.DataFilter,
-    geo_filter: types.GeoFilter,
+        indc_filter: types.IndicatorFilter,
+        data_filter: types.DataFilter,
+        geo_filter: types.GeoFilter,
 ) -> dict:
     starttime = timeit.default_timer()
     """Retrieve time trends data based on specified filters.
@@ -282,9 +282,9 @@ def get_time_trends(
 
 
 def get_revenue_data(
-    indc_filter: types.IndicatorFilter,
-    data_filter: types.DataFilter,
-    geo_filter: Optional[types.GeoFilter] = None,
+        indc_filter: types.IndicatorFilter,
+        data_filter: types.DataFilter,
+        geo_filter: Optional[types.GeoFilter] = None,
 ) -> list[dict]:
     starttime = timeit.default_timer()
     data_list = []
@@ -364,9 +364,9 @@ def get_revenue_data(
 
 
 def get_revenue_map_data(
-    indc_filter: types.IndicatorFilter,
-    data_filter: types.DataFilter,
-    geo_filter: Optional[types.GeoFilter] = None,
+        indc_filter: types.IndicatorFilter,
+        data_filter: types.DataFilter,
+        geo_filter: Optional[types.GeoFilter] = None,
 ) -> dict:
     """Retrieve revenue-circle map data based on specified filters.
 
@@ -439,9 +439,9 @@ def get_revenue_map_data(
 
 
 def get_district_map_data(
-    indc_filter: types.IndicatorFilter,
-    data_filter: types.DataFilter,
-    geo_filter: Optional[types.GeoFilter] = None,
+        indc_filter: types.IndicatorFilter,
+        data_filter: types.DataFilter,
+        geo_filter: Optional[types.GeoFilter] = None,
 ) -> dict:
     """Retrieve district map data based on specified filters.
 
@@ -604,11 +604,22 @@ def get_district_rev_circle(geo_filter: types.GeoFilter):
     return data_dict
 
 
+def get_child_indicators(parent_id: Optional[int] = None) -> typing.List:
+    indicator_list = []
+    indicators = Indicators.objects.filter(parent__id=parent_id, is_visible=True)
+    for indicator in indicators:
+        indicator_list.append(
+            {"slug": indicator.slug, "name": indicator.name, "description": indicator.long_description,
+             "children": get_child_indicators(indicator.id)})
+    return indicator_list
+
+
 @strawberry.type
 class Query:  # camelCase
     indicators: JSON = strawberry_django.field(resolver=get_indicators)
     districtViewData: JSON = strawberry_django.field(resolver=get_district_data)
     tableData: JSON = strawberry_django.field(resolver=get_table_data)
+    indicatorsByCategory: JSON = strawberry_django.field(resolver=get_child_indicators)
     districtMapData: JSON = strawberry_django.field(resolver=get_district_map_data)
     getTimeTrends: JSON = strawberry_django.field(resolver=get_time_trends)
     revCircleViewData: JSON = strawberry_django.field(resolver=get_revenue_data)
