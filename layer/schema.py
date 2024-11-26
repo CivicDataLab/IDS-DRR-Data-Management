@@ -382,7 +382,7 @@ def get_revenue_map_data(
     try:
         geo_object = Geography.objects.get(code__in=geo_filter.code, type="STATE")
         if geo_object.name.title() == "Himachal Pradesh":
-            geo_type = "SUB DISTRICT"
+            geo_type = "TEHSIL"
         else:
             geo_type = "REVENUE CIRCLE"
     except Geography.DoesNotExist:
@@ -575,7 +575,7 @@ def get_district_rev_circle(geo_filter: types.GeoFilter):
         data_dict = data_list
     elif geo_filter.type.upper().strip().replace("-", " ") in [
         "REVENUE CIRCLE",
-        "SUB DISTRICT",
+        "TEHSIL",
     ]:
         geo_object = Geography.objects.filter(
             type=geo_filter.type.upper().strip().replace("-", " ")
