@@ -147,7 +147,9 @@ def get_table_data(
             | Q(indicator__parent__slug=indc_filter.slug)
         )
     else:
-        data_obj = data_obj.filter(indicator__parent__parent=None)
+        geo_obj = Geography.objects.filter(
+            type="DISTRICT", parentId__code__in=geo_filter.state_code
+        )
 
     # Filter by geography
     if geo_filter:
