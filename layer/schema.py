@@ -379,20 +379,20 @@ def get_revenue_map_data(
     starttime = timeit.default_timer()
 
     # Convert geography objects to a GeoJson format.
-    try:
-        geo_object = Geography.objects.get(code__in=geo_filter.code, type="STATE")
-        if geo_object.name.title() == "Himachal Pradesh":
-            geo_type = "TEHSIL"
-        else:
-            geo_type = "REVENUE CIRCLE"
-    except Geography.DoesNotExist:
-        raise GraphQLError("Invalid state code!!")
+    # try:
+    #     geo_object = Geography.objects.get(code__in=geo_filter.code, type="STATE")
+    #     if geo_object.name.title() == "Himachal Pradesh":
+    #         geo_type = "TEHSIL"
+    #     else:
+    #         geo_type = "REVENUE CIRCLE"
+    # except Geography.DoesNotExist:
+    #     raise GraphQLError("Invalid state code!!")
 
     geo_json = json.loads(
         serialize(
             "geojson",
             Geography.objects.filter(
-                type=geo_type, parentId__parentId__code__in=geo_filter.code
+                parentId__parentId__code__in=geo_filter.code
             ),
         )
     )
@@ -400,7 +400,6 @@ def get_revenue_map_data(
     rc_data = Data.objects.filter(
         indicator__slug=indc_filter.slug,
         data_period=data_filter.data_period,
-        geography__type=geo_type,
         geography__parentId__parentId__code__in=geo_filter.code,
     ).select_related("geography")
 
