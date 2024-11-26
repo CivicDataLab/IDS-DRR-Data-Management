@@ -40,7 +40,6 @@ class Unit:
 class GeoFilter:
     name: Optional[str]
     code: Optional[list[strawberry.ID]]
-    state_code: Optional[list[strawberry.ID]]
     type: Optional[str]
 
 

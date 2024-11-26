@@ -34,7 +34,7 @@ def bounding_box(coord_list):
 def get_district_data(
         indc_filter: types.IndicatorFilter,
         data_filter: types.DataFilter,
-        geo_filter: Optional[types.GeoFilter] = None,
+        geo_filter: types.GeoFilter,
 ) -> list[dict]:
     """Retrieve district-specific data based on specified filters.
 
@@ -62,21 +62,16 @@ def get_district_data(
     if data_filter:
         dataset_obj = dataset_obj.filter(data_period=data_filter.data_period)
 
-    if geo_filter and geo_filter.code:
-        if len(geo_filter.code) <= 1:
-            dataset_obj = dataset_obj.filter(
-                Q(geography__parentId__code__in=geo_filter.code)
-                | Q(geography__code__in=geo_filter.code)
-            )
-            geo_obj = Geography.objects.filter(
-                Q(code__in=geo_filter.code) | Q(parentId__code__in=geo_filter.code)
-            )
-        else:
-            geo_obj = Geography.objects.filter(code__in=geo_filter.code)
-    else:
-        geo_obj = Geography.objects.filter(
-            type="DISTRICT", parentId__code__in=geo_filter.state_code
+    if len(geo_filter.code) <= 1:
+        dataset_obj = dataset_obj.filter(
+            Q(geography__parentId__code__in=geo_filter.code)
+            | Q(geography__code__in=geo_filter.code)
         )
+        geo_obj = Geography.objects.filter(
+            Q(code__in=geo_filter.code) | Q(parentId__code__in=geo_filter.code)
+        )
+    else:
+        geo_obj = Geography.objects.filter(code__in=geo_filter.code)
 
     for geo in geo_obj:
         for obj in dataset_obj.filter(geography=geo, indicator__is_visible=True):
@@ -147,9 +142,7 @@ def get_table_data(
             | Q(indicator__parent__slug=indc_filter.slug)
         )
     else:
-        geo_obj = Geography.objects.filter(
-            type="DISTRICT", parentId__code__in=geo_filter.state_code
-        )
+        data_obj = data_obj.filter(indicator__parent__parent=None)
 
     # Filter by geography
     if geo_filter:
@@ -249,9 +242,9 @@ def get_time_trends(
 
     # Filter the data.
     data_queryset = Data.objects.filter(
-        Q(geography__parentId__code__in=geo_filter.state_code)
-        | Q(geography__parentId__parentId__code__in=geo_filter.state_code),
-        geography__code__in=geo_filter.code,
+        Q(geography__parentId__code__in=geo_filter.code)
+        | Q(geography__parentId__parentId__code__in=geo_filter.code)
+        | Q(geography__code__in=geo_filter.code),
         indicator__slug=indc_filter.slug,
         data_period__in=time_list,
     )
@@ -306,21 +299,20 @@ def get_revenue_data(
             mapping each to it's relevant data fields.
     """
 
-    try:
-        # Set the type filter based on state.
-        geo_obj = Geography.objects.get(code__in=geo_filter.state_code, type="STATE")
-        if geo_obj.name.title() == "Himachal Pradesh":
-            geo_type = "SUB DISTRICT"
-        else:
-            geo_type = "REVENUE CIRCLE"
+    # try:
+    #     # Set the type filter based on state.
+    #     geo_obj = Geography.objects.get(code__in=geo_filter.state_code, type="STATE")
+    #     if geo_obj.name.title() == "Himachal Pradesh":
+    #         geo_type = "TEHSIL"
+    #     else:
+    #         geo_type = "REVENUE CIRCLE"
+    #
+    #     # Geo object to iterate over.
+    #     geo_queryset = Geography.objects.filter(type=geo_type)
+    # except Geography.DoesNotExist:
+    #     raise GraphQLError("Invalid state code!!")
 
-        # Geo object to iterate over.
-        geo_queryset = Geography.objects.filter(type=geo_type)
-    except Geography.DoesNotExist:
-        raise GraphQLError("Invalid state code!!")
-
-    if geo_filter.code:
-        geo_queryset = geo_queryset.filter(code__in=geo_filter.code)
+    geo_queryset = Geography.objects.filter(code__in=geo_filter.code)
 
     rc_data_queryset = Data.objects.filter(
         Q(indicator__parent__slug=indc_filter.slug)
