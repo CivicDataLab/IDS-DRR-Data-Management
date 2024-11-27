@@ -392,7 +392,7 @@ def get_revenue_map_data(
         serialize(
             "geojson",
             Geography.objects.filter(
-                parentId__parentId__code__in=geo_filter.code
+                parentId__code__in=geo_filter.code
             ),
         )
     )
@@ -400,7 +400,7 @@ def get_revenue_map_data(
     rc_data = Data.objects.filter(
         indicator__slug=indc_filter.slug,
         data_period=data_filter.data_period,
-        geography__parentId__parentId__code__in=geo_filter.code,
+        geography__parentId__code__in=geo_filter.code,
     ).select_related("geography")
 
     # Create a dictionary to store indicator data by geography code
