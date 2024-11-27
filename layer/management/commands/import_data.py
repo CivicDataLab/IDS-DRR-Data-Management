@@ -149,10 +149,10 @@ def migrate_geojson():
                     )
                 elif file_name == "BharatMaps_HP_district":
                     geo_type = "DISTRICT"
-                    code = ft["properties"]["objectid"]
-                    name = ft["properties"]["dtname"]
-                    state = ft["properties"]["stname"]
-                    state_code = ft["properties"]["stcode11"]
+                    code = ft["properties"]["object_id"]
+                    name = ft["properties"]["District"]
+                    state = ft["properties"]["STATE"]
+                    state_code = "02" # TODO: add statecode to HP geojson
                     try:
                         parent_geo_obj = Geography.objects.get(
                             name__iexact=state, type="STATE"
