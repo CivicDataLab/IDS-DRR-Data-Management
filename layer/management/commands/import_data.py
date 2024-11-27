@@ -180,6 +180,7 @@ def migrate_geojson():
                                                        parentId=parent_geo_obj)
                     geo_object.name = name.capitalize()
                     geo_object.geom = geom
+                    geo_object.type = geo_type
                 except Geography.DoesNotExist:
                     geo_object = Geography(
                         name=name.capitalize(),
