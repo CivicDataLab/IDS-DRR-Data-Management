@@ -213,14 +213,11 @@ def migrate_data(filename=None):
             print(f"Processing row - {i}")
             try:
                 # Get the required geography object.
-                if "assam" in filename.lower():
-                    geography_obj = Geography.objects.get(Q(code=index), ~Q(type="STATE"))
-                else:
-                    geography_obj = Geography.objects.get(Q(code=index), ~Q(type="STATE"))
-                    # if pd.isna(row["district"]):
-                    #     geography_obj = Geography.objects.get(Q(code=str(row.sdtcode11).zfill(3)), ~Q(type="STATE"))
-                    # else:
-                    #     geography_obj = Geography.objects.get(Q(code=str(row.sdtcode11).zfill(5)), ~Q(type="STATE"))
+                geography_obj = Geography.objects.get(Q(code=index), ~Q(type="STATE"))
+                # if pd.isna(row["district"]):
+                #     geography_obj = Geography.objects.get(Q(code=str(row.sdtcode11).zfill(3)), ~Q(type="STATE"))
+                # else:
+                #     geography_obj = Geography.objects.get(Q(code=str(row.sdtcode11).zfill(5)), ~Q(type="STATE"))
                 # Filter visible columns for Districts (Only factors, no variables).
                 # if geography_obj.type == "DISTRICT":
                 #     reqd_columns = reqd_columns.filter(
