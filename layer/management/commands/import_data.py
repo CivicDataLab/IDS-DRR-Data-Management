@@ -191,34 +191,6 @@ def migrate_geojson():
                     )
                 geo_object.save()
 
-def addDataRow(row, state="assam"):
-    try:
-        if "assam" in filename.lower():
-            geography_obj = Geography.objects.get(Q(code=row.name), ~Q(type="STATE"))
-        else:
-            if pd.isna(row["district-name"]):
-                geography_obj = Geography.objects.get(Q(code=str(row.sdtcode11).zfill(3)), ~Q(type="STATE"))
-            else:
-                geography_obj = Geography.objects.get(Q(code=str(row.sdtcode11).zfill(5)), ~Q(type="STATE"))
-    except:
-        print(f"Failed to find geography for: {row}")
-    else:
-        for indc_obj in reqd_columns:
-            existing = Data.objects.filter(indicator__slug=indc_obj.slug, geography__code=geography_obj.code,
-                                           data_period=row.timeperiod)
-            if existing.exists():
-                [e.delete() for e in existing]
-            data_obj = Data(
-                    pk=pk,
-                    value=row[f"{indc_obj.slug}"],
-                    indicator=indc_obj,
-                    geography=geography_obj,
-                    data_period=row.timeperiod,
-            )
-            return data_obj
-            pk += 1
-
-
 def migrate_data(filename=None):
     # Get all the data files from the directory.
     files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
