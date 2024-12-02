@@ -5,6 +5,8 @@ Intelligent Data Solution - Disaster Risk Reduction(IDS-DRR) is a system to assi
 Make migration for layers app: `python manage.py makemigrations`
 Run migrations: `python manage.py migrate`
 Import data: `python manage.py migrate_data`
+Import data for specific state: `python manage.py migrate_data --state assam|HP`
+Import data for specific district from a state: `python manage.py migrate_data --state assam --district 201`
 
 ## License:
 All content in this repository is licensed under
