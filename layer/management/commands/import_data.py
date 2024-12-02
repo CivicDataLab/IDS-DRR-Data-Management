@@ -101,12 +101,14 @@ def migrate_geojson():
     files = sorted(glob.glob(os.getcwd() + "/layer/assets/geojson/*.geojson"))
     sorted_files = sorted(
         files,
-        key=lambda x: ("_district" not in os.path.basename(x), os.path.basename(x)),
+        key=lambda x: ("_district" not in os.path.basename(x),
+                       os.path.basename(x)),
     )
 
     for filename in sorted_files:
         with open(filename) as f:
-            print(f"Adding data from {os.path.basename(filename)} to database....")
+            print(
+                f"Adding data from {os.path.basename(filename)} to database....")
             data = json.load(f)
 
             file_name = data["name"]
@@ -152,7 +154,7 @@ def migrate_geojson():
                     code = ft["properties"]["object_id"]
                     name = ft["properties"]["District"]
                     state = ft["properties"]["STATE"]
-                    state_code = "02" # TODO: add statecode to HP geojson
+                    state_code = "02"  # TODO: add statecode to HP geojson
                     try:
                         parent_geo_obj = Geography.objects.get(
                             name__iexact=state, type="STATE"
@@ -168,13 +170,15 @@ def migrate_geojson():
                     code = ft["properties"]["sdtcode11"]
                     name = ft["properties"]["sdtname"]
                     dtcode = ft["properties"]["dtcode11"]
-                    parent_geo_obj = Geography.objects.get(code=dtcode, type="DISTRICT")
+                    parent_geo_obj = Geography.objects.get(
+                        code=dtcode, type="DISTRICT")
                 elif file_name == "hp_tehsil_temp":
                     geo_type = "TEHSIL"
                     code = ft["properties"]["object_id"]
                     name = ft["properties"]["TEHSIL"]
                     dtcode = f'02-{ft["properties"]["dtcode11"]}'
-                    parent_geo_obj = Geography.objects.get(code=dtcode, type="DISTRICT")
+                    parent_geo_obj = Geography.objects.get(
+                        code=dtcode, type="DISTRICT")
                 try:
                     geo_object = Geography.objects.get(code=code,
                                                        parentId=parent_geo_obj)
@@ -191,6 +195,7 @@ def migrate_geojson():
                     )
                 geo_object.save()
 
+
 def migrate_data(filename=None):
     # Get all the data files from the directory.
     files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
@@ -202,7 +207,8 @@ def migrate_data(filename=None):
         time.sleep(3)
 
         # Using object-id as index, so they can be used as str and not int or float.
-        df = pd.read_csv(filename, index_col="object-id", dtype={"object-id": str, "sdtcode11": str, "objectid": str})
+        df = pd.read_csv(filename, index_col="object-id",
+                         dtype={"object-id": str, "sdtcode11": str, "objectid": str})
         print(f"Total no of rows available - {df.shape[0]}")
         # Get all columns visible on the platform from DB.
         reqd_columns = Indicators.objects.filter(is_visible=True)
@@ -213,7 +219,8 @@ def migrate_data(filename=None):
             print(f"Processing row - {i}")
             try:
                 # Get the required geography object.
-                geography_obj = Geography.objects.get(Q(code=index), ~Q(type="STATE"))
+                geography_obj = Geography.objects.get(
+                    Q(code=index), ~Q(type="STATE"))
                 # if pd.isna(row["district"]):
                 #     geography_obj = Geography.objects.get(Q(code=str(row.sdtcode11).zfill(3)), ~Q(type="STATE"))
                 # else:
