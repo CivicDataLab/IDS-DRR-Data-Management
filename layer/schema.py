@@ -608,6 +608,21 @@ def get_child_indicators(parent_id: Optional[int] = None) -> typing.List:
     return indicator_list
 
 
+def get_states():
+    all_states = Geography.objects.filter(type="STATE")
+    states = []
+    for state in all_states:
+        state_details = {}
+        state_details["name"] = state.name
+        state_details["slug"] = state.slug
+        state_details["code"] = state.code
+        print(Geography.objects.filter(parentId__parentId__code=state.code))
+        state_details["child_type"] = Geography.objects.filter(parentId__parentId__code=state.code).first().type
+        states.append(state_details)
+    return states
+
+
+
 @strawberry.type
 class Query:  # camelCase
     indicators: JSON = strawberry_django.field(resolver=get_indicators)
@@ -624,6 +639,7 @@ class Query:  # camelCase
     getDistrictRevCircle: JSON = strawberry_django.field(
         resolver=get_district_rev_circle
     )
+    getStates:JSON = strawberry_django.field(resolver=get_states)
 
 
 schema = strawberry.Schema(
