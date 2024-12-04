@@ -196,7 +196,10 @@ def migrate_geojson():
                 geo_object.save()
 
 
-counter = Data.objects.last().pk + 1
+if Data.objects.last() is not None:
+    counter = Data.objects.last().pk
+else:
+    counter = 0
 
 
 def generate_pk():
