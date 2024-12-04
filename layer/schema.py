@@ -322,12 +322,14 @@ def get_revenue_data(
 
     for geo in geo_queryset:
         for obj in rc_data_queryset.filter(geography=geo, indicator__is_visible=True):
+            data_dict["type"] = obj.geography.type.lower()
             data_dict[obj.geography.type.lower().replace(" ", "-")] = obj.geography.name
             data_dict[(obj.geography.type + " code").lower().replace(" ", "-")] = (
                 obj.geography.code
             )
             if obj.geography.parentId:
                 parent = obj.geography.parentId
+                data_dict["parent_type"] = parent.type.lower()
                 data_dict[parent.type.lower().replace(" ", "-")] = parent.name
                 data_dict[(parent.type.lower() + " code").lower().replace(" ", "-")] = (
                     parent.code
