@@ -7,9 +7,10 @@ from typing import Optional
 import strawberry
 import strawberry_django
 from dateutil.relativedelta import relativedelta
+from django.contrib.gis.db.models.functions import Centroid, MakeValid
+from django.contrib.gis.db.models.aggregates import Union
 from django.core.serializers import serialize
 from django.db.models import F, Q
-from graphql import GraphQLError
 from strawberry.scalars import JSON
 from strawberry_django.optimizer import DjangoOptimizerExtension
 import geojson
@@ -618,8 +619,11 @@ def get_states():
         state_details["name"] = state.name
         state_details["slug"] = state.slug
         state_details["code"] = state.code
-        print(Geography.objects.filter(parentId__parentId__code=state.code))
         state_details["child_type"] = Geography.objects.filter(parentId__parentId__code=state.code).first().type
+        valid_geometries = Geography.objects.filter(parentId=state).annotate(valid_geom=MakeValid("geom"))
+        state_geometry = valid_geometries.aggregate(union_geometry=Union("valid_geom"))["union_geometry"]
+        state_centroid = state_geometry.centroid if state_geometry else None
+        state_details["center"] = (state_centroid.y, state_centroid.x)
         states.append(state_details)
     return states
 
