@@ -31,6 +31,12 @@ class Geography(models.Model):
         "self", on_delete=models.CASCADE, null=True, default="", blank=True
     )
     geom = models.MultiPolygonField(null=True, blank=True)
+    slug = models.SlugField(max_length=200, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(f"{self.name}")
+        return super().save(*args, **kwargs)
 
 
 class Department(models.Model):
