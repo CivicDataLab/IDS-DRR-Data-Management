@@ -252,6 +252,11 @@ def import_state_data(df, indicators, g_code=None):
         [import_geography_data(df, indicators, g_code)
          for g_code in df.index.unique()]
 
+def filter_indicators(df, indicators):
+    cleaned_indicator = [ind for ind in indicators if ind.slug in df.columns]
+    if missing := [ind.slug for ind in indicators if ind.slug not in df.columns]:
+        print(f"Indicators: {', '.join(missing)} missing")
+    return cleaned_indicator
 
 class Command(BaseCommand):
     def add_arguments(self, parser):
@@ -282,11 +287,11 @@ class Command(BaseCommand):
             df = pd.read_csv(filename, index_col="object-id",
                              dtype={"object-id": str, "sdtcode11": str, "objectid": str})
             if options["district"]:
-                import_state_data(df, indicators, options["district"])
+                import_state_data(df, filter_indicators(df, indicators), options["district"])
             else:
-                import_state_data(df, indicators)
+                import_state_data(df, filter_indicators(df, indicators))
         else:
             for filename in files:
                 df = pd.read_csv(filename, index_col="object-id",
                                  dtype={"object-id": str, "sdtcode11": str, "objectid": str})
-                import_state_data(df, indicators)
+                import_state_data(df, filter_indicators(df, indicators))
