@@ -230,15 +230,9 @@ def import_geography_data(df, indicators, g_code):
         print(f"Geography location for: {g_code} is missing")
     else:
         print(f"Updating datapoints for: {geography_obj.name}")
-        data_count = Data.objects.filter(
-            geography__code=geography_obj.code).count()
-        if data_count:
-            print(f"Existing data entries: {data_count}")
-            print("Deleting existing entries")
-            Data.objects.filter(
-                geography__code=geography_obj.code).all().delete()
-            print(
-                f"Cleaned data entries: {Data.objects.filter(geography__code=geography_obj.code).count()}")
+        for row in rows.itertuples():
+            if Data.objects.filter(geography__code=geography_obj.code, data_period=row.timeperiod).count():
+                Data.objects.filter(geography__code=geography_obj.code, data_period=row.timeperiod).all().delete()
         for index, row in rows.iterrows():
             data_objects = []
             for indicator in indicators:
@@ -249,7 +243,6 @@ def import_geography_data(df, indicators, g_code):
             Data.objects.bulk_create(data_objects)
         updated_data_count = Data.objects.filter(
             geography__code=geography_obj.code).count()
-        print(f"Updated data entries: {updated_data_count}")
 
 
 def import_state_data(df, indicators, g_code=None):
