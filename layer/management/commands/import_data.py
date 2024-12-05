@@ -101,12 +101,14 @@ def migrate_geojson():
     files = sorted(glob.glob(os.getcwd() + "/layer/assets/geojson/*.geojson"))
     sorted_files = sorted(
         files,
-        key=lambda x: ("_district" not in os.path.basename(x), os.path.basename(x)),
+        key=lambda x: ("_district" not in os.path.basename(x),
+                       os.path.basename(x)),
     )
 
     for filename in sorted_files:
         with open(filename) as f:
-            print(f"Adding data from {os.path.basename(filename)} to database....")
+            print(
+                f"Adding data from {os.path.basename(filename)} to database....")
             data = json.load(f)
 
             file_name = data["name"]
@@ -152,7 +154,7 @@ def migrate_geojson():
                     code = ft["properties"]["object_id"]
                     name = ft["properties"]["District"]
                     state = ft["properties"]["STATE"]
-                    state_code = "02" # TODO: add statecode to HP geojson
+                    state_code = "02"  # TODO: add statecode to HP geojson
                     try:
                         parent_geo_obj = Geography.objects.get(
                             name__iexact=state, type="STATE"
@@ -168,13 +170,15 @@ def migrate_geojson():
                     code = ft["properties"]["sdtcode11"]
                     name = ft["properties"]["sdtname"]
                     dtcode = ft["properties"]["dtcode11"]
-                    parent_geo_obj = Geography.objects.get(code=dtcode, type="DISTRICT")
+                    parent_geo_obj = Geography.objects.get(
+                        code=dtcode, type="DISTRICT")
                 elif file_name == "hp_tehsil_temp":
                     geo_type = "TEHSIL"
                     code = ft["properties"]["object_id"]
                     name = ft["properties"]["TEHSIL"]
                     dtcode = f'02-{ft["properties"]["dtcode11"]}'
-                    parent_geo_obj = Geography.objects.get(code=dtcode, type="DISTRICT")
+                    parent_geo_obj = Geography.objects.get(
+                        code=dtcode, type="DISTRICT")
                 try:
                     geo_object = Geography.objects.get(code=code,
                                                        parentId=parent_geo_obj)
@@ -191,100 +195,103 @@ def migrate_geojson():
                     )
                 geo_object.save()
 
-def addDataRow(row, state="assam"):
+
+if Data.objects.last() is not None:
+    counter = Data.objects.last().pk
+else:
+    counter = 0
+
+
+def generate_pk():
+    global counter
+    counter += 1
+    return counter
+
+
+def addDataRow(row, geography_obj, indicator):
+    data_obj = Data(
+        pk=generate_pk(),
+        value=row[f"{indicator.slug}"],
+        indicator=indicator,
+        geography=geography_obj,
+        data_period=row.timeperiod,
+    )
+    return data_obj
+
+
+def import_geography_data(df, indicators, g_code):
+    rows = df[df.index == g_code]
+    if rows.empty:
+        print(f"No entries in the state for geography code: {g_code}")
+        return
     try:
-        if "assam" in filename.lower():
-            geography_obj = Geography.objects.get(Q(code=row.name), ~Q(type="STATE"))
-        else:
-            if pd.isna(row["district-name"]):
-                geography_obj = Geography.objects.get(Q(code=str(row.sdtcode11).zfill(3)), ~Q(type="STATE"))
-            else:
-                geography_obj = Geography.objects.get(Q(code=str(row.sdtcode11).zfill(5)), ~Q(type="STATE"))
-    except:
-        print(f"Failed to find geography for: {row}")
+        geography_obj = Geography.objects.get(Q(code=g_code), ~Q(type="STATE"))
+    except Exception as e:
+        print(f"Geography location for: {g_code} is missing")
     else:
-        for indc_obj in reqd_columns:
-            existing = Data.objects.filter(indicator__slug=indc_obj.slug, geography__code=geography_obj.code,
-                                           data_period=row.timeperiod)
-            if existing.exists():
-                [e.delete() for e in existing]
-            data_obj = Data(
-                    pk=pk,
-                    value=row[f"{indc_obj.slug}"],
-                    indicator=indc_obj,
-                    geography=geography_obj,
-                    data_period=row.timeperiod,
-            )
-            return data_obj
-            pk += 1
-
-
-def migrate_data(filename=None):
-    # Get all the data files from the directory.
-    files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
-    # Iterate over all the files.
-    for filename in files:
-        print("--------")
-        print(f"Addind data from {os.path.basename(filename)} to database....")
-        print("--------")
-        time.sleep(3)
-
-        # Using object-id as index, so they can be used as str and not int or float.
-        df = pd.read_csv(filename, index_col="object-id", dtype={"object-id": str, "sdtcode11": str, "objectid": str})
-        print(f"Total no of rows available - {df.shape[0]}")
-        # Get all columns visible on the platform from DB.
-        reqd_columns = Indicators.objects.filter(is_visible=True)
-
-        i = 1
-        # Iterate over each row and save the data in DB.
-        for index, row in df.iterrows():
-            print(f"Processing row - {i}")
-            try:
-                # Get the required geography object.
-                if "assam" in filename.lower():
-                    geography_obj = Geography.objects.get(Q(code=index), ~Q(type="STATE"))
+        print(f"Updating datapoints for: {geography_obj.name}")
+        for row in rows.itertuples():
+            if Data.objects.filter(geography__code=geography_obj.code, data_period=row.timeperiod).count():
+                Data.objects.filter(geography__code=geography_obj.code, data_period=row.timeperiod).all().delete()
+        for index, row in rows.iterrows():
+            data_objects = []
+            for indicator in indicators:
+                if indicator.slug in df.columns:
+                    data_objects.append(addDataRow(row, geography_obj, indicator))
                 else:
-                    geography_obj = Geography.objects.get(Q(code=index), ~Q(type="STATE"))
-                    # if pd.isna(row["district"]):
-                    #     geography_obj = Geography.objects.get(Q(code=str(row.sdtcode11).zfill(3)), ~Q(type="STATE"))
-                    # else:
-                    #     geography_obj = Geography.objects.get(Q(code=str(row.sdtcode11).zfill(5)), ~Q(type="STATE"))
-                # Filter visible columns for Districts (Only factors, no variables).
-                # if geography_obj.type == "DISTRICT":
-                #     reqd_columns = reqd_columns.filter(
-                #         Q(parent__slug="risk-score") | Q(slug="risk-score")
-                #     )
-            except Exception as e:
-                print(e, row)
-                break
+                    print(f"Indicator {indicator.slug} missing for {geography_obj.name}")
+            Data.objects.bulk_create(data_objects)
+        updated_data_count = Data.objects.filter(
+            geography__code=geography_obj.code).count()
 
-            # Iterating over each indicator.
-            # Each row has data for every indicator(factors+variables) for a time period.
-            for indc_obj in reqd_columns:
-                print(f"Adding data for RC - {geography_obj.name}")
-                print(f"Adding data for Indicator - {indc_obj.slug}")
-                existing = Data.objects.filter(indicator__slug=indc_obj.slug, geography__code=geography_obj.code,
-                                               data_period=row.timeperiod)
-                if existing.exists():
-                    print(
-                        f"Deleting existing objects for {indc_obj.slug} in {geography_obj.name} for period {row.timeperiod}")
-                    [e.delete() for e in existing]
-                try:
-                    data_obj = Data(
-                        value=row[f"{indc_obj.slug}"],
-                        indicator=indc_obj,
-                        geography=geography_obj,
-                        data_period=row.timeperiod,
-                    )
-                    data_obj.save()
-                except KeyError:
-                    continue
-            i += 1
-        print(f"Total rows added to DB - {i}")
 
+def import_state_data(df, indicators, g_code=None):
+    if g_code:
+        import_geography_data(df, indicators, g_code)
+    else:
+        [import_geography_data(df, indicators, g_code)
+         for g_code in df.index.unique()]
+
+def filter_indicators(df, indicators):
+    cleaned_indicator = [ind for ind in indicators if ind.slug in df.columns]
+    if missing := [ind.slug for ind in indicators if ind.slug not in df.columns]:
+        print(f"Indicators: {', '.join(missing)} missing")
+    return cleaned_indicator
 
 class Command(BaseCommand):
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--state",
+            help="Ingest data just for the state",
+        )
+        parser.add_argument(
+            "--district",
+            help="District code to import the data",
+        )
+
     def handle(self, *args, **options):
         migrate_geojson()
         migrate_indicators()
-        migrate_data()
+
+        files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
+        indicators = [
+            indicator for indicator in Indicators.objects.filter(is_visible=True)]
+        if options["state"]:
+            files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
+            state_files = [
+                filename for filename in files if options["state"].lower() in filename.lower()]
+            if not state_files:
+                raise CommandError(
+                    f"Data file for state {options['state']} missing.")
+            filename = state_files[0]
+            df = pd.read_csv(filename, index_col="object-id",
+                             dtype={"object-id": str, "sdtcode11": str, "objectid": str})
+            if options["district"]:
+                import_state_data(df, filter_indicators(df, indicators), options["district"])
+            else:
+                import_state_data(df, filter_indicators(df, indicators))
+        else:
+            for filename in files:
+                df = pd.read_csv(filename, index_col="object-id",
+                                 dtype={"object-id": str, "sdtcode11": str, "objectid": str})
+                import_state_data(df, filter_indicators(df, indicators))
