@@ -590,7 +590,7 @@ def get_district_rev_circle(geo_filter: types.GeoFilter):
                 for rc_data in rc_obj:
                     data_list.append(
                         {
-                            f"{data.type.lower().replace(' ', '-')}": rc_data.name,
+                            f"{data.type}": rc_data.name,
                             "code": rc_data.code,
                             "district_code": data.parentId.code,
                         }
