@@ -11,7 +11,7 @@ from layer.models import Data, Geography, Indicators, Unit
 
 
 def migrate_indicators(filename="layer/assets/data_dict.csv"):
-    df = pd.read_csv(filename, dtype=str)
+    df = pd.read_csv(filename)
 
     for row in df.itertuples(index=False):
         print("Processing Indicator -", row.indicatorSlug)
@@ -24,24 +24,24 @@ def migrate_indicators(filename="layer/assets/data_dict.csv"):
             parent_obj = _get_indicator_parent_from_row(row)
 
             indicator_obj = Indicators(
-                name=str(row.indicatorTitle).strip(),
+                name=row.indicatorTitle.strip(),
                 slug=(
-                    str(row.indicatorSlug).lower().strip() if row.indicatorSlug else None
+                    row.indicatorSlug.lower().strip() if row.indicatorSlug else None
                 ),
                 long_description=(
-                    str(row.indicatorDescription).strip()
+                    row.indicatorDescription.strip()
                     if row.indicatorDescription
                     else None
                 ),
                 # short_description = row.indicatorDescription if row.indicatorDescription else None,
                 category=(
-                    str(row.indicatorCategory).strip() if row.indicatorCategory else None
+                    row.indicatorCategory.strip() if row.indicatorCategory else None
                 ),
                 # type = row.indicatorType if row.indicatorType else None
                 unit=unit_obj,
-                data_source=str(row.datasource).strip() if row.datasource else None,
+                data_source=row.dataSource.strip() if row.dataSource else None,
                 parent=parent_obj,
-                is_visible=True if row.visible_on_platform == "y" else False,
+                is_visible=True if row.visible == "y" else False,
             )
             indicator_obj.save()
             print("Added indicator to the database.")
