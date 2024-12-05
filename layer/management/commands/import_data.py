@@ -144,8 +144,7 @@ def migrate_geojson():
                     geo_type = "REVENUE CIRCLE"
                     code = ft["properties"]["object_id"]
                     name = ft["properties"]["revenue_ci"]
-                    district = ft["properties"]["district_3"]
-
+                    district = ft["properties"]["dtname"]
                     parent_geo_obj = Geography.objects.get(
                         name__iexact=district, type="DISTRICT"
                     )
