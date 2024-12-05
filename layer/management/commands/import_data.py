@@ -179,6 +179,28 @@ def migrate_geojson():
                     dtcode = f'02-{ft["properties"]["dtcode11"]}'
                     parent_geo_obj = Geography.objects.get(
                         code=dtcode, type="DISTRICT")
+                elif file_name == "odisha_district":
+                    geo_type = "DISTRICT"
+                    code = ft["properties"]["object_id"]
+                    name = ft["properties"]["dtname"]
+                    state = "ODISHA"
+                    state_code = "21"
+                    try:
+                        parent_geo_obj = Geography.objects.get(
+                            name__iexact=state, type="STATE"
+                        )
+                    except Geography.DoesNotExist:
+                        parent_geo_obj = Geography(
+                            name=state.capitalize(), code=state_code, type="STATE"
+                        )
+                        parent_geo_obj.save()
+                elif file_name == "odisha_block":
+                    geo_type = "BLOCK"
+                    code = ft["properties"]["object_id"]
+                    name = ft["properties"]["block_name"]
+                    dtcode = f'21-{ft["properties"]["dtcode11"]}'
+                    parent_geo_obj = Geography.objects.get(
+                        code=dtcode, type="DISTRICT")
                 try:
                     geo_object = Geography.objects.get(code=code,
                                                        parentId=parent_geo_obj)
@@ -259,7 +281,20 @@ def filter_indicators(df, indicators):
     return cleaned_indicator
 
 class Command(BaseCommand):
+    """
+    A Django management command for importing geographical and indicator data.
+
+    This command migrates geojson data, migrates indicators, and imports state and district data
+    from CSV files. It can be run for all states or a specific state and district.
+    """
+
     def add_arguments(self, parser):
+        """
+        Add command line arguments to the parser.
+
+        Args:
+            parser (ArgumentParser): The argument parser instance.
+        """
         parser.add_argument(
             "--state",
             help="Ingest data just for the state",
@@ -270,6 +305,26 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        """
+        Execute the command to import geographical and indicator data.
+
+        This method performs the following steps:
+        1. Migrates geojson data
+        2. Migrates indicators
+        3. Imports state and/or district data from CSV files
+
+        Args:
+            *args: Variable length argument list.
+            **options: Arbitrary keyword arguments. Expected keys are:
+                - state (str, optional): The name of the state to import data for.
+                - district (str, optional): The district code to import data for.
+
+        Raises:
+            CommandError: If the data file for the specified state is missing.
+
+        Returns:
+            None
+        """
         migrate_geojson()
         migrate_indicators()
 
