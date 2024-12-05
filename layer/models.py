@@ -79,7 +79,7 @@ class Indicators(models.Model):
         blank=True,
         help_text="Defines the type of indicator that is Raw, Derived, etc.",
     )
-    slug = models.SlugField(max_length=50, null=True, blank=True)
+    slug = models.SlugField(max_length=200, null=True, blank=True)
     unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True, blank=True)
     geography = models.ForeignKey(
         Geography, on_delete=models.PROTECT, null=True, blank=True
@@ -87,7 +87,7 @@ class Indicators(models.Model):
     department = models.ForeignKey(
         Department, on_delete=models.PROTECT, null=True, blank=True
     )
-    data_source = models.CharField(max_length=100, null=True, blank=True)
+    data_source = models.CharField(max_length=150, null=True, blank=True)
     # page = models.ManyToManyField(Page, blank=True)
     scheme = models.ForeignKey(Scheme, on_delete=models.PROTECT, null=True, blank=True)
     parent = models.ForeignKey(
