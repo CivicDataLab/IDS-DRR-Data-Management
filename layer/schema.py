@@ -615,11 +615,8 @@ def get_states():
     all_states = Geography.objects.filter(type="STATE")
     states = []
     for state in all_states:
-        state_details = {}
-        state_details["name"] = state.name
-        state_details["slug"] = state.slug
-        state_details["code"] = state.code
-        state_details["child_type"] = Geography.objects.filter(parentId__parentId__code=state.code).first().type
+        state_details = {"name": state.name, "slug": state.slug, "code": state.code,
+                         "child_type": Geography.objects.filter(parentId__parentId__code=state.code).first().type}
         valid_geometries = Geography.objects.filter(parentId=state).annotate(valid_geom=MakeValid("geom"))
         state_geometry = valid_geometries.aggregate(union_geometry=Union("valid_geom"))["union_geometry"]
         state_centroid = state_geometry.centroid if state_geometry else None
