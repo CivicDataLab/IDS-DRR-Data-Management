@@ -273,11 +273,38 @@ def import_state_data(df, indicators, g_code=None):
         [import_geography_data(df, indicators, g_code)
          for g_code in df.index.unique()]
 
+
 def filter_indicators(df, indicators):
     cleaned_indicator = [ind for ind in indicators if ind.slug in df.columns]
     if missing := [ind.slug for ind in indicators if ind.slug not in df.columns]:
         print(f"Indicators: {', '.join(missing)} missing")
     return cleaned_indicator
+
+
+def update_data(state, district):
+    files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
+    indicators = [
+        indicator for indicator in Indicators.objects.filter(is_visible=True)]
+    if state:
+        files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
+        state_files = [
+            filename for filename in files if state.lower() in filename.lower()]
+        if not state_files:
+            raise CommandError(
+                f"Data file for state {state} missing.")
+        filename = state_files[0]
+        df = pd.read_csv(filename, index_col="object-id",
+                         dtype={"object-id": str, "sdtcode11": str, "objectid": str})
+        if district:
+            import_state_data(df, filter_indicators(df, indicators), district)
+        else:
+            import_state_data(df, filter_indicators(df, indicators))
+    else:
+        for filename in files:
+            df = pd.read_csv(filename, index_col="object-id",
+                             dtype={"object-id": str, "sdtcode11": str, "objectid": str})
+            import_state_data(df, filter_indicators(df, indicators))
+
 
 class Command(BaseCommand):
     """
@@ -326,26 +353,6 @@ class Command(BaseCommand):
         """
         migrate_geojson()
         migrate_indicators()
-
-        files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
-        indicators = [
-            indicator for indicator in Indicators.objects.filter(is_visible=True)]
-        if options["state"]:
-            files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
-            state_files = [
-                filename for filename in files if options["state"].lower() in filename.lower()]
-            if not state_files:
-                raise CommandError(
-                    f"Data file for state {options['state']} missing.")
-            filename = state_files[0]
-            df = pd.read_csv(filename, index_col="object-id",
-                             dtype={"object-id": str, "sdtcode11": str, "objectid": str})
-            if options["district"]:
-                import_state_data(df, filter_indicators(df, indicators), options["district"])
-            else:
-                import_state_data(df, filter_indicators(df, indicators))
-        else:
-            for filename in files:
-                df = pd.read_csv(filename, index_col="object-id",
-                                 dtype={"object-id": str, "sdtcode11": str, "objectid": str})
-                import_state_data(df, filter_indicators(df, indicators))
+        state = options.get("state", None)
+        district = options.get("district", None)
+        update_data(state, district)
