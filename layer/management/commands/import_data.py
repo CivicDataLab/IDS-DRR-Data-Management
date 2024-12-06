@@ -283,9 +283,9 @@ def filter_indicators(df, indicators):
 
 def update_data(state, district):
     files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
-    indicators = [
-        indicator for indicator in Indicators.objects.filter(is_visible=True, geography__name__iexact=state)]
     if state:
+        indicators = [
+            indicator for indicator in Indicators.objects.filter(is_visible=True, geography__name__iexact=state)]
         files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
         state_files = [
             filename for filename in files if state.lower() in filename.lower()]
@@ -303,6 +303,11 @@ def update_data(state, district):
         for filename in files:
             df = pd.read_csv(filename, index_col="object-id",
                              dtype={"object-id": str, "sdtcode11": str, "objectid": str})
+            state = filename.split('/')[-1].replace("_data.csv", "")
+            state = state.replace("_", " ")
+            print(state)
+            indicators = [
+                indicator for indicator in Indicators.objects.filter(is_visible=True, geography__name__iexact=state)]
             import_state_data(df, filter_indicators(df, indicators))
 
 
