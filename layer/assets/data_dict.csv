@@ -29,17 +29,11 @@ drainage-density,Drainage density,Drainage density is a measurement of the sum o
 distance-from-river,Distance from the river,Average distance from river,27,Hazard,Hazard,km,WRIS,,,,,,,,
 mean-ndbi,Mean NDBI,Mean Normalised Difference Building Index (NDBI) value for the region,69,Hazard,Hazard,(Ratio),SENTINEL,,,,,,Creative Commons CC BY-SA 3.0 IGO,,
 exposure,Exposure,Exposures of vulnerable population and assets to hazards,56,Exposure,Overall Flood Risk,Score,,,,,,,,,
-sexratio,Sex Ratio,Total number of females per 1000 male population,48,Exposure,Exposure,,WORLDPOP,y,,,,,,,
 total-hhd,Total Number of Households*,Total number of households,26,Exposure,Exposure,,MISSION ANTYODAYA 2020,y,annually,y,y,sum,GODL,,"30-May: no unit, round off (no decimals)"
 sum-population,Population*,Total number of people residing in the region,45,Exposure,Exposure,,WORLDPOP,y,annually,y,y,sum,Creative Commons Attribution 4.0 International License,,"30-May: Remove population (not necessary since households number takes care of it)
 Keep sex ratio: add a row for this - no unit, round off to 2 decimal points"
 vulnerability,Vulnerability,"Physical, Social, Economic, and Environmental vulnerabilities which increase susceptibility of an area or a community to impact of hazards",138,Vulnerability,Overall Flood Risk,Score,MODEL,y,,,,,,,"30-May: Add ""Score"""
-Lives Loss,,,,,,,,y,monthly,,n,,,,
-lives-missing,Lives missing?? Is data available?,,,,,,,n,monthly,,n,,,,
-Population Affected,,,,,,,,y,monthly,,y,max,,,
-Crop Area Affected,,,,,,,,y,monthly,,y,max,,,
-"Infrastructure Damages (Roads, Embankments, Bridges)- DRIMS",,,,,,,,n,monthly,,y (individually),,,,
-Gender Ratio,,,,,,,,y,annually,,y,mean,,,
+lives-missing,Lives missing?? Is data available?,,,,Vulnerability,,,n,monthly,,n,,,,
 health-centres-count,Number of Health Centres,Number of health centres in the region,38,Vulnerability,Vulnerability,Number,BHARATMAPS,y,annually,y,y,sum,,,"30-May: no units, round off - no decimal point"
 avg-electricity,Average availablity of domestic electricity,Average availablity of domestic electricity,43,Vulnerability,Vulnerability,hours,MISSION ANTYODAYA 2020,y,annually,y,y,mean,GODL,,
 rc-piped-hhds-pct,Percentage of households with piped water connection,Percentage of households with piped water connection,52,Vulnerability,Vulnerability,(Ratio),MISSION ANTYODAYA 2020,y,annually,y,y,mean,GODL,,
