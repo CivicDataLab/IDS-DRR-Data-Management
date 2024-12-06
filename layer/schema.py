@@ -499,33 +499,45 @@ def get_district_map_data(
     return geo_json
 
 
-def get_indicators(indc_filter: Optional[types.IndicatorFilter] = None) -> list:
-    # TODO: Return obj rather than formatted dict. [Faster]
-    """Return a list of indicators and associated data from the 'indicator' table.
+def get_indicators(indc_filter: Optional[types.IndicatorFilter] = None, state_code: int = None) -> list:
+    """
+    Retrieve a list of indicators and associated data from the 'indicator' table.
+
+    This function fetches indicators from the database, optionally filtered by the provided
+    IndicatorFilter. It returns a list of dictionaries containing details about each indicator.
 
     Args:
-        indc_filter (types.IndicatorFilter, optional): An IndicatorFilter object used
-        to filter data based on defined fields from types.py. Defaults to None.
+        indc_filter (Optional[types.IndicatorFilter]): An optional IndicatorFilter object used
+            to filter indicators based on defined fields from types.py. If provided, the function
+            will filter indicators by slug or parent slug. Defaults to None.
+        state_code (int): An integer representing the state code. Defaults to 18.
 
     Returns:
-        list: A list of dictionaries representing indicators and related data.
+        list: A list of dictionaries, where each dictionary represents an indicator and contains
+            the following keys: 'name', 'slug', 'long_description', 'short_description', 
+            'data_source', and 'unit__name'.
+
+    Note:
+        The function also prints the execution time, which might be useful for performance monitoring.
     """
-    starttime = timeit.default_timer()
+    start_time = timeit.default_timer()
     data_list = []
 
-    indc_obj = Indicators.objects.filter(is_visible=True)
+    indcators = Indicators.objects.filter(is_visible=True)
+    if state_code:
+        indcators = indcators.filter(geography__code=state_code)
     if indc_filter:
-        indc_obj = indc_obj.filter(
+        indcators = indcators.filter(
             Q(slug=indc_filter.slug) | Q(parent__slug=indc_filter.slug)
         )
 
-    data_queryset = indc_obj.values(
+    data_queryset = indcators.values(
         "name", "slug", "long_description", "short_description", "data_source", "unit__name"
     )
     for data in data_queryset:
         data_list.append(data)
 
-    print("The time difference is :", timeit.default_timer() - starttime)
+    print("The time difference is :", timeit.default_timer() - start_time)
     return data_list
 
 
@@ -626,7 +638,6 @@ def get_states():
     return states
 
 
-
 @strawberry.type
 class Query:  # camelCase
     indicators: JSON = strawberry_django.field(resolver=get_indicators)
@@ -643,7 +654,7 @@ class Query:  # camelCase
     getDistrictRevCircle: JSON = strawberry_django.field(
         resolver=get_district_rev_circle
     )
-    getStates:JSON = strawberry_django.field(resolver=get_states)
+    getStates: JSON = strawberry_django.field(resolver=get_states)
 
 
 schema = strawberry.Schema(
