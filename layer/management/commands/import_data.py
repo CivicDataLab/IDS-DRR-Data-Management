@@ -125,11 +125,11 @@ def migrate_geojson():
                 elif isinstance(geom, Polygon):
                     geom = MultiPolygon([geom])
 
-                if file_name == "assam_district_35":
+                if file_name == "assam_district":
                     geo_type = "DISTRICT"
-                    code = ft["properties"]["ID"]
-                    name = ft["properties"]["district"]
-                    state = ft["properties"]["state"]
+                    code = ft["properties"]["object_id"]
+                    name = ft["properties"]["dtname"]
+                    state = "Assam"
                     try:
                         parent_geo_obj = Geography.objects.get(
                             name__iexact=state, type="STATE"
