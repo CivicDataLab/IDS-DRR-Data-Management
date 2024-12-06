@@ -499,7 +499,7 @@ def get_district_map_data(
     return geo_json
 
 
-def get_indicators(indc_filter: Optional[types.IndicatorFilter] = None, state_code: int = None) -> list:
+def get_indicators(indc_filter: Optional[types.IndicatorFilter] = None, state_code: Optional[int] = None) -> list:
     """
     Retrieve a list of indicators and associated data from the 'indicator' table.
 
