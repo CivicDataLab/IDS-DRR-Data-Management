@@ -10,7 +10,7 @@ from django.db.models import Q
 from layer.models import Data, Geography, Indicators, Unit
 
 
-def migrate_indicators(filename="layer/assets/data_dict.csv"):
+def migrate_indicators(filename="layer/assets/indicators/data_dict.csv"):
     df = pd.read_csv(filename)
 
     for row in df.itertuples(index=False):
@@ -48,11 +48,11 @@ def migrate_indicators(filename="layer/assets/data_dict.csv"):
         print("---------------------------")
 
 
-def _get_indicator_parent_from_row(row):
+def _get_indicator_parent_from_row(row, state):
     parent_obj = None
     try:
         if row.parent and not isinstance(row.parent, float):
-            parent_obj = Indicators.objects.get(name=row.parent.strip())
+            parent_obj = Indicators.objects.get(name=row.parent.strip(), geography=state)
         else:
             pass
     except Indicators.DoesNotExist:
@@ -76,25 +76,25 @@ def _get_indicator_unit_form_row(row):
     return unit_obj
 
 
-def update_indicators(filename="layer/data_dict.csv"):
-    df = pd.read_csv(filename)
-    for row in df.itertuples(index=False):
-        slug = row.indicatorSlug
-        print("Processing Indicator -", slug)
-        try:
-            indicator = Indicators.objects.get(slug=slug.lower())
-            indicator.name = row.indicatorTitle.strip()
-            indicator.long_description = row.indicatorDescription.strip()
-            indicator.category = row.indicatorCategory.strip()
-            indicator.unit = _get_indicator_unit_form_row(row)
-            indicator.data_source = row.dataSource.strip() if row.dataSource else None
-            indicator.parent = _get_indicator_parent_from_row(row)
-            indicator.is_visible = True if row.visible == "y" else False
-            indicator.save()
-            print(f"updated Indicator - {slug}")
-
-        except Indicators.DoesNotExist:
-            print(f"Indicator with slug {slug} does not exist. ")
+# def update_indicators(filename="layer/data_dict.csv"):
+#     df = pd.read_csv(filename)
+#     for row in df.itertuples(index=False):
+#         slug = row.indicatorSlug
+#         print("Processing Indicator -", slug)
+#         try:
+#             indicator = Indicators.objects.get(slug=slug.lower())
+#             indicator.name = row.indicatorTitle.strip()
+#             indicator.long_description = row.indicatorDescription.strip()
+#             indicator.category = row.indicatorCategory.strip()
+#             indicator.unit = _get_indicator_unit_form_row(row)
+#             indicator.data_source = row.dataSource.strip() if row.dataSource else None
+#             indicator.parent = _get_indicator_parent_from_row(row)
+#             indicator.is_visible = True if row.visible == "y" else False
+#             indicator.save()
+#             print(f"updated Indicator - {slug}")
+#
+#         except Indicators.DoesNotExist:
+#             print(f"Indicator with slug {slug} does not exist. ")
 
 
 def migrate_geojson():
@@ -284,7 +284,7 @@ def filter_indicators(df, indicators):
 def update_data(state, district):
     files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
     indicators = [
-        indicator for indicator in Indicators.objects.filter(is_visible=True)]
+        indicator for indicator in Indicators.objects.filter(is_visible=True, geography__name__iexact=state)]
     if state:
         files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
         state_files = [
@@ -304,6 +304,54 @@ def update_data(state, district):
             df = pd.read_csv(filename, index_col="object-id",
                              dtype={"object-id": str, "sdtcode11": str, "objectid": str})
             import_state_data(df, filter_indicators(df, indicators))
+
+
+def import_state_indicators(df: pd.DataFrame, state: Geography):
+    for row in df.itertuples(index=False):
+        indicator_slug = getattr(row, 'indicatorSlug', '')
+        print("Processing Indicator -", indicator_slug)
+        try:
+            Indicators.objects.get(slug=indicator_slug.lower(), geography=state)
+            print("Already Exists!")
+        except Indicators.DoesNotExist:
+            unit = getattr(row, 'unit', '')
+            print("Processing Unit -", unit)
+            unit_obj = _get_indicator_unit_form_row(row)
+            parent_obj = _get_indicator_parent_from_row(row, state)
+
+            indicator_obj = Indicators(
+                name=str(getattr(row, 'indicatorTitle', '')).strip(),
+                slug=str(indicator_slug).lower().strip() if indicator_slug else None,
+                long_description=str(getattr(row, 'indicatorDescription', '')).strip() or None,
+                category=str(getattr(row, 'indicatorCategory', '')).strip() or None,
+                unit=unit_obj,
+                data_source=str(getattr(row, 'datasource', '')).strip() or None,
+                parent=parent_obj,
+                is_visible=str(getattr(row, 'visible_on_platform', '')) == "y",
+                geography=state
+            )
+            indicator_obj.save()
+            print("Added indicator to the database.")
+
+
+def update_indicators(state):
+    files = glob.glob(os.getcwd() + "/layer/assets/indicators/*_indicators.csv")
+    if state:
+        state_files = [filename for filename in files if state.lower() in filename.lower()]
+        if not state_files:
+            raise CommandError(f"Indicator file for state {state} missing.")
+        filename = state_files[0]
+        df = pd.read_csv(filename)
+        state = state.replace("_", " ")
+        state_geo = Geography.objects.get(name__iexact=state, type="STATE")
+        import_state_indicators(df, state_geo)
+    else:
+        for filename in files:
+            df = pd.read_csv(filename)
+            state = filename.split('/')[-1].replace("_indicators.csv", "")
+            state = state.replace("_", " ")
+            state_geo = Geography.objects.get(name__iexact=state, type="STATE")
+            import_state_indicators(df, state_geo)
 
 
 class Command(BaseCommand):
@@ -352,7 +400,8 @@ class Command(BaseCommand):
             None
         """
         migrate_geojson()
-        migrate_indicators()
+        # migrate_indicators()
         state = options.get("state", None)
         district = options.get("district", None)
+        update_indicators(state)
         update_data(state, district)
