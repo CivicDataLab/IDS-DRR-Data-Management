@@ -24,24 +24,24 @@ def migrate_indicators(filename="layer/assets/data_dict.csv"):
             parent_obj = _get_indicator_parent_from_row(row)
 
             indicator_obj = Indicators(
-                name=row.indicatorTitle.strip(),
+                name=str(row.indicatorTitle).strip(),
                 slug=(
-                    row.indicatorSlug.lower().strip() if row.indicatorSlug else None
+                    str(row.indicatorSlug).lower().strip() if row.indicatorSlug else None
                 ),
                 long_description=(
-                    row.indicatorDescription.strip()
+                    str(row.indicatorDescription).strip()
                     if row.indicatorDescription
                     else None
                 ),
                 # short_description = row.indicatorDescription if row.indicatorDescription else None,
                 category=(
-                    row.indicatorCategory.strip() if row.indicatorCategory else None
+                    str(row.indicatorCategory).strip() if row.indicatorCategory else None
                 ),
                 # type = row.indicatorType if row.indicatorType else None
                 unit=unit_obj,
-                data_source=row.dataSource.strip() if row.dataSource else None,
+                data_source=str(row.datasource).strip() if row.datasource else None,
                 parent=parent_obj,
-                is_visible=True if row.visible == "y" else False,
+                is_visible=True if str(row.visible_on_platform) == "y" else False,
             )
             indicator_obj.save()
             print("Added indicator to the database.")
