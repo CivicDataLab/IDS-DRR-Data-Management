@@ -618,7 +618,7 @@ def get_child_indicators(parent_id: Optional[int] = None, state_code: Optional[s
     indicator_list = []
     indicators = Indicators.objects.filter(parent__id=parent_id, is_visible=True)
     if state_code:
-        indicators.filter(geography__code=state_code)
+        indicators = indicators.filter(geography__code=state_code)
     for indicator in indicators:
         indicator_list.append(
             {"slug": indicator.slug, "name": indicator.name, "description": indicator.long_description,
