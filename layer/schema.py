@@ -7,6 +7,8 @@ from typing import Optional
 import strawberry
 import strawberry_django
 from dateutil.relativedelta import relativedelta
+from django.contrib.gis.db.models.functions import Centroid, MakeValid
+from django.contrib.gis.db.models.aggregates import Union
 from django.core.serializers import serialize
 from django.db.models import F, Q
 from strawberry.scalars import JSON
@@ -15,17 +17,25 @@ import geojson
 
 from D4D_ContextLayer.settings import DEFAULT_TIME_PERIOD
 from . import types
-from .models import Data, Geography, Indicators
-from .utils import bounding_box
+from layer.models import Data, Geography, Indicators
 
 
 # from .mutation import Mutation
 
 
+def bounding_box(coord_list):
+    box = []
+    for i in (0, 1):
+        res = sorted(coord_list, key=lambda x: x[i])
+        box.append((res[0][i], res[-1][i]))
+    ret = [[box[1][0], box[0][0]], [box[1][1], box[0][1]]]
+    return ret
+
+
 def get_district_data(
-    indc_filter: types.IndicatorFilter,
-    data_filter: types.DataFilter,
-    geo_filter: Optional[types.GeoFilter] = None,
+        indc_filter: types.IndicatorFilter,
+        data_filter: types.DataFilter,
+        geo_filter: types.GeoFilter,
 ) -> list[dict]:
     """Retrieve district-specific data based on specified filters.
 
@@ -53,19 +63,16 @@ def get_district_data(
     if data_filter:
         dataset_obj = dataset_obj.filter(data_period=data_filter.data_period)
 
-    if geo_filter:
-        if len(geo_filter.code) <= 1:
-            dataset_obj = dataset_obj.filter(
-                Q(geography__parentId__code__in=geo_filter.code)
-                | Q(geography__code__in=geo_filter.code)
-            )
-            geo_obj = Geography.objects.filter(
-                Q(code__in=geo_filter.code) | Q(parentId__code__in=geo_filter.code)
-            )
-        else:
-            geo_obj = Geography.objects.filter(code__in=geo_filter.code)
+    if len(geo_filter.code) <= 1:
+        dataset_obj = dataset_obj.filter(
+            Q(geography__parentId__code__in=geo_filter.code)
+            | Q(geography__code__in=geo_filter.code)
+        )
+        geo_obj = Geography.objects.filter(
+            Q(code__in=geo_filter.code) | Q(parentId__code__in=geo_filter.code)
+        )
     else:
-        geo_obj = Geography.objects.filter(type="DISTRICT")
+        geo_obj = Geography.objects.filter(code__in=geo_filter.code)
 
     for geo in geo_obj:
         for obj in dataset_obj.filter(geography=geo, indicator__is_visible=True):
@@ -73,11 +80,6 @@ def get_district_data(
             data_dict[obj.geography.type.lower().replace(" ", "-") + "-code"] = (
                 obj.geography.code
             )
-            # if obj.indicator.unit:
-            #     unit = obj.indicator.unit.name
-            #     data_dict[obj.indicator.name] = str(obj.value) + " " + unit
-            # else:
-            #     data_dict[obj.indicator.name] = str(obj.value)
             if obj.indicator.unit:
                 unit = obj.indicator.unit.name
                 data_dict[obj.indicator.slug] = {
@@ -94,9 +96,6 @@ def get_district_data(
             data_list.append(data_dict)
             data_dict = {}
 
-    # filter_key = Indicators.objects.get(slug=indc_filter.slug)
-    # data_list = sorted(data_list, key=lambda d: d[filter_key.name], reverse=True)
-    # data_list = sorted(data_list, key=lambda d: d[indc_filter.slug], reverse=True)
     data_list = sorted(
         data_list,
         key=lambda d: float(d[indc_filter.slug]["value"].split()[0]),
@@ -104,13 +103,13 @@ def get_district_data(
     )
 
     print("The time difference is :", timeit.default_timer() - starttime)
-    return data_list  # {"table_data": data_list}
+    return data_list
 
 
 def get_table_data(
-    indc_filter: Optional[types.IndicatorFilter]= None,
-    data_filter: Optional[types.DataFilter] = None,
-    geo_filter: Optional[types.GeoFilter] = None,
+        indc_filter: Optional[types.IndicatorFilter] = None,
+        data_filter: Optional[types.DataFilter] = None,
+        geo_filter: Optional[types.GeoFilter] = None,
 ) -> list[dict]:
     """Retrieve data to be displayed on table based on specified filters.
 
@@ -198,9 +197,9 @@ def get_table_data(
 
 
 def get_time_trends(
-    indc_filter: types.IndicatorFilter,
-    data_filter: types.DataFilter,
-    geo_filter: types.GeoFilter,
+        indc_filter: types.IndicatorFilter,
+        data_filter: types.DataFilter,
+        geo_filter: types.GeoFilter,
 ) -> dict:
     starttime = timeit.default_timer()
     """Retrieve time trends data based on specified filters.
@@ -244,8 +243,10 @@ def get_time_trends(
 
     # Filter the data.
     data_queryset = Data.objects.filter(
+        Q(geography__parentId__code__in=geo_filter.code)
+        | Q(geography__parentId__parentId__code__in=geo_filter.code)
+        | Q(geography__code__in=geo_filter.code),
         indicator__slug=indc_filter.slug,
-        geography__code__in=geo_filter.code,
         data_period__in=time_list,
     )
 
@@ -260,7 +261,9 @@ def get_time_trends(
         data_list = []
         filtered_queryset = data_queryset.filter(data_period=time)
         for data in filtered_queryset:
-            temp_dict[data.geography.type.lower()] = data.geography.name
+            temp_dict[data.geography.type.lower().replace(" ", "-")] = (
+                data.geography.name
+            )
             temp_dict[data.geography.type.lower().replace(" ", "-") + "-code"] = (
                 data.geography.code
             )
@@ -275,9 +278,9 @@ def get_time_trends(
 
 
 def get_revenue_data(
-    indc_filter: types.IndicatorFilter,
-    data_filter: types.DataFilter,
-    geo_filter: Optional[types.GeoFilter] = None,
+        indc_filter: types.IndicatorFilter,
+        data_filter: types.DataFilter,
+        geo_filter: Optional[types.GeoFilter] = None,
 ) -> list[dict]:
     starttime = timeit.default_timer()
     data_list = []
@@ -297,36 +300,37 @@ def get_revenue_data(
             mapping each to it's relevant data fields.
     """
 
-    geo_queryset = Geography.objects.filter(type="REVENUE CIRCLE")
-    if geo_filter:
-        geo_queryset = geo_queryset.filter(code__in=geo_filter.code)
+    # try:
+    #     # Set the type filter based on state.
+    #     geo_obj = Geography.objects.get(code__in=geo_filter.state_code, type="STATE")
+    #     if geo_obj.name.title() == "Himachal Pradesh":
+    #         geo_type = "TEHSIL"
+    #     else:
+    #         geo_type = "REVENUE CIRCLE"
+    #
+    #     # Geo object to iterate over.
+    #     geo_queryset = Geography.objects.filter(type=geo_type)
+    # except Geography.DoesNotExist:
+    #     raise GraphQLError("Invalid state code!!")
 
-    # rc_data_queryset = Data.objects.all()
+    geo_queryset = Geography.objects.filter(code__in=geo_filter.code)
+
     rc_data_queryset = Data.objects.filter(
         Q(indicator__parent__slug=indc_filter.slug)
         | Q(indicator__slug=indc_filter.slug),
-        # data_period=data_filter.data_period,
     )
     rc_data_queryset = rc_data_queryset.filter(data_period=data_filter.data_period)
 
     for geo in geo_queryset:
-        # filtered_queryset = rc_data_queryset.filter(
-        #     geography=geo, data_period=data_filter.data_period
-        # )
-        # if indc_filter:
-        #     filtered_queryset = filtered_queryset.filter(
-        #         Q(indicator__parent__slug=indc_filter.slug)
-        #         | Q(indicator__slug=indc_filter.slug)
-        #     )
-        # if filtered_queryset.exists():
         for obj in rc_data_queryset.filter(geography=geo, indicator__is_visible=True):
-            # for obj in filtered_queryset:
+            data_dict["type"] = obj.geography.type.lower()
             data_dict[obj.geography.type.lower().replace(" ", "-")] = obj.geography.name
             data_dict[(obj.geography.type + " code").lower().replace(" ", "-")] = (
                 obj.geography.code
             )
             if obj.geography.parentId:
                 parent = obj.geography.parentId
+                data_dict["parent_type"] = parent.type.lower()
                 data_dict[parent.type.lower().replace(" ", "-")] = parent.name
                 data_dict[(parent.type.lower() + " code").lower().replace(" ", "-")] = (
                     parent.code
@@ -342,14 +346,10 @@ def get_revenue_data(
                     "value": str(obj.value),
                     "title": obj.indicator.name,
                 }
-                # data_dict[obj.indicator.name] = str(obj.value)
         if data_dict:
             data_list.append(data_dict)
             data_dict = {}
 
-    # filter_key = Indicators.objects.get(slug=indc_filter.slug)
-    # data_list = sorted(data_list, key=lambda d: d[filter_key.name], reverse=True)
-    # data_list = sorted(data_list, key=lambda d: d[indc_filter.slug], reverse=True)
     data_list = sorted(
         data_list,
         key=lambda d: float(d[indc_filter.slug]["value"].split()[0]),
@@ -357,13 +357,13 @@ def get_revenue_data(
     )
 
     print("The time difference is :", timeit.default_timer() - starttime)
-    return data_list  # {"table_data": data_list}
+    return data_list
 
 
 def get_revenue_map_data(
-    indc_filter: types.IndicatorFilter,
-    data_filter: types.DataFilter,
-    geo_filter: Optional[types.GeoFilter] = None,
+        indc_filter: types.IndicatorFilter,
+        data_filter: types.DataFilter,
+        geo_filter: Optional[types.GeoFilter] = None,
 ) -> dict:
     """Retrieve revenue-circle map data based on specified filters.
 
@@ -373,6 +373,7 @@ def get_revenue_map_data(
         data_filter (types.DataFilter): An DataFilter object used
         to filter data based on defined fields from types.py.
         geo_filter (types.GeoFilter, optional): An GeoFilter object used
+        IMP: The code sent is statecode
         to filter data based on defined fields from types.py. Defaults to None.
 
     Returns:
@@ -382,14 +383,28 @@ def get_revenue_map_data(
     starttime = timeit.default_timer()
 
     # Convert geography objects to a GeoJson format.
+    # try:
+    #     geo_object = Geography.objects.get(code__in=geo_filter.code, type="STATE")
+    #     if geo_object.name.title() == "Himachal Pradesh":
+    #         geo_type = "TEHSIL"
+    #     else:
+    #         geo_type = "REVENUE CIRCLE"
+    # except Geography.DoesNotExist:
+    #     raise GraphQLError("Invalid state code!!")
+
     geo_json = json.loads(
-        serialize("geojson", Geography.objects.filter(type="REVENUE CIRCLE"))
+        serialize(
+            "geojson",
+            Geography.objects.filter(
+                parentId__parentId__code__in=geo_filter.code
+            ),
+        )
     )
 
     rc_data = Data.objects.filter(
         indicator__slug=indc_filter.slug,
         data_period=data_filter.data_period,
-        geography__type="REVENUE CIRCLE",
+        geography__parentId__parentId__code__in=geo_filter.code,
     ).select_related("geography")
 
     # Create a dictionary to store indicator data by geography code
@@ -411,19 +426,19 @@ def get_revenue_map_data(
             # Add indicator slug and value to properties
             rc["properties"][data.indicator.slug] = data.value
 
-            # Remove unnecessary keys
-            rc["properties"].pop("parentId", None)
-            rc["properties"].pop("pk", None)
-            rc.pop("id", None)
+        # Remove unnecessary keys
+        rc["properties"].pop("parentId", None)
+        rc["properties"].pop("pk", None)
+        rc.pop("id", None)
 
     print("The time difference is :", timeit.default_timer() - starttime)
     return geo_json
 
 
 def get_district_map_data(
-    indc_filter: types.IndicatorFilter,
-    data_filter: types.DataFilter,
-    geo_filter: Optional[types.GeoFilter] = None,
+        indc_filter: types.IndicatorFilter,
+        data_filter: types.DataFilter,
+        geo_filter: Optional[types.GeoFilter] = None,
 ) -> dict:
     """Retrieve district map data based on specified filters.
 
@@ -443,7 +458,12 @@ def get_district_map_data(
 
     # Convert geography objects to a GeoJson format.
     geo_json = json.loads(
-        serialize("geojson", Geography.objects.filter(type="DISTRICT"))
+        serialize(
+            "geojson",
+            Geography.objects.filter(
+                type="DISTRICT", parentId__code__in=geo_filter.code
+            ),
+        )
     )
 
     # Get Indicator Data for each district.
@@ -451,6 +471,7 @@ def get_district_map_data(
         indicator__slug=indc_filter.slug,
         data_period=data_filter.data_period,
         geography__type="DISTRICT",
+        geography__parentId__code__in=geo_filter.code,
     ).select_related("geography")
 
     # Create a dictionary to store indicator data by geography code
@@ -478,115 +499,58 @@ def get_district_map_data(
     return geo_json
 
 
-# def get_revenue_chart_data(
-#     indc_filter: types.IndicatorFilter,
-#     data_filter: types.DataFilter,
-#     geo_filter: types.GeoFilter,
-# ):
-#     starttime = timeit.default_timer()
-#     data_dict = {}
+def get_indicators(indc_filter: Optional[types.IndicatorFilter] = None, state_code: Optional[int] = None) -> list:
+    """
+    Retrieve a list of indicators and associated data from the 'indicator' table.
 
-#     # Creating initial dict structure.
-#     # TODO: Optimise it for multiple timeperiods; not supported currently. [Phase-2]
-#     # TODO: Optimise it for multiple indicators; not supported currently. [Phase-2]
-#     data_dict[data_filter.data_period] = {}
-#     data_dict[data_filter.data_period][indc_filter.slug] = {}
-
-#     # Get Indicator Data for each RC.
-#     rc_data = get_revenue_data(
-#         indc_filter=indc_filter,
-#         data_filter=data_filter,
-#         geo_filter=geo_filter,
-#         for_map=True,
-#     )
-
-#     for data in rc_data["table_data"]:
-#         # print(data[f"{indc_filter.slug}"])
-#         data_dict[data_filter.data_period][indc_filter.slug][
-#             data["revenue-circle-code"]
-#         ] = {data["revenue-circle"]: data[f"{indc_filter.slug}"]}
-
-#     print("The time difference is :", timeit.default_timer() - starttime)
-#     return data_dict
-
-
-def get_categories() -> list:
-    data_list = []
-    data_dict = {}
-
-    category_list = Indicators.objects.values_list("category", flat=True)
-    # print(category_list)
-    unique_categories = []
-    [unique_categories.append(x) for x in category_list if x not in unique_categories]
-    for category in unique_categories:
-        filtered_queryset = Indicators.objects.filter(
-            category=category, is_visible=True
-        )  # .order_by("display_order")
-        if filtered_queryset.exists():
-            data_dict[category] = {}
-            for obj in filtered_queryset:
-                data_dict[category][obj.name] = {
-                    "slug": obj.slug,
-                    "description": obj.long_description
-                }
-
-            data_list.append(data_dict)
-            data_dict = {}
-
-    # print(data_list)
-    return data_list
-
-
-def get_child_indicators(parent_id: Optional[int] = None) -> typing.List:
-    indicator_list = []
-    indicators = Indicators.objects.filter(parent__id=parent_id, is_visible=True)
-    for indicator in indicators:
-        indicator_list.append(
-            {"slug": indicator.slug, "name": indicator.name, "description": indicator.long_description,
-             "children": get_child_indicators(indicator.id)})
-    return indicator_list
-
-
-def get_indicators(indc_filter: Optional[types.IndicatorFilter] = None) -> list:
-    # TODO: Return obj rather than formatted dict. [Faster]
-    """Return a list of indicators and associated data from the 'indicator' table.
+    This function fetches indicators from the database, optionally filtered by the provided
+    IndicatorFilter. It returns a list of dictionaries containing details about each indicator.
 
     Args:
-        indc_filter (types.IndicatorFilter, optional): An IndicatorFilter object used
-        to filter data based on defined fields from types.py. Defaults to None.
+        indc_filter (Optional[types.IndicatorFilter]): An optional IndicatorFilter object used
+            to filter indicators based on defined fields from types.py. If provided, the function
+            will filter indicators by slug or parent slug. Defaults to None.
+        state_code (int): An integer representing the state code. Defaults to 18.
 
     Returns:
-        list: A list of dictionaries representing indicators and related data.
+        list: A list of dictionaries, where each dictionary represents an indicator and contains
+            the following keys: 'name', 'slug', 'long_description', 'short_description', 
+            'data_source', and 'unit__name'.
+
+    Note:
+        The function also prints the execution time, which might be useful for performance monitoring.
     """
-    starttime = timeit.default_timer()
+    start_time = timeit.default_timer()
     data_list = []
 
-    indc_obj = Indicators.objects.filter(is_visible=True)
+    indcators = Indicators.objects.filter(is_visible=True)
+    if state_code:
+        indcators = indcators.filter(geography__code=state_code)
     if indc_filter:
-        indc_obj = indc_obj.filter(
+        indcators = indcators.filter(
             Q(slug=indc_filter.slug) | Q(parent__slug=indc_filter.slug)
         )
 
-    data_queryset = indc_obj.values(
+    data_queryset = indcators.values(
         "name", "slug", "long_description", "short_description", "data_source", "unit__name"
     )
     for data in data_queryset:
         data_list.append(data)
 
-    print("The time difference is :", timeit.default_timer() - starttime)
+    print("The time difference is :", timeit.default_timer() - start_time)
     return data_list
 
 
-def get_model_indicators() -> list:
-    data_list = []
+# def get_model_indicators() -> list:
+#     data_list = []
 
-    indc_obj = Indicators.objects.filter(
-        Q(parent__slug="risk-score") | Q(slug="risk-score")
-    )
-    for data in indc_obj:
-        data_list.append({"name": data.name, "slug": data.slug})
+#     indc_obj = Indicators.objects.filter(
+#         Q(parent__slug="risk-score") | Q(slug="risk-score")
+#     )
+#     for data in indc_obj:
+#         data_list.append({"name": data.name, "slug": data.slug})
 
-    return data_list
+#     return data_list
 
 
 def get_timeperiod():
@@ -611,64 +575,88 @@ def get_district_rev_circle(geo_filter: types.GeoFilter):
     data_dict = {}
     data_list = []
 
-    geo_object = Geography.objects.filter(
-        type=geo_filter.type.upper().strip().replace("-", " ")
-    )
-    if geo_object.exists():
-        if geo_filter.type.upper() == "DISTRICT":
-            for data in geo_object:
-                data_list.append(
-                    {
-                        f"{data.type.lower().replace(' ', '-')}": data.name,
-                        "code": data.code,
-                    }
-                )
-            data_dict = data_list
-        elif geo_filter.type.upper().strip().replace("-", " ") == "REVENUE CIRCLE":
-            for data in geo_object:
-                rc_obj = geo_object.filter(parentId=data.parentId)
-                if rc_obj.exists():
-                    for rc_data in rc_obj:
-                        data_list.append(
-                            {
-                                f"{data.type.lower().replace(' ', '-')}": rc_data.name,
-                                "code": rc_data.code,
-                                "district_code": data.parentId.code,
-                            }
-                        )
-                    data_dict[f"{data.parentId.name}"] = data_list
-                    data_list = []
-        else:
-            pass
+    if geo_filter.type.upper() == "DISTRICT":
+        geo_object = Geography.objects.filter(
+            type=geo_filter.type.upper().strip().replace("-", " "),
+            parentId__code__in=geo_filter.code,
+        )
+        for data in geo_object:
+            data_list.append(
+                {
+                    f"{data.type.lower().replace(' ', '-')}": data.name,
+                    "code": data.code,
+                }
+            )
+        data_dict = data_list
+    elif geo_filter.type.upper().strip().replace("-", " ") in [
+        "REVENUE CIRCLE",
+        "TEHSIL",
+        "BLOCK"
+    ]:
+        geo_object = Geography.objects.filter(
+            type=geo_filter.type.upper().strip().replace("-", " ")
+        )
+        for data in geo_object:
+            rc_obj = geo_object.filter(parentId=data.parentId)
+            if rc_obj.exists():
+                for rc_data in rc_obj:
+                    data_list.append(
+                        {
+                            f"{data.type}": rc_data.name,
+                            "code": rc_data.code,
+                            "district_code": data.parentId.code,
+                        }
+                    )
+                data_dict[f"{data.parentId.name}"] = data_list
+                data_list = []
 
     print("The time difference is :", timeit.default_timer() - starttime)
     return data_dict
 
 
+def get_child_indicators(parent_id: Optional[int] = None, state_code: Optional[str] = None) -> typing.List:
+    indicator_list = []
+    indicators = Indicators.objects.filter(parent__id=parent_id, is_visible=True)
+    if state_code:
+        indicators = indicators.filter(geography__code=state_code)
+    for indicator in indicators:
+        indicator_list.append(
+            {"slug": indicator.slug, "name": indicator.name, "description": indicator.long_description,
+             "children": get_child_indicators(indicator.id)})
+    return indicator_list
+
+
+def get_states():
+    all_states = Geography.objects.filter(type="STATE")
+    states = []
+    for state in all_states:
+        state_details = {"name": state.name, "slug": state.slug, "code": state.code,
+                         "child_type": Geography.objects.filter(parentId__parentId__code=state.code).first().type}
+        valid_geometries = Geography.objects.filter(parentId=state).annotate(valid_geom=MakeValid("geom"))
+        state_geometry = valid_geometries.aggregate(union_geometry=Union("valid_geom"))["union_geometry"]
+        state_centroid = state_geometry.centroid if state_geometry else None
+        state_details["center"] = (state_centroid.y, state_centroid.x)
+        states.append(state_details)
+    return states
+
+
 @strawberry.type
 class Query:  # camelCase
-    # unit: list[types.Unit] = strawberry.django.field(resolver=get_unit)
-    # geography: list[types.Geography] = strawberry_django.field()
-    # department: list[types.Department] = strawberry.django.field()
-    # scheme: list[types.Scheme] = strawberry_django.field()
     indicators: JSON = strawberry_django.field(resolver=get_indicators)
-    indicatorsByCategory: JSON = strawberry_django.field(resolver=get_child_indicators)
-    getFactors: JSON = strawberry_django.field(resolver=get_model_indicators)
-    # data: list[types.Data] = strawberry_django.field()
     districtViewData: JSON = strawberry_django.field(resolver=get_district_data)
     tableData: JSON = strawberry_django.field(resolver=get_table_data)
+    indicatorsByCategory: JSON = strawberry_django.field(resolver=get_child_indicators)
     districtMapData: JSON = strawberry_django.field(resolver=get_district_map_data)
     getTimeTrends: JSON = strawberry_django.field(resolver=get_time_trends)
     revCircleViewData: JSON = strawberry_django.field(resolver=get_revenue_data)
     revCircleMapData: JSON = strawberry_django.field(resolver=get_revenue_map_data)
-    # revCircleTimeTrends: JSON = strawberry_django.field(resolver=get_revenue_chart_data)
     getDataTimePeriods: list[types.CustomDataPeriodList] = strawberry_django.field(
         resolver=get_timeperiod
     )
     getDistrictRevCircle: JSON = strawberry_django.field(
         resolver=get_district_rev_circle
     )
-    # barChart: types.BarChart = strawberry.django.field(resolver=get_bar_data)
+    getStates: JSON = strawberry_django.field(resolver=get_states)
 
 
 schema = strawberry.Schema(
