@@ -28,7 +28,7 @@ slope-mean,Mean slope,Mean slope of the region,24,Hazard,Hazard,degrees,NASADEM,
 drainage-density,Drainage density,Drainage density is a measurement of the sum of the channel lengths per unit area,81,Hazard,Hazard,km / sq.km,NASADEM,,annually,y,y,mean,,,"30-May: Remove variable from platform (may be used for model, but not shown on platform)"
 distance-from-river,Distance from the river,Average distance from river,27,Hazard,Hazard,km,WRIS,,,,,,,,
 mean-ndbi,Mean NDBI,Mean Normalised Difference Building Index (NDBI) value for the region,69,Hazard,Hazard,(Ratio),SENTINEL,,,,,,Creative Commons CC BY-SA 3.0 IGO,,
-exposure,Exposure,Exposures of vulnerable population and assets to hazards,56,Exposure,Overall Flood Risk,Score,,,,,,,,,
+exposure,Exposure,Exposures of vulnerable population and assets to hazards,56,Exposure,Overall Flood Risk,Score,,y,,,,,,,
 total-hhd,Total Number of Households*,Total number of households,26,Exposure,Exposure,,MISSION ANTYODAYA 2020,y,annually,y,y,sum,GODL,,"30-May: no unit, round off (no decimals)"
 sum-population,Population*,Total number of people residing in the region,45,Exposure,Exposure,,WORLDPOP,y,annually,y,y,sum,Creative Commons Attribution 4.0 International License,,"30-May: Remove population (not necessary since households number takes care of it)
 Keep sex ratio: add a row for this - no unit, round off to 2 decimal points"
