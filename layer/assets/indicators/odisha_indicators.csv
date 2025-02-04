@@ -31,22 +31,22 @@ mean-cn,Mean Curve Number,Curve Numbers help in estimation of Surface runoff,50,
 slope-mean,Mean slope,Mean slope of the region,24,Hazard,Hazard,degrees,NASADEM,y,one-time,n,,,,,
 drainage-density,Drainage density,Drainage density is a measurement of the sum of the channel lengths per unit area,81,Hazard,Hazard,km / sq.km,NASADEM,y,annually,n,y,mean,,,"30-May: Remove variable from platform (may be used for model, but not shown on platform)"
 mean-ndbi,Mean NDBI,Mean Normalised Difference Building Index (NDBI) value for the region,69,Hazard,Hazard,(Ratio),SENTINEL,,,,,,Creative Commons CC BY-SA 3.0 IGO,,
-exposure,Exposure,Exposures of vulnerable population and assets to hazards,56,Exposure,Overall Flood Risk,Score,,y,,,,,,,
+exposure,Exposure,Exposures of vulnerable population and assets to hazards,56,Exposure,Overall Flood Risk,Score,MODEL,y,monthly,y,,,,,
 total-hhd,Total Number of Households*,Total number of households,26,Exposure,Exposure,,MISSION ANTYODAYA 2020,y,annually,y,y,sum,GODL,,"30-May: no unit, round off (no decimals)"
 sum-population,Population*,Total number of people residing in the region,45,Exposure,Exposure,,WORLDPOP,y,annually,y,y,sum,Creative Commons Attribution 4.0 International License,,"30-May: Remove population (not necessary since households number takes care of it)
 Keep sex ratio: add a row for this - no unit, round off to 2 decimal points"
-health-centres-count,Number of Health Centres,Number of health centres in the region,38,Vulnerability,Exposure,Number,BHARATMAPS,,annually,y,y,sum,,,"30-May: no units, round off - no decimal point"
-schools-count,Number of Schools,Number of Schools in the region,31,Vulnerability,Exposure,Number,BHARATMAPS,,annually,y,y,sum,,,
-rail-length,Length of rail in the region,Length of rail in the region,28,Vulnerability,Exposure,km,BHARATMAPS,,annually,y,y,sum,,,
-road-length,Length of Road,Length of road in the region,28,Vulnerability,Exposure,km,BHARATMAPS,,annually,y,y,sum,,,
-net-sown-area-in-hac,Net Sown Area,Net sown area in the region,27,Vulnerability,Exposure,hectares,MISSION ANTYODAYA 2020,,annually,y,y,sum,GODL,,
-mean-sex-ratio,Mean Sex Ratio*,Number females per 1000 males,29,Vulnerability,Exposure,(Ratio),WORLDPOP,,annually,y,y,mean,Creative Commons Attribution 4.0 International License,,
+health-centres-count,Number of Health Centres,Number of health centres in the region,38,Exposure,Exposure,Number,BHARATMAPS,,annually,y,y,sum,,,"30-May: no units, round off - no decimal point"
+schools-count,Number of Schools,Number of Schools in the region,31,Exposure,Exposure,Number,BHARATMAPS,,annually,y,y,sum,,,
+rail-length,Length of rail in the region,Length of rail in the region,28,Exposure,Exposure,km,BHARATMAPS,,annually,y,y,sum,,,
+road-length,Length of Road,Length of road in the region,28,Exposure,Exposure,km,BHARATMAPS,,annually,y,y,sum,,,
+net-sown-area-in-hac,Net Sown Area,Net sown area in the region,27,Exposure,Exposure,hectares,MISSION ANTYODAYA 2020,,annually,y,y,sum,GODL,,
+mean-sex-ratio,Mean Sex Ratio*,Number females per 1000 males,29,Exposure,Exposure,(Ratio),WORLDPOP,,annually,y,y,mean,Creative Commons Attribution 4.0 International License,,
 vulnerability,Vulnerability,"Physical, Social, Economic, and Environmental vulnerabilities which increase susceptibility of an area or a community to impact of hazards",138,Vulnerability,Overall Flood Risk,Score,MODEL,y,,,,,,,"30-May: Add ""Score"""
 avg-electricity,Average availablity of domestic electricity,Average availablity of domestic electricity,43,Vulnerability,Vulnerability,hours,MISSION ANTYODAYA 2020,y,annually,y,y,mean,GODL,,
 block-piped-hhds-pct,Percentage of households with piped water connection,Percentage of households with piped water connection,52,Vulnerability,Vulnerability,(Ratio),MISSION ANTYODAYA 2020,y,annually,y,y,mean,GODL,,
 block-nosanitation-hhds-pct,Percentage of households without sanitation facilities,Percentage of households without sanitation facilities,54,Vulnerability,Vulnerability,(Ratio),MISSION ANTYODAYA 2020,y,annually,y,y,mean,GODL,,
-sum-aged-population,Elderly population*,Number of people of ages greater than or equal to 65,52,Exposure,Vulnerability,Number,WORLDPOP,y,annually,y,y,sum,Creative Commons Attribution 4.0 International License,,
-sum-young-population,Children population*,Number of people of ages less than or equal to 5,48,Exposure,Vulnerability,Number,WORLDPOP,y,annually,,,,Creative Commons Attribution 4.0 International License,,
+sum-aged-population,Elderly population*,Number of people of ages greater than or equal to 65,52,Vulnerability,Vulnerability,Number,WORLDPOP,y,annually,y,y,sum,Creative Commons Attribution 4.0 International License,,
+sum-young-population,Children population*,Number of people of ages less than or equal to 5,48,Vulnerability,Vulnerability,Number,WORLDPOP,y,annually,,,,Creative Commons Attribution 4.0 International License,,
 avg-tele,Average availablity of telecom services,Average availablity of telecom services,39,Vulnerability,Vulnerability,category,MISSION ANTYODAYA 2020,n,monthly,n,n,,GODL,,
 government-response,Government Response,"Government Response with respect to capacities or resources that can reduce the level of risk, or the effects of disasters",122,Government Response,Overall Flood Risk,Score,MODEL,y,,,,,,,"30-May: Add ""Score"""
 total-tender-awarded-value,Total Value of Flood Tenders,Total value of flood related tenders,36,Government Response,Government Response,INR,assamtenders.gov.in,y,monthly,y,y,sum,,,"30-May: Add Total Number of Flood Related Tenders above
