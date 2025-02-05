@@ -18,7 +18,7 @@ import geojson
 from D4D_ContextLayer.settings import DEFAULT_TIME_PERIOD
 from . import types
 from layer.models import Data, Geography, Indicators
-
+from D4D_ContextLayer.settings import DATA_RESOURCE_MAP
 
 # from .mutation import Mutation
 
@@ -636,6 +636,7 @@ def get_states():
         state_geometry = valid_geometries.aggregate(union_geometry=Union("valid_geom"))["union_geometry"]
         state_centroid = state_geometry.centroid if state_geometry else None
         state_details["center"] = (state_centroid.y, state_centroid.x)
+        state_details["resource_id"] = DATA_RESOURCE_MAP[state.code]
         states.append(state_details)
     return states
 

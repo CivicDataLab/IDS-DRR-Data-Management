@@ -13,13 +13,13 @@ from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak
 
-from D4D_ContextLayer.settings import DEFAULT_TIME_PERIOD, CHART_API_BASE_URL, RESOURCE_ID
+from D4D_ContextLayer.settings import DEFAULT_TIME_PERIOD, CHART_API_BASE_URL, DATA_RESOURCE_MAP
 from layer.models import Data
 
 
-async def fetch_chart(client, chart_payload, output_path):
+async def fetch_chart(client, chart_payload, output_path, geo_filter):
     try:
-        response = await client.post(f"{CHART_API_BASE_URL}{RESOURCE_ID}/?response_type=file", json=chart_payload)
+        response = await client.post(f"{CHART_API_BASE_URL}{DATA_RESOURCE_MAP[geo_filter]}/?response_type=file", json=chart_payload)
         print(response)
         if response.status_code == 200:
             with open(output_path, "wb") as f:
@@ -250,7 +250,7 @@ async def generate_report(request):
                 "show_legend": True,
             }
             chart_path = "bar_chart.png"
-            await fetch_chart(client, chart_payload, chart_path)
+            await fetch_chart(client, chart_payload, chart_path, geo_filter)
             elements.append(Image(chart_path, width=400, height=200))
             elements.append(Spacer(1, 20))
 

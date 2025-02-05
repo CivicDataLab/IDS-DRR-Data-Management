@@ -25,8 +25,12 @@ SECRET_KEY = "django-insecure-pn452gc08m0cfvwv#ti*$r$-0sx$_c%(ptt&gap^gg=f4p7yql
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
-CHART_API_BASE_URL = "https://api.datakeep.civicdays.in/api/generate-dynamic-chart/"
-RESOURCE_ID = "428ae2ad-7a77-415d-9dbc-51b3674d30de"
+CHART_API_BASE_URL = "https://api.dataspace.open-contracting.in/api/generate-dynamic-chart/"
+DATA_RESOURCE_MAP = {
+    "18":"5d343516-2587-48e0-a92e-96d2a07eb6da",
+    "21":"34ce79a3-81cd-4ca1-bf0a-6a66b97cae63",
+    "02":"452cddd4-ef23-47e0-9702-61fa74230851"
+}
 
 CORS_ORIGIN_ALLOW_ALL = True
 # CORS_ORIGIN_WHITELIST = ['*']
