@@ -1,4 +1,5 @@
 import datetime
+from functools import lru_cache
 from io import BytesIO
 from unicodedata import category
 
@@ -24,20 +25,18 @@ from collections import defaultdict
 async def fetch_chart(client, chart_payload, output_path, geo_filter):
     try:
         response = await client.post(f"{CHART_API_BASE_URL}{DATA_RESOURCE_MAP[geo_filter]}/?response_type=file", json=chart_payload)
-        print(response)
         if response.status_code == 200:
             with open(output_path, "wb") as f:
                 f.write(response.content)
             return output_path
         else:
             print(
-                f"Failed to fetch chart: {response.status_code}, {response.text}")
+                f"Failed to fetch chart:::::::::::::::: {response.status_code}, {response.text}")
             return None
     except Exception as e:
-        print(f"Error fetching chart: {e}")
         return None
 
-
+@lru_cache
 async def get_top_vulnerable_districts(time_period, geo_filter=None):
     def filter_data():
         data_obj = Data.objects.filter(data_period=time_period).select_related(
@@ -61,12 +60,16 @@ async def get_top_vulnerable_districts(time_period, geo_filter=None):
             geo_id = item.geography.id
             if geo_id not in unique_geographies:
                 unique_geographies[geo_id] = item
+        
+        final_results = list(unique_geographies.values())
 
-        return list(unique_geographies.values())[:5]
+        final_results.sort(key=lambda x: x.value, reverse=True)
+
+        return final_results[:5]
 
     return await sync_to_async(filter_data)()
 
-
+@lru_cache
 async def get_major_indicators_data(time_period, geo_filter):
     def filter_data():
         # indicatorsList = Indicators.objects.filter(is_visible=True, parent__parent=None).select_related(
@@ -105,9 +108,6 @@ async def get_major_indicators_data(time_period, geo_filter):
                 indicator = item.indicator
                 value = item.value
 
-                print(geography.name, indicator.name.lower(
-                ).strip().replace(" ", "-", -1), value)
-
                 # # Initialize geography if not already present
                 if grouped_data[geography]["geography"] is None:
                     grouped_data[geography]["geography"] = geography
@@ -115,14 +115,19 @@ async def get_major_indicators_data(time_period, geo_filter):
                 # Add indicator to the geography's indicators dictionary
                 grouped_data[geography]["indicators"][indicator.name.lower(
                 ).strip().replace(" ", "-", -1)] = value
+
         except Exception as e:
-            print(e)
+            print("Exception in get_major_indicators_data main function: ", e)
 
         result = list(grouped_data.values())
 
-        result.sort(key=lambda x: x["indicators"]["overall-risk-score"])
+        result.sort(key=lambda x: (x['indicators']["overall-flood-risk"], x['geography'].name))
 
-        return result[:5]
+        # Return top 5 if overall flood risk districts are <5 else return all districts with 5 overall score
+        high_risk_districts = [district for district in result if district['indicators']["overall-flood-risk"] >= 5]
+
+        return result[-5:] if len(high_risk_districts) < 5 else high_risk_districts
+        
 
     return await sync_to_async(filter_data)()
 
@@ -272,10 +277,18 @@ async def generate_report(request):
     if request.method == "GET":
         # Prepare PDF buffer and styles
         pdf_buffer = BytesIO()
-        doc = CustomDocTemplate(pdf_buffer, pagesize=A4)
+        # doc = CustomDocTemplate(pdf_buffer, pagesize=A4)
         
         # Development mode to update a local document for testing
-        # doc = CustomDocTemplate("test_output.pdf", pagesize=A4)
+        doc = CustomDocTemplate("test_output.pdf", pagesize=A4)
+
+        risk_mapping_text = {
+            '1.0' : 'Very Low',
+            '2.0' : 'Low',
+            '3.0' : 'Medium',
+            '4.0' : 'High',
+            '5.0' : 'Very High',
+        }
 
         styles = getSampleStyleSheet()
 
@@ -311,6 +324,14 @@ async def generate_report(request):
             leading=18,
             spaceAfter=10,
         )
+        heading_3_style = ParagraphStyle(
+            "Heading3Style",
+            parent=styles["Heading3"],
+            fontSize=12,
+            leading=20,
+            spaceAfter=10,
+        )
+
         body_style = styles["BodyText"]
 
         # Elements list for PDF
@@ -356,7 +377,11 @@ async def generate_report(request):
 
         # Add Key Figures Table
         elements.append(
-            Paragraph("Top 5 most at risk districts: Key Figures", heading_2_style))
+            Paragraph("Top most at risk districts: Key Figures", heading_2_style))
+
+        # Factor wise risk assessment
+        elements.append(
+            Paragraph("Factor wise risk assessment", heading_3_style))
 
         try:
             majorIndicatorsData = await get_major_indicators_data(time_period, state.code)
@@ -364,16 +389,19 @@ async def generate_report(request):
             district_table_data = [
                 ["District", "Overall Flood Risk", "Hazard Risk", "Exposure Risk", "Vulnerability Risk", "Government Response"]]
             for data in majorIndicatorsData:
-                if data.indicators["overall-risk-score"]:
-                    district_table_data.append([data.geography.name, data.indicators["overall-risk-score"].value, data.indicators["hazard"].value, data.indicators["exposure"].value, data.indicators["vulnerability"].value, data.indicators["government-response"].value])
+                # if data.indicators["overall-flood-risk"]:
+                district_table_data.append([data['geography'].name, risk_mapping_text[str(data['indicators']["overall-flood-risk"])], risk_mapping_text[str(data['indicators']["hazard"])], risk_mapping_text[str(data['indicators']["exposure"])], risk_mapping_text[str(data['indicators']["vulnerability"])], risk_mapping_text[str(data['indicators']["government-response"])]])
 
-            # district_table = await get_table(district_table_data)
-            # elements.append(district_table)
+            district_table = await get_table(district_table_data)
+            elements.append(district_table)
             elements.append(Spacer(1, 20))
         except Exception as e:
             print(f"Error in major indicators:::  {e}")
 
-        # Add District Risk Table
+        # Add Highlights table
+        elements.append(
+            Paragraph(f"Highlights for the month of {time_period_string}", heading_3_style))
+
         try:
             # indicator_filter = request.GET.get("indicator")
             # data_obj = await get_filtered_data(time_period.strftime("%Y_%m"), None, geo_filter)
@@ -538,13 +566,14 @@ async def generate_report(request):
                         "operator": "in",
                         "value": "2024_06,2024_05,2024_04,2024_03",
                     },
-                    {"column": "object-id", "operator": "==", "value": ""},
+                    # {"column": "object-id", "operator": "==", "value": state.code},
                 ],
             }
 
             chart_path = "bar_chart.png"
-            # await fetch_chart(client, chart_payload, chart_path, geo_filter)
-            # elements.append(Image(chart_path, width=400, height=200))
+            await fetch_chart(client, chart_payload, chart_path, state.code)
+            
+            elements.append(Image(chart_path, width=400, height=200))
             elements.append(Spacer(1, 20))
 
         # Add Losses and Damages Section
@@ -570,17 +599,17 @@ async def generate_report(request):
         elements.append(damages_table)
 
         # Generate PDF
-        doc.build(elements)
+        # doc.build(elements)
         pdf_buffer.seek(0)
 
         # Generate PDF to test while development
-        # await generate_pdf(doc, elements)
+        await generate_pdf(doc, elements)
 
         # Sample response to test while development
-        # response = HttpResponse({"message": "Success"},content_type="application/json")
+        response = HttpResponse({"message": "Success"},content_type="application/json")
 
-        response = HttpResponse(pdf_buffer, content_type="application/pdf")
-        response['Content-Disposition'] = 'attachment; filename="state_report_assam.pdf"'
+        # response = HttpResponse(pdf_buffer, content_type="application/pdf")
+        # response['Content-Disposition'] = 'attachment; filename="state_report_assam.pdf"'
         return response
 
     return HttpResponse("Invalid HTTP method", status=405)
