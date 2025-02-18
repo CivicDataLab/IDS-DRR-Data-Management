@@ -69,69 +69,82 @@ async def get_top_vulnerable_districts(time_period, geo_filter=None):
 
     return await sync_to_async(filter_data)()
 
-@lru_cache
+# Group data by geography
+async def group_by_geography(data_list):
+    grouped_data = defaultdict(
+        lambda: {"geography": None, "indicators": {}})
+
+    for item in data_list:
+        geography = item.geography
+        indicator = item.indicator
+        value = item.value
+
+        # # Initialize geography if not already present
+        if grouped_data[geography]["geography"] is None:
+            grouped_data[geography]["geography"] = geography
+
+        # Add indicator to the geography's indicators dictionary
+        grouped_data[geography]["indicators"][indicator.name.lower(
+        ).strip().replace(" ", "-", -1)] = value
+
+    return list(grouped_data.values())
+
+# @lru_cache
 async def get_major_indicators_data(time_period, geo_filter):
-    def filter_data():
-        # indicatorsList = Indicators.objects.filter(is_visible=True, parent__parent=None).select_related(
-        #     "parent",
-        #     "parent__parent",
-        # )
+    
+    # indicatorsList = Indicators.objects.filter(is_visible=True, parent__parent=None).select_related(
+    #     "parent",
+    #     "parent__parent",
+    # )
 
-        # indicatorsListQ = list(indicatorsList)
+    # indicatorsListQ = list(indicatorsList)
 
-        # print([indi.id for indi in list(indicatorsList)])
+    # print([indi.id for indi in list(indicatorsList)])
 
-        data_obj = Data.objects.filter(
-            indicator__is_visible=True, indicator__parent__parent=None, data_period=time_period
-        ).select_related(
-            "geography",
-            "indicator",
-            "indicator__parent",
-            "indicator__parent__parent",
-            "geography__parentId",
-        )
+    data_obj = await sync_to_async(Data.objects.filter)(
+        indicator__is_visible=True, indicator__parent__parent=None, data_period=time_period
+    )
+    data_obj = await sync_to_async(data_obj.select_related)(
+        "geography",
+        "indicator",
+        "indicator__parent",
+        "indicator__parent__parent",
+        "geography__parentId",
+    )
 
-        data_obj = data_obj.filter(
-            Q(geography__parentId__code=geo_filter) | Q(
-                geography__code=geo_filter)
-        )
+    data_obj = await sync_to_async(data_obj.filter)(
+        Q(geography__parentId__code=geo_filter) | Q(
+            geography__code=geo_filter)
+    )
 
-        data_list = list(data_obj.order_by("-value"))
+    data_list = await sync_to_async(data_obj.order_by)("-value")
 
-        try:
+    data_list = await sync_to_async(list)(data_list)
+    result = await group_by_geography(data_list)
+    result.sort(key=lambda x: (x['indicators']["overall-flood-risk"], x['geography'].name))
 
-            grouped_data = defaultdict(
-                lambda: {"geography": None, "indicators": {}})
+    # Return top 5 if overall flood risk districts are <5 else return all districts with 5 overall score
+    high_risk_districts = [district for district in result if district['indicators']["overall-flood-risk"] >= 5]
 
-            for item in data_list:
-                geography = item.geography
-                indicator = item.indicator
-                value = item.value
-
-                # # Initialize geography if not already present
-                if grouped_data[geography]["geography"] is None:
-                    grouped_data[geography]["geography"] = geography
-
-                # Add indicator to the geography's indicators dictionary
-                grouped_data[geography]["indicators"][indicator.name.lower(
-                ).strip().replace(" ", "-", -1)] = value
-
-        except Exception as e:
-            print("Exception in get_major_indicators_data main function: ", e)
-
-        result = list(grouped_data.values())
-
-        result.sort(key=lambda x: (x['indicators']["overall-flood-risk"], x['geography'].name))
-
-        # Return top 5 if overall flood risk districts are <5 else return all districts with 5 overall score
-        high_risk_districts = [district for district in result if district['indicators']["overall-flood-risk"] >= 5]
-
-        return result[-5:] if len(high_risk_districts) < 5 else high_risk_districts
+    return result[-5:] if len(high_risk_districts) < 5 else high_risk_districts
         
 
-    return await sync_to_async(filter_data)()
+    
 
+# async def get_district_highlights(time_period, geo_filter):
+    
+#     districts = await get_major_indicators_data(time_period, geo_filter)
 
+#     districts = [district['geography'] for district in districts]
+
+#     data = Data.objects.filter(geography__in=districts, indicator__slug_in=["crop-area"], data_period=time_period)
+
+#     return data
+
+        
+    
+
+@lru_cache
 async def get_filtered_data(time_period, indicator_filter=None, geo_filter=None):
     def filter_data():
         data_obj = Data.objects.filter(
@@ -383,20 +396,18 @@ async def generate_report(request):
         elements.append(
             Paragraph("Factor wise risk assessment", heading_3_style))
 
-        try:
-            majorIndicatorsData = await get_major_indicators_data(time_period, state.code)
+        majorIndicatorsData = await get_major_indicators_data(time_period, state.code)
 
-            district_table_data = [
-                ["District", "Overall Flood Risk", "Hazard Risk", "Exposure Risk", "Vulnerability Risk", "Government Response"]]
-            for data in majorIndicatorsData:
-                # if data.indicators["overall-flood-risk"]:
-                district_table_data.append([data['geography'].name, risk_mapping_text[str(data['indicators']["overall-flood-risk"])], risk_mapping_text[str(data['indicators']["hazard"])], risk_mapping_text[str(data['indicators']["exposure"])], risk_mapping_text[str(data['indicators']["vulnerability"])], risk_mapping_text[str(data['indicators']["government-response"])]])
+        district_table_data = [
+            ["District", "Overall Flood Risk", "Hazard Risk", "Exposure Risk", "Vulnerability Risk", "Government Response"]]
+        for data in majorIndicatorsData:
+            # if data.indicators["overall-flood-risk"]:
+            district_table_data.append([data['geography'].name, risk_mapping_text[str(data['indicators']["overall-flood-risk"])], risk_mapping_text[str(data['indicators']["hazard"])], risk_mapping_text[str(data['indicators']["exposure"])], risk_mapping_text[str(data['indicators']["vulnerability"])], risk_mapping_text[str(data['indicators']["government-response"])]])
 
-            district_table = await get_table(district_table_data)
-            elements.append(district_table)
-            elements.append(Spacer(1, 20))
-        except Exception as e:
-            print(f"Error in major indicators:::  {e}")
+        district_table = await get_table(district_table_data)
+        elements.append(district_table)
+        elements.append(Spacer(1, 20))
+        
 
         # Add Highlights table
         elements.append(
