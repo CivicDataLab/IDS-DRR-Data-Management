@@ -152,3 +152,5 @@ public/
 
 #environment
 .env
+bar_chart.png
+sink.py
