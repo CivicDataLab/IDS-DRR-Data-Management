@@ -1,5 +1,6 @@
 import datetime
 from io import BytesIO
+from unicodedata import category
 
 from django.http.response import async_to_sync
 import httpx
@@ -16,6 +17,8 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 
 from D4D_ContextLayer.settings import DEFAULT_TIME_PERIOD, CHART_API_BASE_URL, DATA_RESOURCE_MAP
 from layer.models import Data, Geography, Indicators
+
+from collections import defaultdict
 
 
 async def fetch_chart(client, chart_payload, output_path, geo_filter):
@@ -63,20 +66,20 @@ async def get_top_vulnerable_districts(time_period, geo_filter=None):
 
     return await sync_to_async(filter_data)()
 
-async def get_major_indicators_data(time_period, district_list):
+
+async def get_major_indicators_data(time_period, geo_filter):
     def filter_data():
-        indicatorsList = Indicators.objects.filter(is_visible=True).select_related(
-            "parent",
-            "parent__parent",
-        )
+        # indicatorsList = Indicators.objects.filter(is_visible=True, parent__parent=None).select_related(
+        #     "parent",
+        #     "parent__parent",
+        # )
 
         # indicatorsListQ = list(indicatorsList)
 
-        for indicator in indicatorsList:
-            print(indicator)
+        # print([indi.id for indi in list(indicatorsList)])
 
         data_obj = Data.objects.filter(
-            indicator__is_visible=True, data_period=time_period
+            indicator__is_visible=True, indicator__parent__parent=None, data_period=time_period
         ).select_related(
             "geography",
             "indicator",
@@ -85,15 +88,44 @@ async def get_major_indicators_data(time_period, district_list):
             "geography__parentId",
         )
 
-
         data_obj = data_obj.filter(
-            Q(geography__parentId__code__in=district_list)
-            | Q(geography__code__in=district_list)
+            Q(geography__parentId__code=geo_filter) | Q(
+                geography__code=geo_filter)
         )
 
-        return list(data_obj.order_by("-value"))
+        data_list = list(data_obj.order_by("-value"))
+
+        try:
+
+            grouped_data = defaultdict(
+                lambda: {"geography": None, "indicators": {}})
+
+            for item in data_list:
+                geography = item.geography
+                indicator = item.indicator
+                value = item.value
+
+                print(geography.name, indicator.name.lower(
+                ).strip().replace(" ", "-", -1), value)
+
+                # # Initialize geography if not already present
+                if grouped_data[geography]["geography"] is None:
+                    grouped_data[geography]["geography"] = geography
+
+                # Add indicator to the geography's indicators dictionary
+                grouped_data[geography]["indicators"][indicator.name.lower(
+                ).strip().replace(" ", "-", -1)] = value
+        except Exception as e:
+            print(e)
+
+        result = list(grouped_data.values())
+
+        result.sort(key=lambda x: x["indicators"]["overall-risk-score"])
+
+        return result[:5]
 
     return await sync_to_async(filter_data)()
+
 
 async def get_filtered_data(time_period, indicator_filter=None, geo_filter=None):
     def filter_data():
@@ -329,9 +361,17 @@ async def generate_report(request):
         try:
             majorIndicatorsData = await get_major_indicators_data(time_period, state.code)
 
-            print(f"Function completed! {majorIndicatorsData}")
+            district_table_data = [
+                ["District", "Overall Flood Risk", "Hazard Risk", "Exposure Risk", "Vulnerability Risk", "Government Response"]]
+            for data in majorIndicatorsData:
+                if data.indicators["overall-risk-score"]:
+                    district_table_data.append([data.geography.name, data.indicators["overall-risk-score"].value, data.indicators["hazard"].value, data.indicators["exposure"].value, data.indicators["vulnerability"].value, data.indicators["government-response"].value])
+
+            # district_table = await get_table(district_table_data)
+            # elements.append(district_table)
+            elements.append(Spacer(1, 20))
         except Exception as e:
-            print(f"Error {e}")
+            print(f"Error in major indicators:::  {e}")
 
         # Add District Risk Table
         try:
