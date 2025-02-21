@@ -153,7 +153,8 @@ def get_table_data(
                 | Q(geography__code__in=geo_filter.code)
             )
             geo_obj = Geography.objects.filter(
-                Q(code__in=geo_filter.code) | Q(parentId__code__in=geo_filter.code)
+                Q(code__in=geo_filter.code) | Q(
+                    parentId__code__in=geo_filter.code)
             )
         else:
             geo_obj = Geography.objects.filter(code__in=geo_filter.code)
@@ -183,7 +184,8 @@ def get_table_data(
         if data_dict:
             # Reorder data_dict so that the selected indicator is first
             if indc_filter and indc_filter.slug in data_dict:
-                selected_indicator = {indc_filter.slug: data_dict.pop(indc_filter.slug)}
+                selected_indicator = {
+                    indc_filter.slug: data_dict.pop(indc_filter.slug)}
                 data_dict = {**selected_indicator, **data_dict}
 
             data_list.append(data_dict)
@@ -319,12 +321,14 @@ def get_revenue_data(
         Q(indicator__parent__slug=indc_filter.slug)
         | Q(indicator__slug=indc_filter.slug),
     )
-    rc_data_queryset = rc_data_queryset.filter(data_period=data_filter.data_period)
+    rc_data_queryset = rc_data_queryset.filter(
+        data_period=data_filter.data_period)
 
     for geo in geo_queryset:
         for obj in rc_data_queryset.filter(geography=geo, indicator__is_visible=True):
             data_dict["type"] = obj.geography.type.lower()
-            data_dict[obj.geography.type.lower().replace(" ", "-")] = obj.geography.name
+            data_dict[obj.geography.type.lower().replace(" ", "-")
+                      ] = obj.geography.name
             data_dict[(obj.geography.type + " code").lower().replace(" ", "-")] = (
                 obj.geography.code
             )
@@ -485,7 +489,8 @@ def get_district_map_data(
 
             # Add bounding box of district
             poly = geojson.Polygon(district["geometry"]["coordinates"])
-            district["properties"]["bounds"] = bounding_box(list(geojson.utils.coords(poly)))
+            district["properties"]["bounds"] = bounding_box(
+                list(geojson.utils.coords(poly)))
 
             # Add indicator slug and value to properties
             district["properties"][data.indicator.slug] = data.value
@@ -616,7 +621,8 @@ def get_district_rev_circle(geo_filter: types.GeoFilter):
 
 def get_child_indicators(parent_id: Optional[int] = None, state_code: Optional[str] = None) -> typing.List:
     indicator_list = []
-    indicators = Indicators.objects.filter(parent__id=parent_id, is_visible=True)
+    indicators = Indicators.objects.filter(
+        parent__id=parent_id, is_visible=True)
     if state_code:
         indicators = indicators.filter(geography__code=state_code)
     for indicator in indicators:
@@ -627,13 +633,16 @@ def get_child_indicators(parent_id: Optional[int] = None, state_code: Optional[s
 
 
 def get_states():
-    all_states = Geography.objects.filter(type="STATE")
+    # TODO: Remove this temporary restriction and move this to env flag
+    all_states = Geography.objects.filter(type="STATE", code='18')
     states = []
     for state in all_states:
         state_details = {"name": state.name, "slug": state.slug, "code": state.code,
                          "child_type": Geography.objects.filter(parentId__parentId__code=state.code).first().type}
-        valid_geometries = Geography.objects.filter(parentId=state).annotate(valid_geom=MakeValid("geom"))
-        state_geometry = valid_geometries.aggregate(union_geometry=Union("valid_geom"))["union_geometry"]
+        valid_geometries = Geography.objects.filter(
+            parentId=state).annotate(valid_geom=MakeValid("geom"))
+        state_geometry = valid_geometries.aggregate(
+            union_geometry=Union("valid_geom"))["union_geometry"]
         state_centroid = state_geometry.centroid if state_geometry else None
         state_details["center"] = (state_centroid.y, state_centroid.x)
         state_details["resource_id"] = DATA_RESOURCE_MAP[state.code]
@@ -644,13 +653,18 @@ def get_states():
 @strawberry.type
 class Query:  # camelCase
     indicators: JSON = strawberry_django.field(resolver=get_indicators)
-    districtViewData: JSON = strawberry_django.field(resolver=get_district_data)
+    districtViewData: JSON = strawberry_django.field(
+        resolver=get_district_data)
     tableData: JSON = strawberry_django.field(resolver=get_table_data)
-    indicatorsByCategory: JSON = strawberry_django.field(resolver=get_child_indicators)
-    districtMapData: JSON = strawberry_django.field(resolver=get_district_map_data)
+    indicatorsByCategory: JSON = strawberry_django.field(
+        resolver=get_child_indicators)
+    districtMapData: JSON = strawberry_django.field(
+        resolver=get_district_map_data)
     getTimeTrends: JSON = strawberry_django.field(resolver=get_time_trends)
-    revCircleViewData: JSON = strawberry_django.field(resolver=get_revenue_data)
-    revCircleMapData: JSON = strawberry_django.field(resolver=get_revenue_map_data)
+    revCircleViewData: JSON = strawberry_django.field(
+        resolver=get_revenue_data)
+    revCircleMapData: JSON = strawberry_django.field(
+        resolver=get_revenue_map_data)
     getDataTimePeriods: list[types.CustomDataPeriodList] = strawberry_django.field(
         resolver=get_timeperiod
     )
