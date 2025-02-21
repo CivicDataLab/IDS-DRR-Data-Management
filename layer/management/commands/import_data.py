@@ -16,8 +16,17 @@ def migrate_indicators(filename="layer/assets/indicators/data_dict.csv"):
     for row in df.itertuples(index=False):
         print("Processing Indicator -", row.indicatorSlug)
         try:
-            Indicators.objects.get(slug=row.indicatorSlug.lower())
-            print("Already Exists!")
+            indicator = Indicators.objects.get(slug=row.indicatorSlug.lower())
+            print("Already Exists! Updating")
+            indicator.name = row.indicatorTitle.strip()
+            indicator.long_description = row.indicatorDescription.strip()
+            indicator.category = row.indicatorCategory.strip()
+            indicator.unit = _get_indicator_unit_form_row(row)
+            indicator.data_source = row.dataSource.strip() if row.dataSource else None
+            indicator.parent = _get_indicator_parent_from_row(row)
+            indicator.is_visible = True if row.visible == "y" else False
+            indicator.save()
+            print("updated Indicator -", row.indicatorSlug)
         except Indicators.DoesNotExist:
             print("Processing Unit -", row.unit)
             unit_obj = _get_indicator_unit_form_row(row)
