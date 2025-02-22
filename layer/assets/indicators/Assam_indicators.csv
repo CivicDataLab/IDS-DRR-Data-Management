@@ -29,8 +29,8 @@ drainage-density,Drainage density,Drainage density is a measurement of the sum o
 distance-from-river,Distance from the river,Average distance from river,27,Hazard,Hazard,km,WRIS,,,,,,,,
 mean-ndbi,Mean NDBI,Mean Normalised Difference Building Index (NDBI) value for the region,69,Hazard,Hazard,Ratio,SENTINEL,,,,,,Creative Commons CC BY-SA 3.0 IGO,,
 exposure,Exposure,"The situation of people, infrastructure, housing, production capacities, and other tangible human assets located in hazard-prone areas",134,Exposure,Overall Flood Risk,Score,MODEL,y,monthly,y,,,,,
-total-hhd,Total Number of Households*,Total number of households,26,Exposure,Exposure,Number,MISSION ANTYODAYA 2020,y,annually,y,y,sum,GODL,,"30-May: no unit, round off (no decimals)"
-sum-population,Population*,Total number of people residing in the region,45,Exposure,Exposure,Number,WORLDPOP,y,annually,y,y,sum,Creative Commons Attribution 4.0 International License,,"30-May: Remove population (not necessary since households number takes care of it)
+total-hhd,Total Number of Households,Total number of households,26,Exposure,Exposure,Number,MISSION ANTYODAYA 2020,y,annually,y,y,sum,GODL,,"30-May: no unit, round off (no decimals)"
+sum-population,Population,Total number of people residing in the region,45,Exposure,Exposure,Number,WORLDPOP,y,annually,y,y,sum,Creative Commons Attribution 4.0 International License,,"30-May: Remove population (not necessary since households number takes care of it)
 Keep sex ratio: add a row for this - no unit, round off to 2 decimal points"
 vulnerability,Vulnerability,"Physical, Social, Economic, and Environmental vulnerabilities which increase susceptibility of an area or a community to impact of hazards",138,Vulnerability,Overall Flood Risk,Score,MODEL,y,monthly,y,,,,,"30-May: Add ""Score"""
 lives-missing,Lives missing?? Is data available?,,,,Vulnerability,,,n,monthly,,n,,,,
@@ -38,14 +38,14 @@ health-centres-count,Number of Health Centres,Number of health centres in the re
 avg-electricity,Average availablity of domestic electricity,Average availablity of domestic electricity,43,Vulnerability,Vulnerability,hours,MISSION ANTYODAYA 2020,y,annually,y,y,mean,GODL,,
 rc-piped-hhds-pct,Percentage of households with piped water connection,Percentage of households with piped water connection,52,Vulnerability,Vulnerability,Ratio,MISSION ANTYODAYA 2020,y,annually,y,y,mean,GODL,,
 rc-nosanitation-hhds-pct,Percentage of households without sanitation facilities,Percentage of households without sanitation facilities,54,Vulnerability,Vulnerability,Ratio,MISSION ANTYODAYA 2020,y,annually,y,y,mean,GODL,,
-sum-aged-population,Elderly population*,Number of people of ages greater than or equal to 65,52,Exposure,Exposure,Number,WORLDPOP,y,annually,y,y,sum,Creative Commons Attribution 4.0 International License,,
-sum-young-population,Children population*,Number of people of ages less than or equal to 5,48,Exposure,Exposure,Number,WORLDPOP,y,annually,,,,Creative Commons Attribution 4.0 International License,,
+sum-aged-population,Elderly population,Number of people of ages greater than or equal to 65,52,Exposure,Exposure,Number,WORLDPOP,y,annually,y,y,sum,Creative Commons Attribution 4.0 International License,,
+sum-young-population,Children population,Number of people of ages less than or equal to 5,48,Exposure,Exposure,Number,WORLDPOP,y,annually,,,,Creative Commons Attribution 4.0 International License,,
 schools-count,Number of Schools,Number of Schools in the region,31,Vulnerability,Vulnerability,Number,BHARATMAPS,y,annually,y,y,sum,,,
 rail-length,Length of rail in the region,Length of rail in the region,28,Vulnerability,Vulnerability,km,BHARATMAPS,y,annually,y,y,sum,,,
 road-length,Length of Road,Length of road in the region,28,Vulnerability,Vulnerability,km,BHARATMAPS,y,annually,y,y,sum,,,
 net-sown-area-in-hac,Net Sown Area,Net sown area in the region,27,Vulnerability,Vulnerability,hectares,MISSION ANTYODAYA 2020,y,annually,y,y,sum,GODL,,
 avg-tele,Average availablity of telecom services,Average availablity of telecom services,39,Vulnerability,Vulnerability,category,MISSION ANTYODAYA 2020,n,monthly,n,n,,GODL,,
-mean-sex-ratio,Mean Sex Ratio*,Number females per 1000 males,29,Vulnerability,Vulnerability,Ratio,WORLDPOP,y,annually,y,y,mean,Creative Commons Attribution 4.0 International License,,
+mean-sex-ratio,Mean Sex Ratio,Number females per 1000 males,29,Vulnerability,Vulnerability,Ratio,WORLDPOP,y,annually,y,y,mean,Creative Commons Attribution 4.0 International License,,
 total-animal-washed-away,Number of animals washed away,Number of animals washed away,29,Vulnerability,Vulnerability,Number,DRIMS,n,monthly,n,n,sum,,,
 total-animal-affected,Number of animals affected,Number of animals affected,26,Vulnerability,Vulnerability,Number,DRIMS,n,monthly,n,n,sum,,,
 population-affected-total,Total Population Affected,Population affected,19,Vulnerability,Vulnerability,,DRIMS,y,monthly,y,y,max,,y,"30-May: no units, round off - no decimal point"
