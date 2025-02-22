@@ -12,6 +12,7 @@ from reportlab.lib import colors
 from reportlab.lib.colors import HexColor, Color
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak, ListFlowable, ListItem
@@ -53,7 +54,6 @@ async def get_top_vulnerable_districts(time_period, geo_filter=None):
             )
         else:
             data_obj = data_obj.filter(geography__parentId__parentId=None)
-
         data_obj = data_obj.filter(
             indicator__is_visible=True, indicator__parent=None).distinct()
 
@@ -181,16 +181,16 @@ async def get_filtered_data(time_period, indicator_filter=None, geo_filter=None)
 
         if indicator_filter:
             data_obj = data_obj.filter(
-                Q(indicator__slug=indicator_filter)
-                | Q(indicator__parent__slug=indicator_filter)
+                Q(indicator__slug=indicator_filter) | Q(
+                    indicator__parent__slug=indicator_filter)
             )
         else:
             data_obj = data_obj.filter(indicator__parent=None)
 
         if geo_filter:
             data_obj = data_obj.filter(
-                Q(geography__parentId__code__in=[geo_filter])
-                | Q(geography__code__in=[geo_filter])
+                Q(geography__parentId__code__in=[geo_filter]) | Q(
+                    geography__code__in=[geo_filter])
             )
 
         return list(data_obj.order_by("-value"))
@@ -256,14 +256,8 @@ def add_header_footer(canvas_obj, doc):
     # Add an image to the right in the header
     header_image_path = "layer/CDL_Primary Logo.png"
     try:
-        canvas_obj.drawImage(
-            header_image_path,
-            width - 100,
-            height - 50,
-            width=50,
-            height=30,
-            preserveAspectRatio=True,
-        )
+        canvas_obj.drawImage(header_image_path, width - 100, height -
+                             50, width=50, height=30, preserveAspectRatio=True)
     except Exception as e:
         print(f"Error loading header image: {e}")
 
@@ -275,9 +269,8 @@ def add_header_footer(canvas_obj, doc):
     # Page number on the right in the footer
     page_number_text = f"Page {doc.page} of {doc.page_count}"
     footer_width = stringWidth(page_number_text, "Helvetica", 10)
-    canvas_obj.drawString(
-        width - footer_width - 40, 30, page_number_text
-    )  # Right-aligned page number
+    canvas_obj.drawString(width - footer_width - 40, 30,
+                          page_number_text)  # Right-aligned page number
 
 
 class CustomDocTemplate(SimpleDocTemplate):
@@ -300,12 +293,8 @@ class CustomDocTemplate(SimpleDocTemplate):
         """
         self.page_count = len(
             flowables)  # Total page count for dynamic numbering
-        super().build(
-            flowables,
-            onFirstPage=onFirstPage,
-            onLaterPages=onLaterPages,
-            canvasmaker=canvasmaker,
-        )
+        super().build(flowables, onFirstPage=onFirstPage,
+                      onLaterPages=onLaterPages, canvasmaker=canvasmaker)
 
 
 async def generate_report(request):
@@ -373,9 +362,20 @@ async def generate_report(request):
 
         body_style = styles["BodyText"]
 
+        table_header_style = ParagraphStyle(
+            "TableHeaderStyle",
+            parent=styles["BodyText"],
+            fontSize=12,
+
+            # alignment='TA_CENTER',
+            # leading=20,
+            # spaceAfter=10,
+        )
+
         # Elements list for PDF
         elements = []
 
+        # --------------------------------------------------------
         # Title Section
         elements.append(
             Paragraph(f"State Report: {state.name} | {time_period_string}", title_style))
@@ -384,6 +384,7 @@ async def generate_report(request):
         # Flood Risk Overview
         elements.append(Paragraph("Flood Risk Overview", heading_2_style))
 
+        # --------------------------------------------------------
         # Overview Section
         try:
             data_obj = await get_top_vulnerable_districts(
@@ -412,9 +413,9 @@ async def generate_report(request):
         except Exception as e:
             elements.append(
                 Paragraph(f"Error fetching district data: {e}", body_style))
-            elements.append(Spacer(1, 20))
 
-        # Add Key Figures Table
+        # --------------------------------------------------------
+        # Key Figures Section
         elements.append(
             Paragraph("Top most at risk districts: Key Figures", heading_2_style))
 
@@ -435,7 +436,7 @@ async def generate_report(request):
         elements.append(district_table)
         elements.append(Spacer(1, 20))
 
-        # Add Highlights table
+        # Month Highlights sub-section
         elements.append(
             Paragraph(f"Highlights for the month of {time_period_string}", heading_3_style))
 
@@ -445,15 +446,28 @@ async def generate_report(request):
             time_period, state.code
         )
 
-        district_table_data = [
-            ["District", "inundation-pct", "sum-population", "human-live-lost", "population-affected-total", "crop-area", "total-animal-affected", "total-tender-awarded-value"]]
+        # district_table_data = [
+        #     [Paragraph(header, table_header_style) for header in ["District", "Inundation pct", "Sum Population", "Human Live Lost",
+        #                                                           "population affected total", "crop area", "total animal affected",
+        #                                                           "total tender awarded value"]]
+        # ]
+
+        # print()
+
+        a = ["District", "Inundation pct", "Sum Population", "Human Live Lost",
+             "population affected total", "crop area", "total animal affected", "total tender awarded value"]
+        b = []
+        for header_value in a:
+            b.append(Paragraph(header_value, table_header_style))
+        district_table_data = [b]
+        # district_table_data = [a]
         for data in data_obj:
             values = [data['indicators'][indicator]
                       for indicator in month_highlight_table_indicators]
             row = [data['geography'].name] + values
             district_table_data.append(row)
 
-        district_table = await get_table(district_table_data)
+        district_table = await get_table(district_table_data, [70, 70, 70, 70, 70, 70, 70, 70])
         elements.append(district_table)
         elements.append(Spacer(1, 20))
 
@@ -545,54 +559,18 @@ async def generate_report(request):
         # Add Highlights
         elements.append(Paragraph("Highlights", heading_2_style))
         highlights_data = [
-            [
-                "District",
-                "% Area Inundated",
-                "District Population",
-                "Lives Lost",
-                "Population Affected",
-                "Crop Area Affected",
-            ],
-            [
-                "Charaide",
-                "Data/number",
-                "Data/number",
-                "Data/number",
-                "Data/number",
-                "Data/number",
-            ],
-            [
-                "Dibrugar",
-                "Data/number",
-                "Data/number",
-                "Data/number",
-                "Data/number",
-                "Data/number",
-            ],
-            [
-                "Sivsagar",
-                "Data/number",
-                "Data/number",
-                "Data/number",
-                "Data/number",
-                "Data/number",
-            ],
-            [
-                "Cacha",
-                "Data/number",
-                "Data/number",
-                "Data/number",
-                "Data/number",
-                "Data/number",
-            ],
-            [
-                "Tinsukia",
-                "Data/number",
-                "Data/number",
-                "Data/number",
-                "Data/number",
-                "Data/number",
-            ],
+            ["District", "% Area Inundated", "District Population", "Lives Lost", "Population Affected",
+             "Crop Area Affected"],
+            ["Charaide", "Data/number", "Data/number",
+                "Data/number", "Data/number", "Data/number"],
+            ["Dibrugar", "Data/number", "Data/number",
+                "Data/number", "Data/number", "Data/number"],
+            ["Sivsagar", "Data/number", "Data/number",
+                "Data/number", "Data/number", "Data/number"],
+            ["Cacha", "Data/number", "Data/number",
+                "Data/number", "Data/number", "Data/number"],
+            ["Tinsukia", "Data/number", "Data/number",
+                "Data/number", "Data/number", "Data/number"],
         ]
         highlights_table = await get_table(highlights_data)
         elements.append(highlights_table)
@@ -690,7 +668,7 @@ async def generate_report(request):
             bulletColor=colors.black,
             bulletFormat="%s."))
 
-        # --------------------------------------------------------------------------------------
+        # ------------------------------------------------------
         # Sections done until here
 
         # Generate PDF
@@ -711,13 +689,15 @@ async def generate_report(request):
     return HttpResponse("Invalid HTTP method", status=405)
 
 
-async def get_table(table_data):
-    table_view = Table(table_data)
+async def get_table(table_data, colWidths=None):
+    table_view = Table(table_data, colWidths)
+
     table_view.setStyle(
         TableStyle(
             [
                 ("BACKGROUND", (0, 0), (-1, 0), HexColor(0xDBF9E3)),
                 ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
+                ("VALIGN", (0, 0), (-1, 0), "MIDDLE"),
                 ("ALIGN", (0, 0), (-1, -1), "CENTER"),
                 ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
                 ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
