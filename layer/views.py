@@ -523,56 +523,7 @@ async def generate_report(request):
             elements.append(table_with_images)
             elements.append(Spacer(1, 20))
 
-        # Add Key Figures Table
-        # key_figures_data = [
-        #     [
-        #         "District",
-        #         "Overall Flood Risk",
-        #         "Hazard Risk",
-        #         "Exposure Risk",
-        #         "Vulnerability Risk",
-        #         "Gov. Response",
-        #     ],
-        #     [
-        #         "Charaide",
-        #         "Very High",
-        #         "Data/number",
-        #         "Data/number",
-        #         "Data/number",
-        #         "No data",
-        #     ],
-        #     [
-        #         "Dibrugar",
-        #         "Very High",
-        #         "Data/number",
-        #         "Data/number",
-        #         "Data/number",
-        #         "No data",
-        #     ],
-        #     [
-        #         "Sivsagar",
-        #         "High",
-        #         "Data/number",
-        #         "Data/number",
-        #         "Data/number",
-        #         "Data/number",
-        #     ],
-        #     ["Cacha", "High", "Data/number", "Data/number", "Data/number", "No data"],
-        #     [
-        #         "Tinsukia",
-        #         "Medium",
-        #         "Data/number",
-        #         "Data/number",
-        #         "Data/number",
-        #         "No data",
-        #     ],
-        # ]
-
-        # key_figures_table = await get_table(key_figures_data)
-        # elements.append(key_figures_table)
-        # elements.append(Spacer(1, 20))
-
-        # Add Highlights
+        # Add Government Response Spending
         elements.append(Paragraph("Highlights", heading_2_style))
         highlights_data = [
             ["District", "% Area Inundated", "District Population", "Lives Lost", "Population Affected",
@@ -592,7 +543,7 @@ async def generate_report(request):
         elements.append(highlights_table)
         elements.append(Spacer(1, 20))
 
-        # Add Charts
+        # E-tenders Data Insights sub-section
         async with httpx.AsyncClient() as client:
             chart_payload = {
                 "chart_type": "GROUPED_BAR_VERTICAL",
@@ -641,7 +592,7 @@ async def generate_report(request):
             elements.append(Image(chart_path, width=400, height=200))
             elements.append(Spacer(1, 20))
 
-        # Insights Section
+        # Key Insights Section
         elements = await append_insights(elements, time_period, state, time_period_parsed, time_period_string)
         # elements.append(PageBreak())
 
