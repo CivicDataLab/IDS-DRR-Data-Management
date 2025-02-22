@@ -25,6 +25,57 @@ from collections import defaultdict
 month_highlight_table_indicators = ["inundation-pct", "sum-population", "human-live-lost",
                                     "population-affected-total", "crop-area", "total-animal-affected", "total-tender-awarded-value"]
 
+# Custom Styles
+styles = getSampleStyleSheet()
+
+title_style = ParagraphStyle(
+    "TitleStyle",
+    parent=styles["Title"],
+    fontSize=18,
+    leading=22,
+    alignment=1,  # Centered
+)
+heading_1_style = ParagraphStyle(
+    "Heading1Style",
+    parent=styles["Heading1"],
+    fontSize=16,
+    leading=16,
+    spaceAfter=10,
+)
+
+heading_2_style = ParagraphStyle(
+    "Heading2Style",
+    parent=styles["Heading2"],
+    fontSize=14,
+    leading=18,
+    spaceAfter=10,
+)
+heading_3_style = ParagraphStyle(
+    "Heading3Style",
+    parent=styles["Heading3"],
+    fontSize=12,
+    leading=20,
+    spaceAfter=10,
+)
+
+body_style = styles["BodyText"]
+
+table_header_style = ParagraphStyle(
+    "TableHeaderStyle",
+    parent=styles["BodyText"],
+    fontSize=12,
+    alignment=1,
+    # leading=20,
+    # spaceAfter=10,
+)
+
+table_body_style = ParagraphStyle(
+    "TableBodyStyle",
+    parent=styles["BodyText"],
+    fontSize=10,
+    alignment=1,
+)
+
 
 async def fetch_chart(client, chart_payload, output_path, geo_filter):
     try:
@@ -314,8 +365,6 @@ async def generate_report(request):
             '5.0': 'Very High',
         }
 
-        styles = getSampleStyleSheet()
-
         geo_code = request.GET.get("geo_code", "18")
         time_period = request.GET.get("time_period", DEFAULT_TIME_PERIOD)
         time_period_parsed = datetime.datetime.strptime(
@@ -328,49 +377,6 @@ async def generate_report(request):
 
         # Set the type filter based on state.
         state = await sync_to_async(Geography.objects.get)(code=geo_code, type="STATE")
-
-        # Custom Styles
-        title_style = ParagraphStyle(
-            "TitleStyle",
-            parent=styles["Title"],
-            fontSize=18,
-            leading=22,
-            alignment=1,  # Centered
-        )
-        heading_1_style = ParagraphStyle(
-            "Heading1Style",
-            parent=styles["Heading1"],
-            fontSize=16,
-            leading=16,
-            spaceAfter=10,
-        )
-
-        heading_2_style = ParagraphStyle(
-            "Heading2Style",
-            parent=styles["Heading2"],
-            fontSize=14,
-            leading=18,
-            spaceAfter=10,
-        )
-        heading_3_style = ParagraphStyle(
-            "Heading3Style",
-            parent=styles["Heading3"],
-            fontSize=12,
-            leading=20,
-            spaceAfter=10,
-        )
-
-        body_style = styles["BodyText"]
-
-        table_header_style = ParagraphStyle(
-            "TableHeaderStyle",
-            parent=styles["BodyText"],
-            fontSize=12,
-
-            # alignment='TA_CENTER',
-            # leading=20,
-            # spaceAfter=10,
-        )
 
         # Elements list for PDF
         elements = []
@@ -426,13 +432,15 @@ async def generate_report(request):
         majorIndicatorsData = await get_major_indicators_data(time_period, state.code)
 
         district_table_data = [
-            ["District", "Overall Flood Risk", "Hazard Risk", "Exposure Risk", "Vulnerability Risk", "Government Response"]]
+            [Paragraph(table_title, table_header_style) for table_title in [
+                "District", "Risk Score", "Flood Hazard", "Exposure", "Vulnerability", "Government Response"]]
+        ]
         for data in majorIndicatorsData:
             # if data.indicators["overall-flood-risk"]:
-            district_table_data.append([data['geography'].name, risk_mapping_text[str(data['indicators']["risk-score"])], risk_mapping_text[str(data['indicators']["flood-hazard"])], risk_mapping_text[str(
+            district_table_data.append([Paragraph(data['geography'].name, table_body_style), risk_mapping_text[str(data['indicators']["risk-score"])], risk_mapping_text[str(data['indicators']["flood-hazard"])], risk_mapping_text[str(
                 data['indicators']["exposure"])], risk_mapping_text[str(data['indicators']["vulnerability"])], risk_mapping_text[str(data['indicators']["government-response"])]])
 
-        district_table = await get_table(district_table_data)
+        district_table = await get_table(district_table_data, [100, 80, 80, 80, 80, 80])
         elements.append(district_table)
         elements.append(Spacer(1, 20))
 
@@ -464,7 +472,8 @@ async def generate_report(request):
         for data in data_obj:
             values = [data['indicators'][indicator]
                       for indicator in month_highlight_table_indicators]
-            row = [data['geography'].name] + values
+            row = [Paragraph(data['geography'].name,
+                             table_body_style)] + values
             district_table_data.append(row)
 
         district_table = await get_table(district_table_data, [70, 70, 70, 70, 70, 70, 70, 70])
@@ -626,47 +635,8 @@ async def generate_report(request):
             elements.append(Spacer(1, 20))
 
         # Insights Section
+        elements = await append_insights(elements, time_period, state, time_period_parsed, time_period_string)
         # elements.append(PageBreak())
-        elements.append(
-            Paragraph(
-                "Key Insights and Suggested Actions", heading_2_style)
-        )
-
-        major_indicators_districts = await get_major_indicators_data(time_period, state.code)
-        # pick first three items in the list
-        major_indicators_districts = major_indicators_districts[:-2]
-
-        cumulative_tender_value = await get_cumulative_indicator_value_for_last_three_years(
-            time_period_parsed.year, 'total-tender-awarded-value', major_indicators_districts[0]['geography'].id)
-
-        # main insights
-        main_insights = [
-            # join geography name from major indicators, process each
-            f"As per {time_period_string}, most at risk districts are {', '.join([item['geography'].name for item in major_indicators_districts])}. The factors scoring lowest for {', '.join([f"{item['geography'].name} is {sort_data_dict_and_return_highest_key(item['indicators'])}" for item in major_indicators_districts])}",
-            f"Despite receiving significant funds through SDRF in past 3 years. <#> public contracts in past 3 years totalling to {cumulative_tender_value} INR,  <District 1> experienced substantial losses and damages.",
-            "For most at risk district <district 1>, <#> public contracts totalling to <# INR>  have been done in past 3 years for flood management. Biggest project undertaken in this district was <top contract in terms of amount for this district>.",
-            "However, risk is high because of <factor> and <factor> showing need of more targeting intervention to address these.",
-            "<District 1> has received <numbers> amount of money in past three years from SDRF. (If district is getting funds across multiple MoUs then the next line). Repeated funds through SDRF for district 1 and 2 shows focus on immediate relief and restoration efforts.",
-            "Allocate sufficient and appropriate funding for DRR activities, including preparedness and mitigation to establish transparent mechanisms across line departments and key decision makers in DRR."
-        ]
-
-        suggestive_actions = [
-            "<District 3> needs significant effort on Government Response as least money has been received through SDRF despite significant losses and damages."
-            "<district in top 5 at risk that received minimum amount from flood tenders> has received <numbers> amount in terms of flood related tenders in past 3 years despite having among the highest Risk score",
-            "<district in top 5 at risk that received minimum amount from flood tenders> needs effort on Hazard risk reduction as <numbers> of its area experienced inundation this month.",
-            "<District 1> needs effort on exposure risk reduction seeing that Total Population Exposed this month is <numbers>."
-        ]
-
-        elements.append(ListFlowable([
-            ListItem(Paragraph(item, body_style)) for item in main_insights
-        ],  bulletType='1',  # Use '1' for numbered list
-            start='1',       # Start numbering from 1
-            # Overall indentation of the list (adjust as needed)
-            leftIndent=12,
-            # Indent the numbers by 18 points (adjust as needed)
-            bulletFontSize=10,  # Set the font size of the numbers to match the text
-            bulletColor=colors.black,
-            bulletFormat="%s."))
 
         # ------------------------------------------------------
         # Sections done until here
@@ -759,3 +729,48 @@ async def get_cumulative_indicator_value_for_last_three_years(time_period, indic
         total += result.value
 
     return total
+
+
+async def append_insights(elements, time_period, state, time_period_parsed, time_period_string):
+    elements.append(
+        Paragraph(
+            "Key Insights and Suggested Actions", heading_2_style)
+    )
+
+    major_indicators_districts = await get_major_indicators_data(time_period, state.code)
+    # pick first three items in the list
+    major_indicators_districts = major_indicators_districts[:-2]
+
+    cumulative_tender_value = await get_cumulative_indicator_value_for_last_three_years(
+        time_period_parsed.year, 'total-tender-awarded-value', major_indicators_districts[0]['geography'].id)
+
+    # main insights
+    main_insights = [
+        # join geography name from major indicators, process each
+        f"As per {time_period_string}, most at risk districts are {', '.join([item['geography'].name for item in major_indicators_districts])}. The factors scoring lowest for {', '.join([f"{item['geography'].name} is {sort_data_dict_and_return_highest_key(item['indicators'])}" for item in major_indicators_districts])}",
+        f"Despite receiving significant funds through SDRF in past 3 years. <#> public contracts in past 3 years totalling to {cumulative_tender_value} INR,  <District 1> experienced substantial losses and damages.",
+        "For most at risk district <district 1>, <#> public contracts totalling to <# INR>  have been done in past 3 years for flood management. Biggest project undertaken in this district was <top contract in terms of amount for this district>.",
+        "However, risk is high because of <factor> and <factor> showing need of more targeting intervention to address these.",
+        "<District 1> has received <numbers> amount of money in past three years from SDRF. (If district is getting funds across multiple MoUs then the next line). Repeated funds through SDRF for district 1 and 2 shows focus on immediate relief and restoration efforts.",
+        "Allocate sufficient and appropriate funding for DRR activities, including preparedness and mitigation to establish transparent mechanisms across line departments and key decision makers in DRR."
+    ]
+
+    suggestive_actions = [
+        "<District 3> needs significant effort on Government Response as least money has been received through SDRF despite significant losses and damages."
+        "<district in top 5 at risk that received minimum amount from flood tenders> has received <numbers> amount in terms of flood related tenders in past 3 years despite having among the highest Risk score",
+        "<district in top 5 at risk that received minimum amount from flood tenders> needs effort on Hazard risk reduction as <numbers> of its area experienced inundation this month.",
+        "<District 1> needs effort on exposure risk reduction seeing that Total Population Exposed this month is <numbers>."
+    ]
+
+    elements.append(ListFlowable([
+        ListItem(Paragraph(item, body_style)) for item in main_insights
+    ],  bulletType='1',  # Use '1' for numbered list
+        start='1',       # Start numbering from 1
+        # Overall indentation of the list (adjust as needed)
+        leftIndent=12,
+        # Indent the numbers by 18 points (adjust as needed)
+        bulletFontSize=10,  # Set the font size of the numbers to match the text
+        bulletColor=colors.black,
+        bulletFormat="%s."))
+
+    return elements
