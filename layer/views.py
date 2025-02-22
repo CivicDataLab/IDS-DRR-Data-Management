@@ -714,21 +714,25 @@ async def append_insights(elements, time_period, state, time_period_parsed, time
     ]
 
     suggestive_actions = [
-        "<District 3> needs significant effort on Government Response as least money has been received through SDRF despite significant losses and damages."
+        "<District 3> needs significant effort on Government Response as least money has been received through SDRF despite significant losses and damages.",
         "<district in top 5 at risk that received minimum amount from flood tenders> has received <numbers> amount in terms of flood related tenders in past 3 years despite having among the highest Risk score",
         "<district in top 5 at risk that received minimum amount from flood tenders> needs effort on Hazard risk reduction as <numbers> of its area experienced inundation this month.",
         "<District 1> needs effort on exposure risk reduction seeing that Total Population Exposed this month is <numbers>."
     ]
 
-    elements.append(ListFlowable([
-        ListItem(Paragraph(item, body_style)) for item in main_insights
-    ],  bulletType='1',  # Use '1' for numbered list
-        start='1',       # Start numbering from 1
-        # Overall indentation of the list (adjust as needed)
-        leftIndent=12,
-        # Indent the numbers by 18 points (adjust as needed)
-        bulletFontSize=10,  # Set the font size of the numbers to match the text
-        bulletColor=colors.black,
-        bulletFormat="%s."))
+    prepare_array = [ListItem(Paragraph(item, body_style)) for item in main_insights[:-1]] + [
+        ListItem(Paragraph(main_insights[-1], body_style)),
+        ListFlowable([ListItem(Paragraph(item, body_style)) for item in suggestive_actions],  bulletType='1',  # Use '1' for numbered list)
+                     )
+    ]
+
+    elements.append(ListFlowable(prepare_array,  bulletType='1',  # Use '1' for numbered list
+                                 start='1',       # Start numbering from 1
+                                 # Overall indentation of the list (adjust as needed)
+                                 leftIndent=12,
+                                 # Indent the numbers by 18 points (adjust as needed)
+                                 bulletFontSize=10,  # Set the font size of the numbers to match the text
+                                 bulletColor=colors.black,
+                                 bulletFormat="%s."))
 
     return elements
