@@ -513,7 +513,14 @@ async def generate_report(request):
             chart_path = "bar_chart.png"
             await fetch_chart(client, chart_payload, chart_path, state.code)
 
-            elements.append(Image(chart_path, width=400, height=200))
+            image_table_data = [[Image(chart_path, width=250, height=125),
+                                 Image(chart_path, width=250, height=125)]]
+            table_with_images = await get_table(image_table_data, [300, 300], TableStyle([
+                ('GRID', (0, 0), (-1, -1), 0, colors.transparent),
+                ("PADDING", (0, 0), (-1, -1), 5)
+            ]))
+
+            elements.append(table_with_images)
             elements.append(Spacer(1, 20))
 
         # Add Key Figures Table
@@ -659,21 +666,21 @@ async def generate_report(request):
     return HttpResponse("Invalid HTTP method", status=405)
 
 
-async def get_table(table_data, colWidths=None):
+async def get_table(table_data, colWidths=None, table_style=TableStyle(
+    [
+        ("BACKGROUND", (0, 0), (-1, 0), HexColor(0xDBF9E3)),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
+        ("VALIGN", (0, 0), (-1, 0), "MIDDLE"),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+        ("GRID", (0, 0), (-1, -1), 1, colors.black),
+    ]
+)):
     table_view = Table(table_data, colWidths)
 
     table_view.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), HexColor(0xDBF9E3)),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
-                ("VALIGN", (0, 0), (-1, 0), "MIDDLE"),
-                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
-                ("GRID", (0, 0), (-1, -1), 1, colors.black),
-            ]
-        )
+        table_style
     )
     return table_view
 
