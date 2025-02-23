@@ -588,31 +588,47 @@ async def generate_report(request):
         elements.append(Paragraph("Losses and Damages", heading_2_style))
 
         elements.append(Paragraph(
-            f"Times Series for {time_period_prev_months_array}", heading_3_style))
+            f"Time Series for {', '.join([datetime.datetime.strptime(
+                period, "%Y_%m").strftime("%B %Y") for period in time_period_prev_months_array])}", heading_3_style))
 
         elements = await add_losses_and_damages_times_series(elements, time_period_prev_months_array, time_period, state.code)
 
         # Add Government Response Spending
-        elements.append(Paragraph("Highlights", heading_2_style))
+        elements.append(
+            Paragraph("Government Response / Spending:", heading_2_style))
+
+        elements.append(Paragraph(
+            "SDRF Disbursement data Insights", heading_3_style))
+
+        elements.append(Paragraph(
+            "For the high risk districts, SDRF sanctions in previous 2 FYs. (Starting and End Point)", body_style))
+
         highlights_data = [
-            ["District", "% Area Inundated", "District Population", "Lives Lost", "Population Affected",
-             "Crop Area Affected"],
+            [Paragraph(header_value, table_header_style) for header_value in ["District", "Amount Sanctioned as per 48th SEC meting", "Amount Sanctioned as per 49th SEC meting",
+                                                                              "Amount Sanctioned as per 50th SEC meting", "Total Allocation"]],
             ["Charaide", "Data/number", "Data/number",
-                "Data/number", "Data/number", "Data/number"],
+                "Data/number", "Data/number"],
             ["Dibrugar", "Data/number", "Data/number",
-                "Data/number", "Data/number", "Data/number"],
+                "Data/number", "Data/number"],
             ["Sivsagar", "Data/number", "Data/number",
-                "Data/number", "Data/number", "Data/number"],
+                "Data/number", "Data/number"],
             ["Cacha", "Data/number", "Data/number",
-                "Data/number", "Data/number", "Data/number"],
+                "Data/number", "Data/number"],
             ["Tinsukia", "Data/number", "Data/number",
-                "Data/number", "Data/number", "Data/number"],
+                "Data/number", "Data/number"],
         ]
-        highlights_table = await get_table(highlights_data)
+        highlights_table = await get_table(highlights_data, [90, 90, 90, 90, 90])
         elements.append(highlights_table)
         elements.append(Spacer(1, 20))
 
         # E-tenders Data Insights sub-section
+        # Insert Link to Assam Tenders Dashboard in heading later
+        elements.append(Paragraph(
+            "E-tenders Data Insights", heading_3_style))
+
+        elements.append(Paragraph(
+            "For identified high risk districts, e-tenders related to floods in previous 3 financial years (2022-2024)", body_style))
+
         async with httpx.AsyncClient() as client:
             chart_payload = {
                 "chart_type": "GROUPED_BAR_VERTICAL",
