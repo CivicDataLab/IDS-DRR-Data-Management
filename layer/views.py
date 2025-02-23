@@ -765,6 +765,8 @@ async def append_insights_section(elements, time_period, state, time_period_pars
             "Key Insights and Suggested Actions", heading_2_style)
     )
 
+    topsis_value = await get_topsis_score_for_given_values(time_period, state.code)
+
     major_indicators_districts = await get_major_indicators_data(time_period, state.code)
     # pick first three items in the list
     major_indicators_districts_top_3 = major_indicators_districts[:-2]
@@ -898,3 +900,32 @@ def append_annexure_section(elements):
     elements.append(Spacer(1, 20))
 
     return elements
+
+
+async def get_topsis_score_for_given_values(time_period, state_code):
+    """
+
+    """
+
+    data_obj = await sync_to_async(Data.objects.filter)(
+        indicator__slug="topsis-score", data_period=time_period
+    )
+
+    data_obj = await sync_to_async(data_obj.select_related)(
+        "geography",
+        "indicator",
+        "indicator__parent",
+        "indicator__parent__parent",
+        "geography__parentId",
+    )
+
+    data_obj = await sync_to_async(data_obj.filter)(
+        Q(geography__parentId__code=state_code) | Q(
+            geography__code=state_code)
+    )
+
+    data_list = await sync_to_async(data_obj.order_by)("-value")
+
+    data_list = await sync_to_async(list)(data_list)
+
+    return data_list[0].value
