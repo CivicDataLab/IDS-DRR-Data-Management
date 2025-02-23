@@ -79,7 +79,7 @@ table_body_style = ParagraphStyle(
 )
 
 
-async def fetch_chart(client, chart_payload , resource_id):
+async def fetch_chart(client, chart_payload, resource_id):
     output_path = Faker().file_name(extension="png")
     try:
         timeout = httpx.Timeout(10.0, read=None)
@@ -352,10 +352,12 @@ class CustomDocTemplate(SimpleDocTemplate):
         super().build(flowables, onFirstPage=onFirstPage,
                       onLaterPages=onLaterPages, canvasmaker=canvasmaker)
 
+
 async def add_losses_and_damages_times_series(elements, time_period_prev_months_array, time_period, geo_filter):
     districts = await get_major_indicators_data(time_period, geo_filter)
 
-    districts: List[Geography] = [district['geography'] for district in districts]
+    districts: list[Geography] = [district['geography']
+                                  for district in districts]
     y_axis_columns = []
     for district in districts:
         y_axis_columns.append({
@@ -365,63 +367,64 @@ async def add_losses_and_damages_times_series(elements, time_period_prev_months_
         })
 
     async with httpx.AsyncClient() as client:
-            chart_payload1 = {
-                "chart_type": "MULTILINE",
-                "x_axis_column": "timeperiod",
-                "x_axis_label": "Month",
-                "y_axis_column": y_axis_columns,
-                "y_axis_label": "Score",
-                "show_legend": "true",
-                "filters": [
-                    {
-                        "column": "timeperiod",
-                        "operator": "in",
-                        "value": ",".join(time_period_prev_months_array),
-                    },
-                    {
-                        "column": "factor",
-                        "operator": "==",
-                        "value": "population-affected-total",
-                    },
-                ],
-            }
-            
-            chart_payload2 = {
-                "chart_type": "MULTILINE",
-                "x_axis_column": "timeperiod",
-                "x_axis_label": "Month",
-                "y_axis_column": y_axis_columns,
-                "y_axis_label": "Score",
-                "show_legend": "true",
-                "filters": [
-                    {
-                        "column": "timeperiod",
-                        "operator": "in",
-                        "value": ",".join(time_period_prev_months_array),
-                    },
-                    {
-                        "column": "factor",
-                        "operator": "==",
-                        "value": "population-affected-total",
-                    },
-                ],
-            }
+        chart_payload1 = {
+            "chart_type": "MULTILINE",
+            "x_axis_column": "timeperiod",
+            "x_axis_label": "Month",
+            "y_axis_column": y_axis_columns,
+            "y_axis_label": "Score",
+            "show_legend": "true",
+            "filters": [
+                {
+                    "column": "timeperiod",
+                    "operator": "in",
+                    "value": ",".join(time_period_prev_months_array),
+                },
+                {
+                    "column": "factor",
+                    "operator": "==",
+                    "value": "population-affected-total",
+                },
+            ],
+        }
 
-            chart1 = await fetch_chart(client, chart_payload1, "a165cb92-8c92-49d5-83bb-d8a875c61a57")
-            chart2 = await fetch_chart(client, chart_payload2, "a165cb92-8c92-49d5-83bb-d8a875c61a57")
+        chart_payload2 = {
+            "chart_type": "MULTILINE",
+            "x_axis_column": "timeperiod",
+            "x_axis_label": "Month",
+            "y_axis_column": y_axis_columns,
+            "y_axis_label": "Score",
+            "show_legend": "true",
+            "filters": [
+                {
+                    "column": "timeperiod",
+                    "operator": "in",
+                    "value": ",".join(time_period_prev_months_array),
+                },
+                {
+                    "column": "factor",
+                    "operator": "==",
+                    "value": "population-affected-total",
+                },
+            ],
+        }
 
-            image_table_data = [[Image(chart1, width=250, height=125),
-                                 Image(chart2, width=250, height=125)]]
-            table_with_images = await get_table(image_table_data, [300, 300], TableStyle([
-                ('GRID', (0, 0), (-1, -1), 0, colors.transparent),
-                ("PADDING", (0, 0), (-1, -1), 5)
-            ]))
+        chart1 = await fetch_chart(client, chart_payload1, "a165cb92-8c92-49d5-83bb-d8a875c61a57")
+        chart2 = await fetch_chart(client, chart_payload2, "a165cb92-8c92-49d5-83bb-d8a875c61a57")
 
-            elements.append(table_with_images)
-            elements.append(Spacer(1, 20))
-            # os.remove(chart1)
-            # os.remove(chart2)
+        image_table_data = [[Image(chart1, width=250, height=125),
+                             Image(chart2, width=250, height=125)]]
+        table_with_images = await get_table(image_table_data, [300, 300], TableStyle([
+            ('GRID', (0, 0), (-1, -1), 0, colors.transparent),
+            ("PADDING", (0, 0), (-1, -1), 5)
+        ]))
+
+        elements.append(table_with_images)
+        elements.append(Spacer(1, 20))
+        # os.remove(chart1)
+        # os.remove(chart2)
     return elements
+
 
 async def generate_report(request):
     if request.method == "GET":
@@ -559,7 +562,7 @@ async def generate_report(request):
 
         elements.append(Paragraph(
             f"Times Series for {time_period_prev_months_array}", heading_3_style))
-        
+
         elements = await add_losses_and_damages_times_series(elements, time_period_prev_months_array, time_period, state.code)
 
         # Add Government Response Spending
