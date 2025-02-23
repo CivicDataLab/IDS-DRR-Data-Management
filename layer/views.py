@@ -78,6 +78,17 @@ table_body_style = ParagraphStyle(
     alignment=1,
 )
 
+# Global variables to set state and time period in page footers
+page_level_state = ''
+page_level_time_period = ''
+
+
+def set_page_level_state_and_time_period(state, time_period):
+    global page_level_state
+    global page_level_time_period
+    page_level_state = state
+    page_level_time_period = time_period
+
 
 async def fetch_chart(client, chart_payload, resource_id):
     output_path = Faker().file_name(extension="png")
@@ -304,10 +315,18 @@ def add_header_footer(canvas_obj, doc):
     """
     width, height = A4
 
+    # Add an image to the left in the header
+    header_image_path = "layer/IDS_DRR_Logo.png"
+    try:
+        canvas_obj.drawImage(header_image_path, 40, height -
+                             50, width=260, height=30, preserveAspectRatio=True)
+    except Exception as e:
+        print(f"Error loading header image: {e}")
+
     # Header
-    header_text = "IDS-DRR | Intelligent Data Solution for Disaster Risk Reduction"
-    canvas_obj.setFont("Helvetica-Bold", 8)
-    canvas_obj.drawString(40, height - 30, header_text)
+    # header_text = "IDS-DRR | Intelligent Data Solution for Disaster Risk Reduction"
+    # canvas_obj.setFont("Helvetica-Bold", 8)
+    # canvas_obj.drawString(40, height - 30, header_text)
 
     # Add an image to the right in the header
     header_image_path = "layer/CDL_Primary Logo.png"
@@ -318,12 +337,12 @@ def add_header_footer(canvas_obj, doc):
         print(f"Error loading header image: {e}")
 
     # Footer
-    footer_text = "State Report: Assam | May 2023"
+    footer_text = f"State Report: {page_level_state} | {page_level_time_period}"
     canvas_obj.setFont("Helvetica", 8)
     canvas_obj.drawString(40, 30, footer_text)  # Left-justified footer text
 
-    # Page number on the right in the footer
-    page_number_text = f"Page {doc.page} of {doc.page_count}"
+    # Page number on the right in the footer of {doc.page_count}
+    page_number_text = f"Page {doc.page}"
     footer_width = stringWidth(page_number_text, "Helvetica", 10)
     canvas_obj.drawString(width - footer_width - 40, 30,
                           page_number_text)  # Right-aligned page number
@@ -347,8 +366,14 @@ class CustomDocTemplate(SimpleDocTemplate):
         """
         Overridden build method to add header and footer.
         """
-        self.page_count = len(
-            flowables)  # Total page count for dynamic numbering
+        # self.page_count = len(
+        #     flowables)  # Total page count for dynamic numbering
+
+        # Below also didn't work
+        # Track page count using afterPage hook
+        # def onLaterPagesWithCount(canvas_obj, doc):
+        #     self.page_count += 1
+        #     onLaterPages(canvas_obj, doc)
         super().build(flowables, onFirstPage=onFirstPage,
                       onLaterPages=onLaterPages, canvasmaker=canvasmaker)
 
@@ -430,8 +455,19 @@ async def generate_report(request):
     if request.method == "GET":
         # Prepare PDF buffer and styles
         pdf_buffer = BytesIO()
-        # doc = CustomDocTemplate(pdf_buffer, pagesize=A4)
 
+        geo_code = request.GET.get("geo_code", "18")
+        time_period = request.GET.get("time_period", DEFAULT_TIME_PERIOD)
+        time_period_parsed = datetime.datetime.strptime(
+            time_period, "%Y_%m")
+        time_period_string = time_period_parsed.strftime("%B %Y")
+
+        # Set the type filter based on state.
+        state = await sync_to_async(Geography.objects.get)(code=geo_code, type="STATE")
+
+        set_page_level_state_and_time_period(state.name, time_period_string)
+
+        # doc = CustomDocTemplate(pdf_buffer, pagesize=A4)
         # Development mode to update a local document for testing
         doc = CustomDocTemplate("test_output.pdf", pagesize=A4)
 
@@ -443,18 +479,9 @@ async def generate_report(request):
             '5.0': 'Very High',
         }
 
-        geo_code = request.GET.get("geo_code", "18")
-        time_period = request.GET.get("time_period", DEFAULT_TIME_PERIOD)
-        time_period_parsed = datetime.datetime.strptime(
-            time_period, "%Y_%m")
-        time_period_string = time_period_parsed.strftime("%B %Y")
-
         # Create a time period array with 2 months prior to current selected month along with the current month
         time_period_prev_months_array = [(time_period_parsed - datetime.timedelta(days=60)).strftime(
             "%Y_%m"), (time_period_parsed - datetime.timedelta(days=30)).strftime("%Y_%m"), time_period_parsed.strftime("%Y_%m")]
-
-        # Set the type filter based on state.
-        state = await sync_to_async(Geography.objects.get)(code=geo_code, type="STATE")
 
         # Elements list for PDF
         elements = []
