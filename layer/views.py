@@ -1,4 +1,6 @@
 import datetime
+from faker import Faker
+import os
 from functools import lru_cache
 from io import BytesIO
 from unicodedata import category
@@ -77,9 +79,11 @@ table_body_style = ParagraphStyle(
 )
 
 
-async def fetch_chart(client, chart_payload, output_path, geo_filter):
+async def fetch_chart(client, chart_payload , resource_id):
+    output_path = Faker().file_name(extension="png")
     try:
-        response = await client.post(f"{CHART_API_BASE_URL}{DATA_RESOURCE_MAP[geo_filter]}/?response_type=file", json=chart_payload)
+        timeout = httpx.Timeout(10.0, read=None)
+        response = await client.post(f"{CHART_API_BASE_URL}{resource_id}/?response_type=file", json=chart_payload, timeout=timeout)
         if response.status_code == 200:
             with open(output_path, "wb") as f:
                 f.write(response.content)
@@ -89,6 +93,7 @@ async def fetch_chart(client, chart_payload, output_path, geo_filter):
                 f"Failed to fetch chart:::::::::::::::: {response.status_code}, {response.text}")
             return None
     except Exception as e:
+        print(f"Error fetching chart: {e}")
         return None
 
 
@@ -347,6 +352,76 @@ class CustomDocTemplate(SimpleDocTemplate):
         super().build(flowables, onFirstPage=onFirstPage,
                       onLaterPages=onLaterPages, canvasmaker=canvasmaker)
 
+async def add_losses_and_damages_times_series(elements, time_period_prev_months_array, time_period, geo_filter):
+    districts = await get_major_indicators_data(time_period, geo_filter)
+
+    districts: List[Geography] = [district['geography'] for district in districts]
+    y_axis_columns = []
+    for district in districts:
+        y_axis_columns.append({
+            "field_name": f"{district.code}",
+            "label": f"{district.name}",
+            "color": f"{Faker().color()}",
+        })
+
+    async with httpx.AsyncClient() as client:
+            chart_payload1 = {
+                "chart_type": "MULTILINE",
+                "x_axis_column": "timeperiod",
+                "x_axis_label": "Month",
+                "y_axis_column": y_axis_columns,
+                "y_axis_label": "Score",
+                "show_legend": "true",
+                "filters": [
+                    {
+                        "column": "timeperiod",
+                        "operator": "in",
+                        "value": ",".join(time_period_prev_months_array),
+                    },
+                    {
+                        "column": "factor",
+                        "operator": "==",
+                        "value": "population-affected-total",
+                    },
+                ],
+            }
+            
+            chart_payload2 = {
+                "chart_type": "MULTILINE",
+                "x_axis_column": "timeperiod",
+                "x_axis_label": "Month",
+                "y_axis_column": y_axis_columns,
+                "y_axis_label": "Score",
+                "show_legend": "true",
+                "filters": [
+                    {
+                        "column": "timeperiod",
+                        "operator": "in",
+                        "value": ",".join(time_period_prev_months_array),
+                    },
+                    {
+                        "column": "factor",
+                        "operator": "==",
+                        "value": "population-affected-total",
+                    },
+                ],
+            }
+
+            chart1 = await fetch_chart(client, chart_payload1, "a165cb92-8c92-49d5-83bb-d8a875c61a57")
+            chart2 = await fetch_chart(client, chart_payload2, "a165cb92-8c92-49d5-83bb-d8a875c61a57")
+
+            image_table_data = [[Image(chart1, width=250, height=125),
+                                 Image(chart2, width=250, height=125)]]
+            table_with_images = await get_table(image_table_data, [300, 300], TableStyle([
+                ('GRID', (0, 0), (-1, -1), 0, colors.transparent),
+                ("PADDING", (0, 0), (-1, -1), 5)
+            ]))
+
+            elements.append(table_with_images)
+            elements.append(Spacer(1, 20))
+            # os.remove(chart1)
+            # os.remove(chart2)
+    return elements
 
 async def generate_report(request):
     if request.method == "GET":
@@ -436,7 +511,6 @@ async def generate_report(request):
                 "District", "Risk Score", "Flood Hazard", "Exposure", "Vulnerability", "Government Response"]]
         ]
         for data in majorIndicatorsData:
-            # if data.indicators["overall-flood-risk"]:
             district_table_data.append([Paragraph(data['geography'].name, table_body_style), risk_mapping_text[str(data['indicators']["risk-score"])], risk_mapping_text[str(data['indicators']["flood-hazard"])], risk_mapping_text[str(
                 data['indicators']["exposure"])], risk_mapping_text[str(data['indicators']["vulnerability"])], risk_mapping_text[str(data['indicators']["government-response"])]])
 
@@ -485,43 +559,8 @@ async def generate_report(request):
 
         elements.append(Paragraph(
             f"Times Series for {time_period_prev_months_array}", heading_3_style))
-        async with httpx.AsyncClient() as client:
-            chart_payload = {
-                "chart_type": "GROUPED_BAR_VERTICAL",
-                "x_axis_column": "timeperiod",
-                "time_column": "timeperiod",
-                "x_axis_label": "Month",
-                "y_axis_column": [
-                    {
-                        "field_name": "population-affected-total",
-                        "label": "Total Population affected",
-                        "color": "#8B5E3C",
-                    },
-                ],
-                "y_axis_label": "Score",
-                "show_legend": "true",
-                "filters": [
-                    {
-                        "column": "timeperiod",
-                        "operator": "in",
-                        "value": time_period_prev_months_array,
-                    },
-                    # {"column": "object-id", "operator": "==", "value": state.code},
-                ],
-            }
-
-            chart_path = "bar_chart.png"
-            await fetch_chart(client, chart_payload, chart_path, state.code)
-
-            image_table_data = [[Image(chart_path, width=250, height=125),
-                                 Image(chart_path, width=250, height=125)]]
-            table_with_images = await get_table(image_table_data, [300, 300], TableStyle([
-                ('GRID', (0, 0), (-1, -1), 0, colors.transparent),
-                ("PADDING", (0, 0), (-1, -1), 5)
-            ]))
-
-            elements.append(table_with_images)
-            elements.append(Spacer(1, 20))
+        
+        elements = await add_losses_and_damages_times_series(elements, time_period_prev_months_array, time_period, state.code)
 
         # Add Government Response Spending
         elements.append(Paragraph("Highlights", heading_2_style))
@@ -585,9 +624,8 @@ async def generate_report(request):
                     # {"column": "object-id", "operator": "==", "value": state.code},
                 ],
             }
-
-            chart_path = "bar_chart.png"
-            await fetch_chart(client, chart_payload, chart_path, state.code)
+            resource_id = DATA_RESOURCE_MAP[state.code]
+            chart_path = await fetch_chart(client, chart_payload, resource_id)
 
             elements.append(Image(chart_path, width=400, height=200))
             elements.append(Spacer(1, 20))
