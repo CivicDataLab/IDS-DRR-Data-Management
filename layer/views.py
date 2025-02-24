@@ -437,8 +437,8 @@ async def add_losses_and_damages_times_series(elements, time_period_prev_months_
         chart1 = await fetch_chart(client, chart_payload1, "a165cb92-8c92-49d5-83bb-d8a875c61a57")
         chart2 = await fetch_chart(client, chart_payload2, "a165cb92-8c92-49d5-83bb-d8a875c61a57")
 
-        image_table_data = [[Image(chart1, width=250, height=125),
-                             Image(chart2, width=250, height=125)]]
+        image_table_data = [[Image(chart1, width=300, height=200),
+                             Image(chart2, width=300, height=200)]]
         table_with_images = await get_table(image_table_data, [300, 300], TableStyle([
             ('GRID', (0, 0), (-1, -1), 0, colors.transparent),
             ("PADDING", (0, 0), (-1, -1), 5)
