@@ -91,7 +91,7 @@ def set_page_level_state_and_time_period(state, time_period):
 
 
 async def fetch_chart(client, chart_payload, resource_id):
-    output_path = Faker().file_name(extension="png")
+    output_path = f"layer/assets/charts/{Faker().file_name(extension='png')}"
     try:
         timeout = httpx.Timeout(10.0, read=None)
         response = await client.post(f"{CHART_API_BASE_URL}{resource_id}/?response_type=file", json=chart_payload, timeout=timeout)
@@ -170,15 +170,6 @@ async def group_by_geography(data_list, expected_indicators=[]):
 
 # @lru_cache
 async def get_major_indicators_data(time_period, geo_filter):
-
-    # indicatorsList = Indicators.objects.filter(is_visible=True, parent__parent=None).select_related(
-    #     "parent",
-    #     "parent__parent",
-    # )
-
-    # indicatorsListQ = list(indicatorsList)
-
-    # print([indi.id for indi in list(indicatorsList)])
 
     data_obj = await sync_to_async(Data.objects.filter)(
         indicator__is_visible=True, indicator__parent__parent=None, data_period=time_period
@@ -450,6 +441,14 @@ async def add_losses_and_damages_times_series(elements, time_period_prev_months_
         # os.remove(chart2)
     return elements
 
+async def cleanup_temp_files():
+    """
+    Cleanup temporary files generated during the report generation process.
+    """
+    import glob
+    chart_files = glob.glob("layer/assets/charts/*.png")
+    for file in chart_files:
+        os.remove(file)
 
 async def generate_report(request):
     if request.method == "GET":
