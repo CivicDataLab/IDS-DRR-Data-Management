@@ -420,7 +420,7 @@ async def add_losses_and_damages_times_series(elements, time_period_prev_months_
                 {
                     "column": "factor",
                     "operator": "==",
-                    "value": "population-affected-total",
+                    "value": "total-infrastructure-damage",
                 },
             ],
         }
@@ -652,6 +652,7 @@ async def generate_report(request):
                         "field_name": "exposure",
                         "label": "Exposure",
                         "color": "#2E8B57",
+                        "aggregate_type": "MEAN",
                         "value_mapping": [
                             {"key": "1.0","value": "Low Risk"},
                             {"key": "2.0","value": "Medium Risk"},
@@ -739,6 +740,7 @@ async def generate_report(request):
 
         # response = HttpResponse(pdf_buffer, content_type="application/pdf")
         # response['Content-Disposition'] = 'attachment; filename="state_report_assam.pdf"'
+        await cleanup_temp_files()
         return response
 
     return HttpResponse("Invalid HTTP method", status=405)
