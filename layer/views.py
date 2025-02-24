@@ -397,7 +397,7 @@ async def add_losses_and_damages_times_series(elements, time_period_prev_months_
             "x_axis_column": "timeperiod",
             "x_axis_label": "Month",
             "y_axis_column": y_axis_columns,
-            "y_axis_label": "Score",
+            "y_axis_label": "Number of people affected",
             "show_legend": "true",
             "filters": [
                 {
