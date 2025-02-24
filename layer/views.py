@@ -586,10 +586,10 @@ async def generate_report(request):
 
         # Losses and Damages section
         elements.append(Paragraph("Losses and Damages", heading_2_style))
+        
+        time_period_str = ', '.join([datetime.datetime.strptime(period, "%Y_%m").strftime("%B %Y") for period in time_period_prev_months_array])
 
-        elements.append(Paragraph(
-            f"Time Series for {', '.join([datetime.datetime.strptime(
-                period, "%Y_%m").strftime("%B %Y") for period in time_period_prev_months_array])}", heading_3_style))
+        elements.append(Paragraph(f"Time Series for {time_period_str}", heading_3_style))
 
         elements = await add_losses_and_damages_times_series(elements, time_period_prev_months_array, time_period, state.code)
 
@@ -632,14 +632,15 @@ async def generate_report(request):
         async with httpx.AsyncClient() as client:
             chart_payload = {
                 "chart_type": "GROUPED_BAR_VERTICAL",
-                "x_axis_column": "timeperiod",
-                "time_column": "timeperiod",
-                "x_axis_label": "Time Period",
+                "x_axis_column": "financial-year",
+                "x_axis_label": "Financial Year",
+                "time_column": "financial-year",
                 "y_axis_column": [
                     {
                         "field_name": "risk-score",
                         "label": "Risk Score",
                         "color": "#8B5E3C",
+                        "aggregate_type": "MEAN",
                     },
                     {"field_name": "exposure",
                         "label": "Exposure", "color": "#2E8B57"},
@@ -647,25 +648,28 @@ async def generate_report(request):
                         "field_name": "vulnerability",
                         "label": "Vulnerability",
                         "color": "#9370DB",
+                        "aggregate_type": "MEAN",
                     },
                     {
                         "field_name": "flood-hazard",
                         "label": "Flood Hazard",
                         "color": "#FFB347",
+                        "aggregate_type": "MEAN",
                     },
                     {
                         "field_name": "government-response",
                         "label": "Government Response",
                         "color": "#808000",
+                        "aggregate_type": "MEAN",
                     },
                 ],
                 "y_axis_label": "Score",
                 "show_legend": "true",
                 "filters": [
                     {
-                        "column": "timeperiod",
+                        "column": "financial-year",
                         "operator": "in",
-                        "value": "2024_06,2024_05,2024_04,2024_03",
+                        "value": "2024-2025,2023-2024,2023-2024",
                     },
                     # {"column": "object-id", "operator": "==", "value": state.code},
                 ],
