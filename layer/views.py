@@ -368,6 +368,55 @@ class CustomDocTemplate(SimpleDocTemplate):
         super().build(flowables, onFirstPage=onFirstPage,
                       onLaterPages=onLaterPages, canvasmaker=canvasmaker)
 
+async def add_total_tender_awarded_value_chart(elements, time_period_prev_months_array, time_period, geo_filter):
+    districts = await get_major_indicators_data(time_period, geo_filter)
+
+    districts: list[Geography] = [district['geography']
+                                  for district in districts]
+    y_axis_columns = []
+    for district in districts:
+        y_axis_columns.append({
+            "field_name": f"{district.code}",
+            "label": f"{district.name}",
+            "color": f"{Faker().color()}",
+            "aggregate_type": "SUM"
+        })
+    
+    async with httpx.AsyncClient() as client:
+        chart_payload = {
+            "chart_type": "GROUPED_BAR_VERTICAL",
+            "x_axis_column": "financial-year",
+            "time_column": "financial-year",
+            "x_axis_label": "Financial Year",
+            "y_axis_column": y_axis_columns,
+            "y_axis_label": "Total render awarded value",
+            "show_legend": "true",
+            "filters": [
+                {
+                    "column": "financial-year",
+                    "operator": "in",
+                    "value": "2022-2023,2023-2024,2024-2025", 
+                },
+                {
+                    "column": "factor",
+                    "operator": "==",
+                    "value": "total-tender-awarded-value",
+                }
+            ],
+        }
+
+        chart = await fetch_chart(client, chart_payload, "a165cb92-8c92-49d5-83bb-d8a875c61a57")
+
+        image_table_data = [[Image(chart, width=500, height=300)]]
+        table_with_images = await get_table(image_table_data, [500, 200], TableStyle([
+            ('GRID', (0, 0), (-1, -1), 0, colors.transparent),
+            ("PADDING", (0, 0), (-1, -1), 5)
+        ]))
+
+        elements.append(table_with_images)
+        elements.append(Spacer(1, 20))
+    return elements
+    
 
 async def add_losses_and_damages_times_series(elements, time_period_prev_months_array, time_period, geo_filter):
     districts = await get_major_indicators_data(time_period, geo_filter)
@@ -437,8 +486,6 @@ async def add_losses_and_damages_times_series(elements, time_period_prev_months_
 
         elements.append(table_with_images)
         elements.append(Spacer(1, 20))
-        # os.remove(chart1)
-        # os.remove(chart2)
     return elements
 
 async def cleanup_temp_files():
@@ -628,96 +675,7 @@ async def generate_report(request):
         elements.append(Paragraph(
             "For identified high risk districts, e-tenders related to floods in previous 3 financial years (2022-2024)", body_style))
 
-        async with httpx.AsyncClient() as client:
-            chart_payload = {
-                "chart_type": "GROUPED_BAR_VERTICAL",
-                "x_axis_column": "financial-year",
-                "x_axis_label": "Financial Year",
-                "time_column": "financial-year",
-                "y_axis_column": [
-                    {
-                        "field_name": "risk-score",
-                        "label": "Risk Score",
-                        "color": "#8B5E3C",
-                        "aggregate_type": "MEAN",
-                        "value_mapping": [
-                            {"key": "1.0","value": "Low Risk"},
-                            {"key": "2.0","value": "Medium Risk"},
-                            {"key": "3.0","value": "High Risk"},
-                            {"key": "4.0","value": "Very High Risk"},
-                            {"key": "5.0","value": "Extreme Risk"}
-                        ]
-                    },
-                    {
-                        "field_name": "exposure",
-                        "label": "Exposure",
-                        "color": "#2E8B57",
-                        "aggregate_type": "MEAN",
-                        "value_mapping": [
-                            {"key": "1.0","value": "Low Risk"},
-                            {"key": "2.0","value": "Medium Risk"},
-                            {"key": "3.0","value": "High Risk"},
-                            {"key": "4.0","value": "Very High Risk"},
-                            {"key": "5.0","value": "Extreme Risk"}
-                        ]  
-                    },
-                    {
-                        "field_name": "vulnerability",
-                        "label": "Vulnerability",
-                        "color": "#9370DB",
-                        "aggregate_type": "MEAN",
-                        "value_mapping": [
-                            {"key": "1.0","value": "Low Risk"},
-                            {"key": "2.0","value": "Medium Risk"},
-                            {"key": "3.0","value": "High Risk"},
-                            {"key": "4.0","value": "Very High Risk"},
-                            {"key": "5.0","value": "Extreme Risk"}
-                        ]
-                    },
-                    {
-                        "field_name": "flood-hazard",
-                        "label": "Flood Hazard",
-                        "color": "#FFB347",
-                        "aggregate_type": "MEAN",
-                        "value_mapping": [
-                            {"key": "1.0","value": "Low Risk"},
-                            {"key": "2.0","value": "Medium Risk"},
-                            {"key": "3.0","value": "High Risk"},
-                            {"key": "4.0","value": "Very High Risk"},
-                            {"key": "5.0","value": "Extreme Risk"}
-                        ]
-                    },
-                    {
-                        "field_name": "government-response",
-                        "label": "Government Response",
-                        "color": "#808000",
-                        "aggregate_type": "MEAN",
-                        "value_mapping": [
-                            {"key": "1.0","value": "Low Risk"},
-                            {"key": "2.0","value": "Medium Risk"},
-                            {"key": "3.0","value": "High Risk"},
-                            {"key": "4.0","value": "Very High Risk"},
-                            {"key": "5.0","value": "Extreme Risk"}
-                        ]
-                    },
-                ],
-                "y_axis_label": "Score",
-                "show_legend": "true",
-                "filters": [
-                    {
-                        "column": "financial-year",
-                        "operator": "in",
-                        "value": "2024-2025,2023-2024,2023-2024",
-                    },
-                    # {"column": "object-id", "operator": "==", "value": state.code},
-                ],
-            }
-            resource_id = DATA_RESOURCE_MAP[state.code]
-            chart_path = await fetch_chart(client, chart_payload, resource_id)
-
-            elements.append(Image(chart_path, width=400, height=200))
-            elements.append(Spacer(1, 20))
-
+        elements = await add_total_tender_awarded_value_chart(elements, time_period_prev_months_array, time_period, state.code)
         # Key Insights Section
         elements = await append_insights_section(elements, time_period, state, time_period_parsed, time_period_string)
         # elements.append(PageBreak())
@@ -824,7 +782,7 @@ async def append_insights_section(elements, time_period, state, time_period_pars
             "Key Insights and Suggested Actions", heading_2_style)
     )
 
-    topsis_value = await get_topsis_score_for_given_values(time_period, state.code)
+    # topsis_value = await get_topsis_score_for_given_values(time_period, state.code)
 
     major_indicators_districts = await get_major_indicators_data(time_period, state.code)
     # pick first three items in the list
@@ -848,7 +806,7 @@ async def append_insights_section(elements, time_period, state, time_period_pars
     # main insights
     main_insights = [
         # join geography name from major indicators, process each
-        f"As per {time_period_string}, most at risk districts are {', '.join([item['geography'].name for item in major_indicators_districts_top_3])}. The factors scoring lowest for {', '.join([f"{item['geography'].name} is {sort_data_dict_and_return_highest_key(item['indicators'])}" for item in major_indicators_districts_top_3])}",
+        # f"As per {time_period_string}, most at risk districts are {', '.join([item['geography'].name for item in major_indicators_districts_top_3])}. The factors scoring lowest for {', '.join([f"{item['geography'].name} is {sort_data_dict_and_return_highest_key(item['indicators'])}" for item in major_indicators_districts_top_3])}",
         f"Despite receiving significant funds through SDRF in past 3 years. <#> public contracts in past 3 years totalling to {cumulative_tender_value} INR,  <District 1> experienced substantial losses and damages.",
         "For most at risk district <district 1>, <#> public contracts totalling to <# INR>  have been done in past 3 years for flood management. Biggest project undertaken in this district was <top contract in terms of amount for this district>.",
         "However, risk is high because of <factor> and <factor> showing need of more targeting intervention to address these.",
