@@ -640,26 +640,64 @@ async def generate_report(request):
                         "label": "Risk Score",
                         "color": "#8B5E3C",
                         "aggregate_type": "MEAN",
+                        "value_mapping": [
+                            {"key": "1.0","value": "Low Risk"},
+                            {"key": "2.0","value": "Medium Risk"},
+                            {"key": "3.0","value": "High Risk"},
+                            {"key": "4.0","value": "Very High Risk"},
+                            {"key": "5.0","value": "Extreme Risk"}
+                        ]
                     },
-                    {"field_name": "exposure",
-                        "label": "Exposure", "color": "#2E8B57"},
+                    {
+                        "field_name": "exposure",
+                        "label": "Exposure",
+                        "color": "#2E8B57",
+                        "value_mapping": [
+                            {"key": "1.0","value": "Low Risk"},
+                            {"key": "2.0","value": "Medium Risk"},
+                            {"key": "3.0","value": "High Risk"},
+                            {"key": "4.0","value": "Very High Risk"},
+                            {"key": "5.0","value": "Extreme Risk"}
+                        ]  
+                    },
                     {
                         "field_name": "vulnerability",
                         "label": "Vulnerability",
                         "color": "#9370DB",
                         "aggregate_type": "MEAN",
+                        "value_mapping": [
+                            {"key": "1.0","value": "Low Risk"},
+                            {"key": "2.0","value": "Medium Risk"},
+                            {"key": "3.0","value": "High Risk"},
+                            {"key": "4.0","value": "Very High Risk"},
+                            {"key": "5.0","value": "Extreme Risk"}
+                        ]
                     },
                     {
                         "field_name": "flood-hazard",
                         "label": "Flood Hazard",
                         "color": "#FFB347",
                         "aggregate_type": "MEAN",
+                        "value_mapping": [
+                            {"key": "1.0","value": "Low Risk"},
+                            {"key": "2.0","value": "Medium Risk"},
+                            {"key": "3.0","value": "High Risk"},
+                            {"key": "4.0","value": "Very High Risk"},
+                            {"key": "5.0","value": "Extreme Risk"}
+                        ]
                     },
                     {
                         "field_name": "government-response",
                         "label": "Government Response",
                         "color": "#808000",
                         "aggregate_type": "MEAN",
+                        "value_mapping": [
+                            {"key": "1.0","value": "Low Risk"},
+                            {"key": "2.0","value": "Medium Risk"},
+                            {"key": "3.0","value": "High Risk"},
+                            {"key": "4.0","value": "Very High Risk"},
+                            {"key": "5.0","value": "Extreme Risk"}
+                        ]
                     },
                 ],
                 "y_axis_label": "Score",
