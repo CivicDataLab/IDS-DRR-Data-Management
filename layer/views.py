@@ -15,7 +15,9 @@ from reportlab.lib.colors import HexColor, Color
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
-from reportlab.pdfbase.pdfmetrics import stringWidth
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
 from reportlab.pdfgen import canvas
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak, ListFlowable, ListItem
 
@@ -24,15 +26,57 @@ from layer.models import Data, Geography, Indicators
 
 from collections import defaultdict
 
+import requests
+import io
+
+# roads, bridge, embankments-affected
 month_highlight_table_indicators = ["inundation-pct", "sum-population", "human-live-lost",
-                                    "population-affected-total", "crop-area", "total-animal-affected", "total-tender-awarded-value"]
+                                    "population-affected-total", "crop-area", "total-animal-affected", "total-tender-awarded-value", "roads", "bridge", "embankments-affected"]
+
+
+def register_google_font(font_name, font_url_bold=None, font_url_regular=None):
+    """Downloads and registers a Google Font with ReportLab, defaults to Helvetica if fails."""
+
+    try:
+        if font_url_bold:
+            response_bold = requests.get(font_url_bold)
+            response_bold.raise_for_status()
+            font_data_bold = io.BytesIO(response_bold.content)
+            pdfmetrics.registerFont(
+                TTFont(f"{font_name}-Bold", font_data_bold))
+
+        if font_url_regular:
+            response_regular = requests.get(font_url_regular)
+            response_regular.raise_for_status()
+            font_data_regular = io.BytesIO(response_regular.content)
+            pdfmetrics.registerFont(TTFont(font_name, font_data_regular))
+
+        print(f"{font_name} registered successfully.")  # Success message
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error registering {font_name}: {e}")
+        print(f"Falling back to default font (Helvetica) for {font_name}.")
+        # No need to explicitly register Helvetica, it's a built-in ReportLab font
+        return False  # Indicate failure, but the code will continue
+
+    return True  # Indicate success
+
 
 # Custom Styles
 styles = getSampleStyleSheet()
+# Register Noto Sans (replace with your desired Google Font URLs)
+# Replace with the actual URL
+noto_sans_bold_url = "https://fonts.gstatic.com/s/notosans/v2/NotoSans-Bold.ttf"
+# Replace with the actual URL
+noto_sans_regular_url = "https://fonts.gstatic.com/s/notosans/v2/NotoSans-Regular.ttf"
+
+font_registered = register_google_font(
+    "NotoSans", noto_sans_bold_url, noto_sans_regular_url)
 
 title_style = ParagraphStyle(
     "TitleStyle",
     parent=styles["Title"],
+    fontName="NotoSans-Bold" if font_registered else "Helvetica-Bold",
     fontSize=18,
     leading=22,
     alignment=1,  # Centered
@@ -40,6 +84,7 @@ title_style = ParagraphStyle(
 heading_1_style = ParagraphStyle(
     "Heading1Style",
     parent=styles["Heading1"],
+    fontName="NotoSans-Bold" if font_registered else "Helvetica-Bold",
     fontSize=16,
     leading=16,
     spaceAfter=10,
@@ -48,6 +93,7 @@ heading_1_style = ParagraphStyle(
 heading_2_style = ParagraphStyle(
     "Heading2Style",
     parent=styles["Heading2"],
+    fontName="NotoSans-Bold" if font_registered else "Helvetica-Bold",
     fontSize=14,
     leading=18,
     spaceAfter=10,
@@ -55,17 +101,24 @@ heading_2_style = ParagraphStyle(
 heading_3_style = ParagraphStyle(
     "Heading3Style",
     parent=styles["Heading3"],
+    fontName="NotoSans-Bold" if font_registered else "Helvetica-Bold",
     fontSize=12,
     leading=20,
     spaceAfter=10,
 )
 
-body_style = styles["BodyText"]
+body_style = ParagraphStyle(
+    "BodyStyle",
+    parent=styles["BodyText"],
+    fontName="NotoSans" if font_registered else "Helvetica",
+    fontSize=10,
+)
 
 table_header_style = ParagraphStyle(
     "TableHeaderStyle",
     parent=styles["BodyText"],
-    fontSize=12,
+    fontName="NotoSans-Bold" if font_registered else "Helvetica-Bold",
+    fontSize=10,
     alignment=1,
     # leading=20,
     # spaceAfter=10,
@@ -74,6 +127,7 @@ table_header_style = ParagraphStyle(
 table_body_style = ParagraphStyle(
     "TableBodyStyle",
     parent=styles["BodyText"],
+    fontName="NotoSans" if font_registered else "Helvetica",
     fontSize=10,
     alignment=1,
 )
@@ -221,6 +275,12 @@ async def get_district_highlights(time_period, geo_filter):
 
     data = await group_by_geography(data, month_highlight_table_indicators)
 
+    # add roads, bridge and embankments affected to create a new property infrastructure damaged
+    for district in data:
+        district['indicators']['infrastructure-damaged'] = district['indicators']['roads'] + \
+            district['indicators']['bridge'] + \
+            district['indicators']['embankments-affected']
+
     return data
 
 
@@ -310,7 +370,7 @@ def add_header_footer(canvas_obj, doc):
     header_image_path = "layer/IDS_DRR_Logo.png"
     try:
         canvas_obj.drawImage(header_image_path, 40, height -
-                             50, width=260, height=30, preserveAspectRatio=True)
+                             50, width=260, height=30, preserveAspectRatio=True, mask='auto')
     except Exception as e:
         print(f"Error loading header image: {e}")
 
@@ -321,20 +381,22 @@ def add_header_footer(canvas_obj, doc):
 
     # Add an image to the right in the header
     header_image_path = "layer/CDL_Primary Logo.png"
+    # draw Image with background transparent
     try:
         canvas_obj.drawImage(header_image_path, width - 100, height -
-                             50, width=50, height=30, preserveAspectRatio=True)
+                             60, width=90, height=50, preserveAspectRatio=True, mask='auto')
     except Exception as e:
         print(f"Error loading header image: {e}")
 
     # Footer
     footer_text = f"State Report: {page_level_state} | {page_level_time_period}"
-    canvas_obj.setFont("Helvetica", 8)
+    canvas_obj.setFont("NotoSans" if font_registered else "Helvetica", 8)
     canvas_obj.drawString(40, 30, footer_text)  # Left-justified footer text
 
     # Page number on the right in the footer of {doc.page_count}
     page_number_text = f"Page {doc.page}"
-    footer_width = stringWidth(page_number_text, "Helvetica", 10)
+    footer_width = pdfmetrics.stringWidth(
+        page_number_text, "NotoSans" if font_registered else "Helvetica", 10)
     canvas_obj.drawString(width - footer_width - 40, 30,
                           page_number_text)  # Right-aligned page number
 
@@ -368,6 +430,7 @@ class CustomDocTemplate(SimpleDocTemplate):
         super().build(flowables, onFirstPage=onFirstPage,
                       onLaterPages=onLaterPages, canvasmaker=canvasmaker)
 
+
 async def add_total_tender_awarded_value_chart(elements, time_period_prev_months_array, time_period, geo_filter):
     districts = await get_major_indicators_data(time_period, geo_filter)
 
@@ -381,7 +444,7 @@ async def add_total_tender_awarded_value_chart(elements, time_period_prev_months
             "color": f"{Faker().color()}",
             "aggregate_type": "SUM"
         })
-    
+
     async with httpx.AsyncClient() as client:
         chart_payload = {
             "chart_type": "GROUPED_BAR_VERTICAL",
@@ -395,7 +458,7 @@ async def add_total_tender_awarded_value_chart(elements, time_period_prev_months
                 {
                     "column": "financial-year",
                     "operator": "in",
-                    "value": "2022-2023,2023-2024,2024-2025", 
+                    "value": "2022-2023,2023-2024,2024-2025",
                 },
                 {
                     "column": "factor",
@@ -416,7 +479,7 @@ async def add_total_tender_awarded_value_chart(elements, time_period_prev_months
         elements.append(table_with_images)
         elements.append(Spacer(1, 20))
     return elements
-    
+
 
 async def add_losses_and_damages_times_series(elements, time_period_prev_months_array, time_period, geo_filter):
     districts = await get_major_indicators_data(time_period, geo_filter)
@@ -488,6 +551,7 @@ async def add_losses_and_damages_times_series(elements, time_period_prev_months_
         elements.append(Spacer(1, 20))
     return elements
 
+
 async def cleanup_temp_files():
     """
     Cleanup temporary files generated during the report generation process.
@@ -496,6 +560,7 @@ async def cleanup_temp_files():
     chart_files = glob.glob("layer/assets/charts/*.png")
     for file in chart_files:
         os.remove(file)
+
 
 async def generate_report(request):
     if request.method == "GET":
@@ -613,7 +678,7 @@ async def generate_report(request):
         # print()
 
         a = ["District", "Inundation pct", "Sum Population", "Human Live Lost",
-             "population affected total", "crop area", "total animal affected", "total tender awarded value"]
+             "Population Affected Total", "Crop Area", "No of Infrastructure damaged", "Total Animal Affected", "Total Tender Awarded Value"]
         b = []
         for header_value in a:
             b.append(Paragraph(header_value, table_header_style))
@@ -621,7 +686,8 @@ async def generate_report(request):
         # district_table_data = [a]
         for data in data_obj:
             values = [data['indicators'][indicator]
-                      for indicator in month_highlight_table_indicators]
+                      for indicator in ["inundation-pct", "sum-population", "human-live-lost",
+                                        "population-affected-total", "crop-area", "infrastructure-damaged", "total-animal-affected",  "total-tender-awarded-value"]]
             row = [Paragraph(data['geography'].name,
                              table_body_style)] + values
             district_table_data.append(row)
@@ -632,13 +698,15 @@ async def generate_report(request):
 
         # Losses and Damages section
         elements.append(Paragraph("Losses and Damages", heading_2_style))
-        
-        time_period_str = ', '.join([datetime.datetime.strptime(period, "%Y_%m").strftime("%B %Y") for period in time_period_prev_months_array])
 
-        elements.append(Paragraph(f"Time Series for {time_period_str}", heading_3_style))
+        time_period_str = ', '.join([datetime.datetime.strptime(
+            period, "%Y_%m").strftime("%B %Y") for period in time_period_prev_months_array])
+
+        elements.append(
+            Paragraph(f"Time Series for {time_period_str}", heading_3_style))
 
         elements = await add_losses_and_damages_times_series(elements, time_period_prev_months_array, time_period, state.code)
-
+        elements.append(Spacer(1, 5))
         # Add Government Response Spending
         elements.append(
             Paragraph("Government Response / Spending:", heading_2_style))
@@ -649,6 +717,7 @@ async def generate_report(request):
         elements.append(Paragraph(
             "For the high risk districts, SDRF sanctions in previous 2 FYs. (Starting and End Point)", body_style))
 
+        # indicator y axis sdrf-sanctions-awarded-value
         highlights_data = [
             [Paragraph(header_value, table_header_style) for header_value in ["District", "Amount Sanctioned as per 48th SEC meting", "Amount Sanctioned as per 49th SEC meting",
                                                                               "Amount Sanctioned as per 50th SEC meting", "Total Allocation"]],
@@ -710,7 +779,8 @@ async def get_table(table_data, colWidths=None, table_style=TableStyle(
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
         ("VALIGN", (0, 0), (-1, 0), "MIDDLE"),
         ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTNAME", (0, 0), (-1, 0),
+         "NotoSans-Bold" if font_registered else "Helvetica-Bold"),
         ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
         ("GRID", (0, 0), (-1, -1), 1, colors.black),
     ]
@@ -931,18 +1001,17 @@ async def get_topsis_score_for_given_values(time_period, state_code):
     data_obj = await sync_to_async(data_obj.select_related)(
         "geography",
         "indicator",
-        "indicator__parent",
-        "indicator__parent__parent",
         "geography__parentId",
     )
 
     data_obj = await sync_to_async(data_obj.filter)(
-        Q(geography__parentId__code=state_code) | Q(
-            geography__code=state_code)
+        Q(geography__parentId__parentId__code=state_code)
     )
 
     data_list = await sync_to_async(data_obj.order_by)("-value")
 
     data_list = await sync_to_async(list)(data_list)
-
-    return data_list[0].value
+    if len(data_list) > 0:
+        return data_list[0].value
+    else:
+        return '0'
