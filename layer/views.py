@@ -874,11 +874,12 @@ async def append_insights_section(elements, time_period, state, time_period_pars
 
     # Get the total population exposed value for top district for provided time period (month)
     top_district_total_population_exposed = await get_indicator_value_for_specified_month(time_period, 'sum-population', major_indicators_districts[0]['geography'].id)
-
+    factors_scoring_lowest = ', '.join(
+        [f"{item['geography'].name} is {sort_data_dict_and_return_highest_key(item['indicators'])}" for item in major_indicators_districts_top_3])
     # main insights
     main_insights = [
         # join geography name from major indicators, process each
-        f"As per {time_period_string}, most at risk districts are {', '.join([item['geography'].name for item in major_indicators_districts_top_3])}. The factors scoring lowest for {', '.join([f"{item['geography'].name} is {sort_data_dict_and_return_highest_key(item['indicators'])}" for item in major_indicators_districts_top_3])}",
+        f"As per {time_period_string}, most at risk districts are {', '.join([item['geography'].name for item in major_indicators_districts_top_3])}. The factors scoring lowest for {factors_scoring_lowest}",
         f"Despite receiving significant funds through SDRF in past 3 years. Public contracts in past 3 years totalling to {cumulative_tender_value} INR,  {major_indicators_districts_top_3[0]['geography'].name} experienced substantial losses and damages.",
         f"For most at risk district {major_indicators_districts_top_3[0]['geography'].name},public contracts totalling to <# INR>  have been done in past 3 years for flood management. Biggest project undertaken in this district was <top contract in terms of amount for this district>.",
         "However, risk is high because of <factor> and <factor> showing need of more targeting intervention to address these.",
