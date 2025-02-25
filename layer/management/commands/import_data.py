@@ -326,7 +326,16 @@ def import_state_indicators(df: pd.DataFrame, state: Geography):
         print("Processing Indicator -", indicator_slug)
         try:
             Indicators.objects.get(slug=indicator_slug.lower(), geography=state)
-            print("Already Exists!")
+            print("Already Exists! Updating")
+            indicator.name = row.indicatorTitle.strip()
+            indicator.long_description = row.indicatorDescription.strip()
+            indicator.category = row.indicatorCategory.strip()
+            indicator.unit = _get_indicator_unit_form_row(row)
+            indicator.data_source = row.dataSource.strip() if row.dataSource else None
+            indicator.parent = _get_indicator_parent_from_row(row)
+            indicator.is_visible = True if row.visible == "y" else False
+            indicator.save()
+            print("updated Indicator -", row.indicatorSlug)
         except Indicators.DoesNotExist:
             unit = getattr(row, 'unit', '')
             print("Processing Unit -", unit)
