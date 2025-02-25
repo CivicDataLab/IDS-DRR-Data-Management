@@ -176,9 +176,9 @@ async def get_top_vulnerable_districts(time_period, geo_filter=None):
         else:
             data_obj = data_obj.filter(geography__parentId__parentId=None)
         data_obj = data_obj.filter(
-            indicator__is_visible=True, indicator__parent=None).distinct()
+            indicator__slug='topsis-score').distinct()
 
-        results = list(data_obj.order_by("-value"))
+        results = list(data_obj.order_by("value"))
 
         unique_geographies = {}
         for item in results:
@@ -225,8 +225,12 @@ async def group_by_geography(data_list, expected_indicators=[]):
 # @lru_cache
 async def get_major_indicators_data(time_period, geo_filter):
 
+    top_districts = await get_top_vulnerable_districts(time_period, geo_filter)
+
+    top_districts = [x.geography for x in top_districts]
+
     data_obj = await sync_to_async(Data.objects.filter)(
-        indicator__is_visible=True, indicator__parent__parent=None, data_period=time_period
+        indicator__is_visible=True, indicator__parent__parent=None, data_period=time_period, geography__in=top_districts
     )
 
     data_obj = await sync_to_async(data_obj.select_related)(
@@ -237,12 +241,7 @@ async def get_major_indicators_data(time_period, geo_filter):
         "geography__parentId",
     )
 
-    data_obj = await sync_to_async(data_obj.filter)(
-        Q(geography__parentId__code=geo_filter) | Q(
-            geography__code=geo_filter)
-    )
-
-    data_list = await sync_to_async(data_obj.order_by)("-value")
+    data_list = await sync_to_async(data_obj.order_by)("value")
 
     data_list = await sync_to_async(list)(data_list)
     result = await group_by_geography(data_list)
@@ -250,27 +249,28 @@ async def get_major_indicators_data(time_period, geo_filter):
                 ["risk-score"], x['geography'].name))
 
     # Return top 5 if overall flood risk districts are <5 else return all districts with 5 overall score
-    high_risk_districts = [
-        district for district in result if district['indicators']["risk-score"] >= 5]
+    # high_risk_districts = [
+    #     district for district in result if district['indicators']["risk-score"] >= 5]
 
-    return result[-5:] if len(high_risk_districts) < 5 else high_risk_districts
+    return result[:5]
 
 
 async def get_district_highlights(time_period, geo_filter):
 
-    districts = await get_major_indicators_data(time_period, geo_filter)
+    districts = await get_top_vulnerable_districts(time_period, geo_filter)
 
-    districts = [district['geography'] for district in districts]
+    districts = [district.geography for district in districts]
 
     data = await sync_to_async(Data.objects.filter)(geography__in=districts, indicator__slug__in=month_highlight_table_indicators, data_period=time_period)
 
     data = await sync_to_async(data.select_related)(
         "geography",
         "indicator",
-        "indicator__parent",
-        "indicator__parent__parent",
-        "geography__parentId",
+        # "indicator__parent",
+        # "indicator__parent__parent",
+        # "geography__parentId",
     )
+
     data = await sync_to_async(list)(data)
 
     data = await group_by_geography(data, month_highlight_table_indicators)
@@ -280,6 +280,9 @@ async def get_district_highlights(time_period, geo_filter):
         district['indicators']['infrastructure-damaged'] = district['indicators']['roads'] + \
             district['indicators']['bridge'] + \
             district['indicators']['embankments-affected']
+        district["indicators"].pop('roads')
+        district["indicators"].pop('bridge')
+        district["indicators"].pop('embankments-affected')
 
     return data
 
@@ -432,9 +435,9 @@ class CustomDocTemplate(SimpleDocTemplate):
 
 
 async def add_total_tender_awarded_value_chart(elements, time_period_prev_months_array, time_period, geo_filter):
-    districts = await get_major_indicators_data(time_period, geo_filter)
+    districts = await get_top_vulnerable_districts(time_period, geo_filter)
 
-    districts: list[Geography] = [district['geography']
+    districts: list[Geography] = [district.geography
                                   for district in districts]
     y_axis_columns = []
     for district in districts:
@@ -482,10 +485,9 @@ async def add_total_tender_awarded_value_chart(elements, time_period_prev_months
 
 
 async def add_losses_and_damages_times_series(elements, time_period_prev_months_array, time_period, geo_filter):
-    districts = await get_major_indicators_data(time_period, geo_filter)
+    districts = await get_top_vulnerable_districts(time_period, geo_filter)
 
-    districts: list[Geography] = [district['geography']
-                                  for district in districts]
+    districts: list[Geography] = [district.geography for district in districts]
     y_axis_columns = []
     for district in districts:
         y_axis_columns.append({
@@ -852,7 +854,7 @@ async def append_insights_section(elements, time_period, state, time_period_pars
             "Key Insights and Suggested Actions", heading_2_style)
     )
 
-    # topsis_value = await get_topsis_score_for_given_values(time_period, state.code)
+    topsis_value = await get_topsis_score_for_given_values(time_period, state.code)
 
     major_indicators_districts = await get_major_indicators_data(time_period, state.code)
     # pick first three items in the list
@@ -876,11 +878,11 @@ async def append_insights_section(elements, time_period, state, time_period_pars
     # main insights
     main_insights = [
         # join geography name from major indicators, process each
-        # f"As per {time_period_string}, most at risk districts are {', '.join([item['geography'].name for item in major_indicators_districts_top_3])}. The factors scoring lowest for {', '.join([f"{item['geography'].name} is {sort_data_dict_and_return_highest_key(item['indicators'])}" for item in major_indicators_districts_top_3])}",
-        f"Despite receiving significant funds through SDRF in past 3 years. <#> public contracts in past 3 years totalling to {cumulative_tender_value} INR,  <District 1> experienced substantial losses and damages.",
-        "For most at risk district <district 1>, <#> public contracts totalling to <# INR>  have been done in past 3 years for flood management. Biggest project undertaken in this district was <top contract in terms of amount for this district>.",
+        f"As per {time_period_string}, most at risk districts are {', '.join([item['geography'].name for item in major_indicators_districts_top_3])}. The factors scoring lowest for {', '.join([f"{item['geography'].name} is {sort_data_dict_and_return_highest_key(item['indicators'])}" for item in major_indicators_districts_top_3])}",
+        f"Despite receiving significant funds through SDRF in past 3 years. Public contracts in past 3 years totalling to {cumulative_tender_value} INR,  {major_indicators_districts_top_3[0]['geography'].name} experienced substantial losses and damages.",
+        f"For most at risk district {major_indicators_districts_top_3[0]['geography'].name},public contracts totalling to <# INR>  have been done in past 3 years for flood management. Biggest project undertaken in this district was <top contract in terms of amount for this district>.",
         "However, risk is high because of <factor> and <factor> showing need of more targeting intervention to address these.",
-        "<District 1> has received <numbers> amount of money in past three years from SDRF. (If district is getting funds across multiple MoUs then the next line). Repeated funds through SDRF for district 1 and 2 shows focus on immediate relief and restoration efforts.",
+        f"{major_indicators_districts_top_3[-1]['geography'].name} has received <numbers> amount of money in past three years from SDRF. (If district is getting funds across multiple MoUs then the next line). Repeated funds through SDRF for district 1 and 2 shows focus on immediate relief and restoration efforts.",
         "Allocate sufficient and appropriate funding for DRR activities, including preparedness and mitigation to establish transparent mechanisms across line departments and key decision makers in DRR."
     ]
 
@@ -995,17 +997,13 @@ async def get_topsis_score_for_given_values(time_period, state_code):
     """
 
     data_obj = await sync_to_async(Data.objects.filter)(
-        indicator__slug="topsis-score", data_period=time_period
+        indicator__slug="topsis-score", data_period=time_period, geography__parentId__code=state_code
     )
 
     data_obj = await sync_to_async(data_obj.select_related)(
         "geography",
         "indicator",
         "geography__parentId",
-    )
-
-    data_obj = await sync_to_async(data_obj.filter)(
-        Q(geography__parentId__parentId__code=state_code)
     )
 
     data_list = await sync_to_async(data_obj.order_by)("-value")
