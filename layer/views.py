@@ -8,7 +8,7 @@ from unicodedata import category
 from django.http.response import async_to_sync
 import httpx
 from asgiref.sync import sync_to_async
-from django.db.models import Q, F
+from django.db.models import Q, F, Sum
 from django.http import HttpResponse
 from reportlab.lib import colors
 from reportlab.lib.colors import HexColor, Color
@@ -28,7 +28,8 @@ from collections import defaultdict
 
 # roads, bridge, embankments-affected
 month_highlight_table_indicators = ["inundation-pct", "sum-population", "human-live-lost",
-                                    "population-affected-total", "crop-area", "total-animal-affected", "total-tender-awarded-value", "roads", "bridge", "embankments-affected"]
+                                    "population-affected-total", "crop-area", "total-animal-affected", "roads", "bridge", "embankments-affected"]
+chart_colors = ['#89672A', '#3B8F44', '#C41C8D', '#FB4E93', '#7B4DD9']
 
 
 def register_font(font_name, font_url_bold=None, font_url_regular=None, font_url_italic=None):
@@ -264,6 +265,38 @@ async def get_major_indicators_data(time_period, geo_filter):
     return sorted_result
 
 
+def generate_financial_year_months(time_period):
+    # Parse the input time_period
+    year, month = map(int, time_period.split('_'))
+
+    # Determine the financial year start and end
+    if month <= 3:  # Financial year starts in April
+        start_year = year - 1
+        end_year = year
+    else:
+        start_year = year
+        end_year = year + 1
+
+    # Generate months for the financial year
+    financial_year_months = []
+    for m in range(4, 13):  # From April (4) to December (12)
+        financial_year_months.append(f"{start_year}_{m:02d}")
+    for m in range(1, 4):  # From January (1) to March (3) of the next year
+        financial_year_months.append(f"{end_year}_{m:02d}")
+
+    return financial_year_months
+
+
+async def get_cumulative_value_for_financial_year(time_period, indicator, district):
+    # generate current financial year months given time_period in yyyy_mm
+    time_period_months = await sync_to_async(
+        generate_financial_year_months)(time_period)
+
+    data_value = await sync_to_async(Data.objects.filter)(geography=district, indicator__slug=indicator, data_period__in=time_period_months)
+    data_value = await sync_to_async(data_value.aggregate)(Sum('value'))
+    return data_value['value__sum']
+
+
 async def get_district_highlights(time_period, geo_filter):
 
     districts = await get_top_vulnerable_districts(time_period, geo_filter)
@@ -275,9 +308,6 @@ async def get_district_highlights(time_period, geo_filter):
     data = await sync_to_async(data.select_related)(
         "geography",
         "indicator",
-        # "indicator__parent",
-        # "indicator__parent__parent",
-        # "geography__parentId",
     )
 
     data = await sync_to_async(list)(data)
@@ -289,9 +319,13 @@ async def get_district_highlights(time_period, geo_filter):
         district['indicators']['infrastructure-damaged'] = district['indicators']['roads'] + \
             district['indicators']['bridge'] + \
             district['indicators']['embankments-affected']
+
         district["indicators"].pop('roads')
         district["indicators"].pop('bridge')
         district["indicators"].pop('embankments-affected')
+
+        # fetch the total-tender-awarded-value for the current financial year
+        district['indicators']['total-tender-awarded-value'] = await get_cumulative_value_for_financial_year(time_period, 'total-tender-awarded-value', district['geography'])
 
     sorted_result = []
     for dist in districts:
@@ -423,11 +457,12 @@ async def add_total_tender_awarded_value_chart(elements, time_period, geo_filter
     districts: list[Geography] = [district.geography
                                   for district in districts]
     y_axis_columns = []
+    tender_chart_colors = chart_colors.copy()
     for district in districts:
         y_axis_columns.append({
             "field_name": f"{district.code}",
             "label": f"{district.name}",
-            "color": f"{Faker().color()}",
+            "color": tender_chart_colors.pop(0),
             "aggregate_type": "SUM"
         })
 
@@ -455,14 +490,15 @@ async def add_total_tender_awarded_value_chart(elements, time_period, geo_filter
 
         chart = await fetch_chart(client, chart_payload, "a165cb92-8c92-49d5-83bb-d8a875c61a57")
 
-        image_table_data = [[Image(chart, width=500, height=300)]]
-        table_with_images = await get_table(image_table_data, [500, 200], TableStyle([
-            ('GRID', (0, 0), (-1, -1), 0, colors.transparent),
-            ("PADDING", (0, 0), (-1, -1), 5)
-        ]))
+        # image_table_data = [[Image(chart, width=500, height=300)]]
+        # table_with_images = await get_table(image_table_data, [500, 200], TableStyle([
+        #     ('GRID', (0, 0), (-1, -1), 0, colors.transparent),
+        #     ("PADDING", (0, 0), (-1, -1), 5)
+        # ]))
 
-        elements.append(table_with_images)
-        elements.append(Spacer(1, 20))
+        # elements.append(table_with_images)
+        elements.append(Image(chart, width=500, height=300))
+        elements.append(Spacer(1, 5))
     return elements
 
 
@@ -471,11 +507,12 @@ async def add_losses_and_damages_times_series(elements, time_period_prev_months_
 
     districts: list[Geography] = [district.geography for district in districts]
     y_axis_columns = []
+    lnd_chart_colors = chart_colors.copy()
     for district in districts:
         y_axis_columns.append({
             "field_name": f"{district.code}",
             "label": f"{district.name}",
-            "color": f"{Faker().color()}",
+            "color": lnd_chart_colors.pop(0),
         })
 
     async with httpx.AsyncClient() as client:
@@ -524,14 +561,15 @@ async def add_losses_and_damages_times_series(elements, time_period_prev_months_
         chart1 = await fetch_chart(client, chart_payload1, "a165cb92-8c92-49d5-83bb-d8a875c61a57")
         chart2 = await fetch_chart(client, chart_payload2, "a165cb92-8c92-49d5-83bb-d8a875c61a57")
 
-        image_table_data = [[Paragraph("Total Population Affected by Floods", body_style), Paragraph("Total Instances of Infrastructure Damage", body_style)], [Image(chart1, width=300, height=175),
-                                                                                                                                                                Image(chart2, width=300, height=175)]]
-        table_with_images = await get_table(image_table_data, [300, 300], TableStyle([
-            ('GRID', (0, 0), (-1, -1), 0, colors.transparent),
-            ("PADDING", (0, 0), (-1, -1), 3)
-        ]))
+        elements.append(
+            Paragraph("Total Population Affected by Floods", body_style))
+        elements.append(Image(chart1, width=500, height=275))
 
-        elements.append(table_with_images)
+        elements.append(
+            Paragraph("Total Instances of Infrastructure Damage", body_style))
+        elements.append(Image(chart2, width=500, height=275))
+        elements.append(Spacer(1, 5))
+
     return elements
 
 
@@ -671,7 +709,7 @@ async def generate_report(request):
         district_table_data = [b]
         # district_table_data = [a]
         for data in data_obj:
-            values = [Paragraph(str(data['indicators'][indicator]), table_body_style)
+            values = [Paragraph(str(int(data['indicators'][indicator]) if data['indicators'][indicator] != 'NA' else 'NA'), table_body_style)
                       for indicator in ["inundation-pct", "sum-population", "human-live-lost",
                                         "population-affected-total", "crop-area", "infrastructure-damaged", "total-animal-affected",  "total-tender-awarded-value"]]
             row = [Paragraph(data['geography'].name,
@@ -680,7 +718,10 @@ async def generate_report(request):
 
         district_table = await get_table(district_table_data, [70, 60, 60, 60, 60, 60, 60, 60])
         elements.append(district_table)
-        elements.append(Spacer(1, 20))
+        # elements.append(Spacer(1, 5))
+
+        # add page break
+        elements.append(PageBreak())
 
         # Losses and Damages section
         elements.append(Paragraph("Losses and Damages", heading_2_style))
@@ -692,33 +733,37 @@ async def generate_report(request):
             Paragraph(f"Time Series for {time_period_str}", heading_3_style))
 
         elements = await add_losses_and_damages_times_series(elements, time_period_prev_months_array, time_period, state.code)
-        elements.append(Spacer(1, 5))
+
+        # add page break
+        elements.append(PageBreak())
+
         # Add Government Response Spending
         elements.append(
             Paragraph("Government Response / Spending:", heading_2_style))
 
-        elements.append(Paragraph(
-            "SDRF Disbursement data Insights", heading_3_style))
+        # elements.append(Paragraph(
+        #     "SDRF Disbursement data Insights", heading_3_style))
 
-        elements.append(Paragraph(
-            "For the high risk districts, SDRF sanctions in previous 3 FYs.", body_style))
+        # elements.append(Paragraph(
+        #     "For the high risk districts, SDRF sanctions in previous 3 FYs.", body_style))
 
-        elements.append(Spacer(1, 2))
+        # elements.append(Spacer(1, 2))
 
         # indicator y axis sdrf-sanctions-awarded-value
-        elements = await add_sdrf_section_for_top_districts(elements, time_period, state.code)
+        # elements = await add_sdrf_section_for_top_districts(elements, time_period, state.code)
 
-        elements.append(Spacer(1, 5))
+        # elements.append(Spacer(1, 5))
 
         # E-tenders Data Insights sub-section
         # Insert Link to Assam Tenders Dashboard in heading later
-        elements.append(Paragraph(
-            "E-tenders Data Insights", heading_3_style))
+        elements.append(Paragraph("E-tenders Data Insights", heading_3_style))
 
         elements.append(Paragraph(
             "For identified high risk districts, e-tenders related to floods in previous 3 financial years (2022-2024)", body_style))
+        elements.append(Spacer(1, 5))
 
         elements = await add_total_tender_awarded_value_chart(elements, time_period, state.code)
+
         # Key Insights Section
         elements = await append_insights_section(elements, time_period, state, time_period_parsed, time_period_string)
         # elements.append(PageBreak())
@@ -839,62 +884,44 @@ async def append_insights_section(elements, time_period, state, time_period_pars
     major_indicators_districts_top_3 = major_indicators_districts[:-2]
 
     cumulative_sdrf_value_0 = await get_cumulative_indicator_value_for_last_three_years(time_period_parsed.year, 'sdrf-tenders-awarded-value', major_indicators_districts_top_3[0]['geography'].id)
+    cumulative_total_flood_value_0 = await get_cumulative_indicator_value_for_last_three_years(time_period_parsed.year, 'total-tender-awarded-value', major_indicators_districts_top_3[0]['geography'].id)
 
-    cumulative_sdrf_value_1 = await get_cumulative_indicator_value_for_last_three_years(time_period_parsed.year, 'sdrf-tenders-awarded-value', major_indicators_districts_top_3[1]['geography'].id)
+    cumulative_total_flood_value_1 = await get_cumulative_indicator_value_for_last_three_years(time_period_parsed.year, 'total-tender-awarded-value', major_indicators_districts_top_3[1]['geography'].id)
 
-    cumulative_sdrf_value_2 = await get_cumulative_indicator_value_for_last_three_years(time_period_parsed.year, 'sdrf-tenders-awarded-value', major_indicators_districts_top_3[2]['geography'].id)
+    cumulative_total_flood_value_2 = await get_cumulative_indicator_value_for_last_three_years(time_period_parsed.year, 'total-tender-awarded-value', major_indicators_districts_top_3[2]['geography'].id)
 
     # Get the cumulative tender value for top district for last three years
     cumulative_tender_value = await get_cumulative_indicator_value_for_last_three_years(
         time_period_parsed.year, 'total-tender-awarded-value', major_indicators_districts_top_3[0]['geography'].id)
 
     # Get district that received minimum amount from flood tenders for given time period
-    district_that_received_minimum_amount_flood_tenders = await get_district_that_received_minimum_given_indicator(major_indicators_districts, 'total-tender-awarded-value', time_period)
+    district_that_received_minimum_amount_flood_tenders = await get_district_that_received_min_max_given_indicator(major_indicators_districts, 'total-tender-awarded-value', time_period, 'min')
 
-    flood_tenders_amount_for_three_years_for_high_risk_district = await get_cumulative_indicator_value_for_last_three_years(time_period_parsed.year, 'total-tender-awarded-value', district_that_received_minimum_amount_flood_tenders.id)
+    district_with_highest_hazard_score = await get_district_that_received_min_max_given_indicator(major_indicators_districts, 'flood-hazard', time_period, 'max')
 
-    # Get indicator specific value from the major indicators list for the given district geography id
-    inundation_area_of_district_with_min_amount = await get_indicator_value_for_specified_month(time_period, 'inundation-pct', district_that_received_minimum_amount_flood_tenders.id)
+    area_inundated_pct_for_dist_with_high_hazard = await get_indicator_value_for_specified_month(time_period, 'inundation-pct', district_with_highest_hazard_score.id)
 
-    # Get the total population exposed value for top district for provided time period (month)
-    top_district_total_population_exposed = await get_indicator_value_for_specified_month(time_period, 'sum-population', major_indicators_districts[0]['geography'].id)
+    district_with_highest_exposure = await get_district_that_received_min_max_given_indicator(major_indicators_districts, 'exposure', time_period, 'max')
 
-    # Proess before calculating factors scoring lowest
-    # factors_scoring_lowest = []
-    # for item in major_indicators_districts_top_3:
-    #     indicators = item['indicators']
-    #     sorted_indicators = sort_data_dict_and_return_highest_key(indicators)
-    #     factors_scoring_lowest.append(
-    #         f"{item['geography'].name} is {sorted_indicators[1][0]}")
-
-    # factors_scoring_lowest = ', '.join(factors_scoring_lowest)
+    total_population_exposed_for_dist_with_highest_exposure = await get_indicator_value_for_specified_month(time_period, 'population-affected-total', district_with_highest_exposure.id)
 
     factors_scoring_lowest = ', '.join(
-        [f"{item['geography'].name} is {indicator_mapping[sort_data_dict_and_return_highest_key(item['indicators'])[1][0]]}" for item in major_indicators_districts_top_3])
+        [f"{item['geography'].name.title()} is {indicator_mapping[sort_data_dict_and_return_highest_key(item['indicators'])[1][0]]}" for item in major_indicators_districts_top_3])
 
     # main insights
     main_insights = [
-        # join geography name from major indicators, process each
-        f"As per {time_period_string}, most at risk districts are {', '.join([item['geography'].name for item in major_indicators_districts_top_3])}. The factors scoring lowest for {factors_scoring_lowest}",
-        f"{major_indicators_districts_top_3[0]['geography'].name} received INR {cumulative_sdrf_value_0} in past 3 years. {major_indicators_districts_top_3[1]['geography'].name} received INR {cumulative_sdrf_value_1}. {major_indicators_districts_top_3[2]['geography'].name} received INR {cumulative_sdrf_value_2}.",
-        f"For most at risk district {major_indicators_districts_top_3[0]['geography'].name},public contracts totalling to INR {cumulative_tender_value} have been done in past 3 years for flood management.",
-        f"However, risk is high because of {indicator_mapping[sort_data_dict_and_return_highest_key(major_indicators_districts_top_3[0]['indicators'])[1][0]]} and {indicator_mapping[sort_data_dict_and_return_highest_key(major_indicators_districts_top_3[0]['indicators'])[2][0]]} showing need of more targeting intervention to address these.",
-        f"{major_indicators_districts_top_3[-1]['geography'].name} has received INR {cumulative_sdrf_value_2} amount of money in past three years from SDRF.",
-        "Allocate sufficient and appropriate funding for DRR activities, including preparedness and mitigation to establish transparent mechanisms across line departments and key decision makers in DRR."
+        f"As per {time_period_string}, most at risk districts are {', '.join([item['geography'].name.title() for item in major_indicators_districts_top_3])}. The factors scoring lowest for {factors_scoring_lowest}",
+        f"For most at risk district, {major_indicators_districts_top_3[0]['geography'].name.title()}, public contracts totalling to INR {cumulative_total_flood_value_0} have been awarded in past 3 years for flood management related activities and projects. Out of this, INR {cumulative_sdrf_value_0} has been spent on flood related tenders through SDRF.",
+        f"For {major_indicators_districts_top_3[1]['geography'].name.title()}, public contracts totalling to INR {cumulative_total_flood_value_1} have been awarded in past 3 years for flood management related activities and projects and for {major_indicators_districts_top_3[2]['geography'].name.title()}, public contracts totalling to INR {cumulative_total_flood_value_2} have been awarded.",
+        f"For {major_indicators_districts_top_3[0]['geography'].name.title()}, Risk is high because of {indicator_mapping[sort_data_dict_and_return_highest_key(major_indicators_districts_top_3[0]['indicators'])[1][0]]} and {indicator_mapping[sort_data_dict_and_return_highest_key(major_indicators_districts_top_3[0]['indicators'])[2][0]]} showing need of more targetted intervention to address these.",
+        f"{major_indicators_districts_top_3[0]['geography'].name.title()} has received {cumulative_tender_value} amount in terms of flood related tenders in past 3 years despite having among the highest Risk score",
+        f"{district_that_received_minimum_amount_flood_tenders.name.title()} needs significant effort on Government Response as least money has been received despite having among the highest Risk score.",
+        f"{district_with_highest_hazard_score.name.title()} needs effort on Hazard risk reduction as {area_inundated_pct_for_dist_with_high_hazard} of its area experienced inundation this month.",
+        f"{district_with_highest_exposure.name.title()} needs effort on exposure risk reduction, seeing that Total Population Exposed this month is {total_population_exposed_for_dist_with_highest_exposure}."
     ]
 
-    suggestive_actions = [
-        f"{major_indicators_districts_top_3[-1]['geography'].name} needs significant effort on Government Response as least money has been received through SDRF despite significant losses and damages.",
-        f"{district_that_received_minimum_amount_flood_tenders.name} has received {flood_tenders_amount_for_three_years_for_high_risk_district} amount in terms of flood related tenders in past 3 years despite having among the highest Risk score",
-        f"{district_that_received_minimum_amount_flood_tenders.name} needs effort on Hazard risk reduction as {inundation_area_of_district_with_min_amount} of its area experienced inundation this month.",
-        f"{major_indicators_districts[0]['geography'].name} needs effort on Exposure risk reduction seeing that Total Population Exposed this month is {top_district_total_population_exposed}."
-    ]
-
-    prepare_array = [ListItem(Paragraph(item, body_style)) for item in main_insights[:-1]] + [
-        ListItem(Paragraph(main_insights[-1], body_style)),
-        ListFlowable([ListItem(Paragraph(item, body_style)) for item in suggestive_actions],  bulletType='a',  # Use '1' for numbered list)
-                     )
-    ]
+    prepare_array = [ListItem(Paragraph(item, body_style))
+                     for item in main_insights]
 
     elements.append(ListFlowable(prepare_array,  bulletType='1',  # Use '1' for numbered list
                                  start='1',       # Start numbering from 1
@@ -935,7 +962,7 @@ async def get_indicator_value_for_specified_month(time_period, indicator, distri
     return results[0].value
 
 
-async def get_district_that_received_minimum_given_indicator(district_list, indicator, time_period):
+async def get_district_that_received_min_max_given_indicator(district_list, indicator, time_period, min_max='min'):
     """
     A simple function to return district that received minimum value for the given indicator and time period
 
@@ -962,28 +989,28 @@ async def get_district_that_received_minimum_given_indicator(district_list, indi
 
     results = sorted(results, key=lambda x: x.value)
 
-    return results[0].geography
+    if min_max == 'min':
+        return results[0].geography
+    else:
+        return results[-1].geography
 
 
 def append_annexure_section(elements):
     elements.append(
         Paragraph("Annexure II: Definitions", heading_2_style)
     )
-    elements.append(
-        Paragraph("<b>Hazard</b> represents the extent and intensity of flooding due to factors like Rainfall & Land Characteristics", body_style)
-    )
-    elements.append(
-        Paragraph("<b>Exposure</b> represents the total population inhabiting the place: Population & Total number of Households", body_style)
-    )
-    elements.append(
-        Paragraph(
-            "<b>Vulnerability</b> represents how the losses & damages compare against the socioeconomic indicators", body_style)
-    )
-    elements.append(
-        Paragraph("<b>Government Response</b> represents the public investments through the tenders made for flood disaster management", body_style)
-    )
 
-    elements.append(Spacer(1, 20))
+    list_of_defs = [
+        "<b>Hazard</b> represents the extent and intensity of flooding due to factors like Rainfall & Land Characteristics",
+        "<b>Exposure</b> represents the total population inhabiting the place: Population & Total number of Households",
+        "<b>Vulnerability</b> represents how the losses & damages compare against the socioeconomic indicators",
+        "<b>Government Response</b> represents the public investments through the tenders made for flood disaster management",
+    ]
+
+    elements.append(ListFlowable([ListItem(Paragraph(item, body_style)) for item in list_of_defs], bulletType='1',
+                    start='1', leftIndent=12, bulletFontSize=10, bulletColor=colors.black, bulletFormat="%s."))
+
+    elements.append(Spacer(1, 10))
 
     return elements
 
@@ -1025,31 +1052,9 @@ async def add_sdrf_section_for_top_districts(elements, time_period, geo_filter):
             "color": f"{Faker().color()}",
         })
 
-    async with httpx.AsyncClient() as client:
-        chart_payload = {
-            "chart_type": "GROUPED_BAR_VERTICAL",
-            "x_axis_column": "financial-year",
-            "x_axis_label": "Financial Year",
-            "y_axis_column": y_axis_columns,
-            "y_axis_label": "SDRF Sanctions Awarded",
-            "show_legend": "true",
-            "filters": [
-                {
-                    "column": "financial-year",
-                    "operator": "in",
-                    "value": ','.join(identify_and_get_prev_financial_years(time_period, 3)),
-                },
-                {
-                    "column": "factor",
-                    "operator": "==",
-                    "value": "sdrf-sanctions-awarded-value",
-                },
-            ],
-        }
+        # chart = await fetch_chart(client, chart_payload, "a165cb92-8c92-49d5-83bb-d8a875c61a57")
 
-        chart = await fetch_chart(client, chart_payload, "a165cb92-8c92-49d5-83bb-d8a875c61a57")
-
-        elements.append(Image(chart, width=500, height=300))
+        # elements.append(Image(chart, width=500, height=300))
     return elements
 
 
