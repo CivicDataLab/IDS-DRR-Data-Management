@@ -599,9 +599,9 @@ async def generate_report(request):
 
         set_page_level_state_and_time_period(state.name, time_period_string)
 
-        # doc = CustomDocTemplate(pdf_buffer, pagesize=A4)
+        doc = CustomDocTemplate(pdf_buffer, pagesize=A4)
         # Development mode to update a local document for testing
-        doc = CustomDocTemplate("test_output.pdf", pagesize=A4)
+        # doc = CustomDocTemplate("test_output.pdf", pagesize=A4)
 
         doc.topMargin = 1 * inch
         doc.bottomMargin = 1 * inch
@@ -770,22 +770,24 @@ async def generate_report(request):
 
         elements = append_annexure_section(elements)
 
+        elements = append_data_sources_section(elements)
+
         # ------------------------------------------------------
         # Sections done until here
 
         # Generate PDF
-        # doc.build(elements)
+        doc.build(elements)
         pdf_buffer.seek(0)
 
         # Generate PDF to test while development
-        await generate_pdf(doc, elements)
+        # await generate_pdf(doc, elements)
 
         # Sample response to test while development
-        response = HttpResponse({"message": "Success"},
-                                content_type="application/json")
+        # response = HttpResponse({"message": "Success"},
+        # content_type="application/json")
 
-        # response = HttpResponse(pdf_buffer, content_type="application/pdf")
-        # response['Content-Disposition'] = 'attachment; filename="state_report_assam.pdf"'
+        response = HttpResponse(pdf_buffer, content_type="application/pdf")
+        response['Content-Disposition'] = 'attachment; filename="state_report_assam.pdf"'
         await cleanup_temp_files()
         return response
 
@@ -1075,3 +1077,27 @@ def identify_and_get_prev_financial_years(time_period, number_of_years=3):
         financial_years.append(f"{start}-{end}")
 
     return financial_years
+
+
+def append_data_sources_section(elements):
+    elements.append(Paragraph("Data Sources", heading_2_style))
+
+    list_of_sources = [
+        "Source for Inundation Data: <u><a href='https://bhuvan-app1.nrsc.gov.in/disaster/disaster.php?id=flood'>Bhuvan</a></u>",
+        "Source for population and demographic data: <u><a href='https://hub.worldpop.org/project/categories?id=3'>UN WorldPop</a></u>",
+        "Source for Losses and Damages: <u><a href='https://www.asdma.gov.in/reports.html'>ASDMA DRIMS</a></u>",
+        "Source for tender data: <u><a href='https://assamtenders.gov.in/nicgep/app?page=WebTenderStatusLists&service=page'>Assam GEPNiC e-tenders platform</a></u>",
+    ]
+    elements.append(
+        ListFlowable(
+            [ListItem(Paragraph(source, body_style))
+             for source in list_of_sources],
+            bulletType='1',
+            start='1',
+            leftIndent=12,
+            bulletFontSize=10,
+            bulletColor=colors.black,
+            bulletFormat="%s."
+        )
+    )
+    return elements
