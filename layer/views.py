@@ -31,10 +31,10 @@ month_highlight_table_indicators = ["inundation-pct", "sum-population", "human-l
                                     "population-affected-total", "crop-area", "total-animal-affected", "total-tender-awarded-value", "roads", "bridge", "embankments-affected"]
 
 
-def register_font(font_name, font_url_bold=None, font_url_regular=None):
+def register_font(font_name, font_url_bold=None, font_url_regular=None, font_url_italic=None):
     """Downloads and registers a Font with ReportLab, defaults to Helvetica if fails."""
 
-    if font_url_bold or font_url_regular:
+    if font_url_bold or font_url_regular or font_url_italic:
         if font_url_bold:
             pdfmetrics.registerFont(
                 TTFont(f"{font_name}-Bold", font_url_bold))
@@ -42,6 +42,10 @@ def register_font(font_name, font_url_bold=None, font_url_regular=None):
         if font_url_regular:
             pdfmetrics.registerFont(
                 TTFont(font_name, font_url_regular))
+
+        if font_url_italic:
+            pdfmetrics.registerFont(
+                TTFont(f"{font_name}-Italic", font_url_italic))
 
         print(f"{font_name} registered successfully.")  # Success message
 
@@ -52,14 +56,14 @@ def register_font(font_name, font_url_bold=None, font_url_regular=None):
 
 # Custom Styles
 styles = getSampleStyleSheet()
-# Register Noto Sans (replace with your desired Google Font URLs)
-# Replace with the actual URL
+
+# Font locations
 noto_sans_bold_url = "layer/assets/fonts/noto-sans-800.ttf"
-# Replace with the actual URL
 noto_sans_regular_url = "layer/assets/fonts/noto-sans-regular.ttf"
+noto_sans_italic_url = "layer/assets/fonts/noto-sans-italic.ttf"
 
 font_registered = register_font(
-    "NotoSans", noto_sans_bold_url, noto_sans_regular_url)
+    "NotoSans", noto_sans_bold_url, noto_sans_regular_url, noto_sans_italic_url)
 
 title_style = ParagraphStyle(
     "TitleStyle",
@@ -99,6 +103,13 @@ body_style = ParagraphStyle(
     "BodyStyle",
     parent=styles["BodyText"],
     fontName="NotoSans" if font_registered else "Helvetica",
+    fontSize=10,
+)
+
+body_style_italic = ParagraphStyle(
+    "BodyStyleItalic",
+    parent=styles["BodyText"],
+    fontName="NotoSans-Italic" if font_registered else "Helvetica-Italic",
     fontSize=10,
 )
 
@@ -624,7 +635,7 @@ async def generate_report(request):
             ))
 
             elements.append(Paragraph(
-                "<i>Note: The Flood Risk is calculated as a function of Hazard, Exposure, Vulnerability and Government Response.</i>", body_style))
+                "Note: The Flood Risk is calculated as a function of Hazard, Exposure, Vulnerability and Government Response.", body_style_italic))
 
             elements.append(Spacer(1, 20))
         except Exception as e:
