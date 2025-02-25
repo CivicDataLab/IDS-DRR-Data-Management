@@ -105,8 +105,8 @@ body_style = ParagraphStyle(
 table_header_style = ParagraphStyle(
     "TableHeaderStyle",
     parent=styles["BodyText"],
-    fontName="NotoSans" if font_registered else "Helvetica",
-    fontSize=10,
+    fontName="NotoSans-Bold" if font_registered else "Helvetica-Bold",
+    fontSize=8,
     alignment=1,
     # leading=20,
     # spaceAfter=10,
@@ -116,7 +116,7 @@ table_body_style = ParagraphStyle(
     "TableBodyStyle",
     parent=styles["BodyText"],
     fontName="NotoSans" if font_registered else "Helvetica",
-    fontSize=10,
+    fontSize=8,
     alignment=1,
 )
 
@@ -578,11 +578,11 @@ async def generate_report(request):
         doc.rightMargin = 0.5 * inch
 
         risk_mapping_text = {
-            '1.0': 'Very Low',
-            '2.0': 'Low',
-            '3.0': 'Medium',
-            '4.0': 'High',
-            '5.0': 'Very High',
+            '1.0': Paragraph('Very Low', table_body_style),
+            '2.0': Paragraph('Low', table_body_style),
+            '3.0': Paragraph('Medium', table_body_style),
+            '4.0': Paragraph('High', table_body_style),
+            '5.0': Paragraph('Very High', table_body_style),
         }
 
         # Create a time period array with 2 months prior to current selected month along with the current month
@@ -672,15 +672,15 @@ async def generate_report(request):
 
         # print()
 
-        a = ["District", "Inundation pct", "Sum Population", "Human Live Lost",
-             "Population Affected Total", "Crop Area", "No of Infrastructure damaged", "Total Animal Affected", "Total Tender Awarded Value"]
+        a = ["District Name", "% Area Inundated", "District Population", "Lives Lost (Confirmed + Missing)",
+             "Population Affected (peak of the month)", "Crop Area Affected (Hectares)", "No. of Infrastructure Damage", "Animals Affected", "Cumulative Flood tenders for current F.Y (INR)"]
         b = []
         for header_value in a:
             b.append(Paragraph(header_value, table_header_style))
         district_table_data = [b]
         # district_table_data = [a]
         for data in data_obj:
-            values = [data['indicators'][indicator]
+            values = [Paragraph(str(data['indicators'][indicator]), table_body_style)
                       for indicator in ["inundation-pct", "sum-population", "human-live-lost",
                                         "population-affected-total", "crop-area", "infrastructure-damaged", "total-animal-affected",  "total-tender-awarded-value"]]
             row = [Paragraph(data['geography'].name,
