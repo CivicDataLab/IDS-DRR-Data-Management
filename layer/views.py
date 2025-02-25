@@ -433,7 +433,7 @@ class CustomDocTemplate(SimpleDocTemplate):
                       onLaterPages=onLaterPages, canvasmaker=canvasmaker)
 
 
-async def add_total_tender_awarded_value_chart(elements, time_period_prev_months_array, time_period, geo_filter):
+async def add_total_tender_awarded_value_chart(elements, time_period, geo_filter):
     districts = await get_top_vulnerable_districts(time_period, geo_filter)
 
     districts: list[Geography] = [district.geography
@@ -459,7 +459,7 @@ async def add_total_tender_awarded_value_chart(elements, time_period_prev_months
                 {
                     "column": "financial-year",
                     "operator": "in",
-                    "value": "2022-2023,2023-2024,2024-2025",
+                    "value": ','.join(identify_and_get_prev_financial_years(time_period, 3)),
                 },
                 {
                     "column": "factor",
@@ -544,11 +544,10 @@ async def add_losses_and_damages_times_series(elements, time_period_prev_months_
                                                                                                                                                                 Image(chart2, width=300, height=175)]]
         table_with_images = await get_table(image_table_data, [300, 300], TableStyle([
             ('GRID', (0, 0), (-1, -1), 0, colors.transparent),
-            ("PADDING", (0, 0), (-1, -1), 4)
+            ("PADDING", (0, 0), (-1, -1), 3)
         ]))
 
         elements.append(table_with_images)
-        elements.append(Spacer(1, 20))
     return elements
 
 
@@ -712,24 +711,12 @@ async def generate_report(request):
         elements.append(Paragraph(
             "For the high risk districts, SDRF sanctions in previous 2 FYs. (Starting and End Point)", body_style))
 
+        elements.append(Spacer(1, 2))
+
         # indicator y axis sdrf-sanctions-awarded-value
-        highlights_data = [
-            [Paragraph(header_value, table_header_style) for header_value in ["District", "Amount Sanctioned as per 48th SEC meting", "Amount Sanctioned as per 49th SEC meting",
-                                                                              "Amount Sanctioned as per 50th SEC meting", "Total Allocation"]],
-            ["Charaide", "Data/number", "Data/number",
-                "Data/number", "Data/number"],
-            ["Dibrugar", "Data/number", "Data/number",
-                "Data/number", "Data/number"],
-            ["Sivsagar", "Data/number", "Data/number",
-                "Data/number", "Data/number"],
-            ["Cacha", "Data/number", "Data/number",
-                "Data/number", "Data/number"],
-            ["Tinsukia", "Data/number", "Data/number",
-                "Data/number", "Data/number"],
-        ]
-        highlights_table = await get_table(highlights_data, [90, 90, 90, 90, 90])
-        elements.append(highlights_table)
-        elements.append(Spacer(1, 20))
+        elements = await add_sdrf_section_for_top_districts(elements, time_period, state.code)
+
+        elements.append(Spacer(1, 5))
 
         # E-tenders Data Insights sub-section
         # Insert Link to Assam Tenders Dashboard in heading later
@@ -739,7 +726,7 @@ async def generate_report(request):
         elements.append(Paragraph(
             "For identified high risk districts, e-tenders related to floods in previous 3 financial years (2022-2024)", body_style))
 
-        elements = await add_total_tender_awarded_value_chart(elements, time_period_prev_months_array, time_period, state.code)
+        elements = await add_total_tender_awarded_value_chart(elements, time_period, state.code)
         # Key Insights Section
         elements = await append_insights_section(elements, time_period, state, time_period_parsed, time_period_string)
         # elements.append(PageBreak())
@@ -1007,3 +994,63 @@ async def get_topsis_score_for_given_values(time_period, state_code):
         return data_list[0].value
     else:
         return '0'
+
+
+async def add_sdrf_section_for_top_districts(elements, time_period, geo_filter):
+    districts = await get_top_vulnerable_districts(time_period, geo_filter)
+
+    districts: list[Geography] = [district.geography for district in districts]
+
+    y_axis_columns = []
+    for district in districts:
+        y_axis_columns.append({
+            "field_name": f"{district.code}",
+            "label": f"{district.name}",
+            "color": f"{Faker().color()}",
+        })
+
+    async with httpx.AsyncClient() as client:
+        chart_payload = {
+            "chart_type": "GROUPED_BAR_VERTICAL",
+            "x_axis_column": "financial-year",
+            "x_axis_label": "Financial Year",
+            "y_axis_column": y_axis_columns,
+            "y_axis_label": "SDRF Sanctions Awarded",
+            "show_legend": "true",
+            "filters": [
+                {
+                    "column": "financial-year",
+                    "operator": "in",
+                    "value": ','.join(identify_and_get_prev_financial_years(time_period, 3)),
+                },
+                {
+                    "column": "factor",
+                    "operator": "==",
+                    "value": "sdrf-sanctions-awarded-value",
+                },
+            ],
+        }
+
+        chart = await fetch_chart(client, chart_payload, "a165cb92-8c92-49d5-83bb-d8a875c61a57")
+
+        elements.append(Image(chart, width=500, height=300))
+    return elements
+
+
+def identify_and_get_prev_financial_years(time_period, number_of_years=3):
+    time_period_parsed = datetime.datetime.strptime(time_period, "%Y_%m")
+
+    # check if the month is before or after march
+    if time_period_parsed.month <= 3:
+        current_year = time_period_parsed.year - 1
+    else:
+        current_year = time_period_parsed.year
+
+    financial_years = []
+
+    for i in range(number_of_years):
+        start = current_year - i
+        end = start + 1
+        financial_years.append(f"{start}-{end}")
+
+    return financial_years
