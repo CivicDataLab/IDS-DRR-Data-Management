@@ -26,51 +26,39 @@ from layer.models import Data, Geography, Indicators
 
 from collections import defaultdict
 
-import requests
-import io
-
 # roads, bridge, embankments-affected
 month_highlight_table_indicators = ["inundation-pct", "sum-population", "human-live-lost",
                                     "population-affected-total", "crop-area", "total-animal-affected", "total-tender-awarded-value", "roads", "bridge", "embankments-affected"]
 
 
-def register_google_font(font_name, font_url_bold=None, font_url_regular=None):
-    """Downloads and registers a Google Font with ReportLab, defaults to Helvetica if fails."""
+def register_font(font_name, font_url_bold=None, font_url_regular=None):
+    """Downloads and registers a Font with ReportLab, defaults to Helvetica if fails."""
 
-    try:
+    if font_url_bold or font_url_regular:
         if font_url_bold:
-            response_bold = requests.get(font_url_bold)
-            response_bold.raise_for_status()
-            font_data_bold = io.BytesIO(response_bold.content)
             pdfmetrics.registerFont(
-                TTFont(f"{font_name}-Bold", font_data_bold))
+                TTFont(f"{font_name}-Bold", font_url_bold))
 
         if font_url_regular:
-            response_regular = requests.get(font_url_regular)
-            response_regular.raise_for_status()
-            font_data_regular = io.BytesIO(response_regular.content)
-            pdfmetrics.registerFont(TTFont(font_name, font_data_regular))
+            pdfmetrics.registerFont(
+                TTFont(font_name, font_url_regular))
 
         print(f"{font_name} registered successfully.")  # Success message
 
-    except requests.exceptions.RequestException as e:
-        print(f"Error registering {font_name}: {e}")
-        print(f"Falling back to default font (Helvetica) for {font_name}.")
-        # No need to explicitly register Helvetica, it's a built-in ReportLab font
-        return False  # Indicate failure, but the code will continue
-
-    return True  # Indicate success
+        return True  # Indicate success
+    else:
+        return False
 
 
 # Custom Styles
 styles = getSampleStyleSheet()
 # Register Noto Sans (replace with your desired Google Font URLs)
 # Replace with the actual URL
-noto_sans_bold_url = "https://fonts.gstatic.com/s/notosans/v2/NotoSans-Bold.ttf"
+noto_sans_bold_url = "layer/assets/fonts/noto-sans-800.ttf"
 # Replace with the actual URL
-noto_sans_regular_url = "https://fonts.gstatic.com/s/notosans/v2/NotoSans-Regular.ttf"
+noto_sans_regular_url = "layer/assets/fonts/noto-sans-regular.ttf"
 
-font_registered = register_google_font(
+font_registered = register_font(
     "NotoSans", noto_sans_bold_url, noto_sans_regular_url)
 
 title_style = ParagraphStyle(
@@ -117,7 +105,7 @@ body_style = ParagraphStyle(
 table_header_style = ParagraphStyle(
     "TableHeaderStyle",
     parent=styles["BodyText"],
-    fontName="NotoSans-Bold" if font_registered else "Helvetica-Bold",
+    fontName="NotoSans" if font_registered else "Helvetica",
     fontSize=10,
     alignment=1,
     # leading=20,
@@ -584,6 +572,11 @@ async def generate_report(request):
         # Development mode to update a local document for testing
         doc = CustomDocTemplate("test_output.pdf", pagesize=A4)
 
+        doc.topMargin = 1 * inch
+        doc.bottomMargin = 1 * inch
+        doc.leftMargin = 0.5 * inch
+        doc.rightMargin = 0.5 * inch
+
         risk_mapping_text = {
             '1.0': 'Very Low',
             '2.0': 'Low',
@@ -694,7 +687,7 @@ async def generate_report(request):
                              table_body_style)] + values
             district_table_data.append(row)
 
-        district_table = await get_table(district_table_data, [70, 70, 70, 70, 70, 70, 70, 70])
+        district_table = await get_table(district_table_data, [70, 60, 60, 60, 60, 60, 60, 60])
         elements.append(district_table)
         elements.append(Spacer(1, 20))
 
