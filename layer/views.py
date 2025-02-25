@@ -522,7 +522,7 @@ async def add_losses_and_damages_times_series(elements, time_period_prev_months_
             "x_axis_column": "timeperiod",
             "x_axis_label": "Month",
             "y_axis_column": y_axis_columns,
-            "y_axis_label": "Score",
+            "y_axis_label": "Total Instances of Infrastructure Damage",
             "show_legend": "true",
             "filters": [
                 {
@@ -541,11 +541,11 @@ async def add_losses_and_damages_times_series(elements, time_period_prev_months_
         chart1 = await fetch_chart(client, chart_payload1, "a165cb92-8c92-49d5-83bb-d8a875c61a57")
         chart2 = await fetch_chart(client, chart_payload2, "a165cb92-8c92-49d5-83bb-d8a875c61a57")
 
-        image_table_data = [[Image(chart1, width=300, height=200),
-                             Image(chart2, width=300, height=200)]]
+        image_table_data = [[Paragraph("Total Population Affected by Floods", body_style), Paragraph("Total Instances of Infrastructure Damage", body_style)], [Image(chart1, width=300, height=175),
+                                                                                                                                                                Image(chart2, width=300, height=175)]]
         table_with_images = await get_table(image_table_data, [300, 300], TableStyle([
             ('GRID', (0, 0), (-1, -1), 0, colors.transparent),
-            ("PADDING", (0, 0), (-1, -1), 5)
+            ("PADDING", (0, 0), (-1, -1), 4)
         ]))
 
         elements.append(table_with_images)
@@ -663,25 +663,15 @@ async def generate_report(request):
 
         district_table = await get_table(district_table_data, [100, 80, 80, 80, 80, 80])
         elements.append(district_table)
-        elements.append(Spacer(1, 20))
+        elements.append(Spacer(1, 10))
 
         # Month Highlights sub-section
         elements.append(
             Paragraph(f"Highlights for the month of {time_period_string}", heading_3_style))
 
-        # indicator_filter = request.GET.get("indicator")
-        # data_obj = await get_filtered_data(time_period.strftime("%Y_%m"), None, geo_filter)
         data_obj = await get_district_highlights(
             time_period, state.code
         )
-
-        # district_table_data = [
-        #     [Paragraph(header, table_header_style) for header in ["District", "Inundation pct", "Sum Population", "Human Live Lost",
-        #                                                           "population affected total", "crop area", "total animal affected",
-        #                                                           "total tender awarded value"]]
-        # ]
-
-        # print()
 
         a = ["District Name", "% Area Inundated", "District Population", "Lives Lost (Confirmed + Missing)",
              "Population Affected (peak of the month)", "Crop Area Affected (Hectares)", "No. of Infrastructure Damage", "Animals Affected", "Cumulative Flood tenders for current F.Y (INR)"]
