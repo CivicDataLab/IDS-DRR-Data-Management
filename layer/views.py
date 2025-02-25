@@ -240,18 +240,19 @@ async def get_major_indicators_data(time_period, geo_filter):
         "geography__parentId",
     )
 
-    data_list = await sync_to_async(data_obj.order_by)("value")
+    data_list = await sync_to_async(list)(data_obj)
 
-    data_list = await sync_to_async(list)(data_list)
     result = await group_by_geography(data_list)
-    result.sort(key=lambda x: (x['indicators']
-                ["risk-score"], x['geography'].name))
-
-    # Return top 5 if overall flood risk districts are <5 else return all districts with 5 overall score
+    sorted_result = []
+    for dist in top_districts:
+        for item in result:
+            if item["geography"].id == dist.id:
+                sorted_result.append(item)
+    # Return top 5 if` overall flood risk districts are <5 else return all districts with 5 overall score
     # high_risk_districts = [
     #     district for district in result if district['indicators']["risk-score"] >= 5]
 
-    return result[:5]
+    return sorted_result
 
 
 async def get_district_highlights(time_period, geo_filter):
@@ -283,7 +284,13 @@ async def get_district_highlights(time_period, geo_filter):
         district["indicators"].pop('bridge')
         district["indicators"].pop('embankments-affected')
 
-    return data
+    sorted_result = []
+    for dist in districts:
+        for item in data:
+            if item["geography"].id == dist.id:
+                sorted_result.append(item)
+
+    return sorted_result
 
 
 @lru_cache
@@ -785,7 +792,7 @@ def sort_data_dict_and_return_highest_key(data_dict):
 
     sorted_items = sorted(
         data_dict.items(), key=lambda item: item[1], reverse=True)
-    return sorted_items[0][0]
+    return sorted_items[1][0]
 
 
 async def get_cumulative_indicator_value_for_last_three_years(time_period, indicator, district):
@@ -834,7 +841,7 @@ async def append_insights_section(elements, time_period, state, time_period_pars
             "Key Insights and Suggested Actions", heading_2_style)
     )
 
-    topsis_value = await get_topsis_score_for_given_values(time_period, state.code)
+    # topsis_value = await get_topsis_score_for_given_values(time_period, state.code)
 
     major_indicators_districts = await get_major_indicators_data(time_period, state.code)
     # pick first three items in the list
@@ -854,8 +861,10 @@ async def append_insights_section(elements, time_period, state, time_period_pars
 
     # Get the total population exposed value for top district for provided time period (month)
     top_district_total_population_exposed = await get_indicator_value_for_specified_month(time_period, 'sum-population', major_indicators_districts[0]['geography'].id)
+
     factors_scoring_lowest = ', '.join(
         [f"{item['geography'].name} is {sort_data_dict_and_return_highest_key(item['indicators'])}" for item in major_indicators_districts_top_3])
+
     # main insights
     main_insights = [
         # join geography name from major indicators, process each
