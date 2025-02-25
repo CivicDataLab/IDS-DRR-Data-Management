@@ -451,7 +451,6 @@ async def add_total_tender_awarded_value_chart(elements, time_period_prev_months
         chart_payload = {
             "chart_type": "GROUPED_BAR_VERTICAL",
             "x_axis_column": "financial-year",
-            "time_column": "financial-year",
             "x_axis_label": "Financial Year",
             "y_axis_column": y_axis_columns,
             "y_axis_label": "Total render awarded value",
