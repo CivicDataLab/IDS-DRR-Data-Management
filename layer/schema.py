@@ -633,8 +633,8 @@ def get_child_indicators(parent_id: Optional[int] = None, state_code: Optional[s
 
 
 def get_states():
-    # TODO: Remove this temporary restriction and move this to env flag
-    all_states = Geography.objects.filter(type="STATE", code='18')
+    # TODO: Move the additional filter code='18' to env flag
+    all_states = Geography.objects.filter(type="STATE")
     states = []
     for state in all_states:
         state_details = {"name": state.name, "slug": state.slug, "code": state.code,
