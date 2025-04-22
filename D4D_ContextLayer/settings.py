@@ -164,3 +164,6 @@ STRAWBERRY_DJANGO = {
 
 # Default period for table data
 DEFAULT_TIME_PERIOD = "2024_08"
+
+# ASGI application class to use
+ASGI_APPLICATION = "D4D_ContextLayer.asgi.application"
