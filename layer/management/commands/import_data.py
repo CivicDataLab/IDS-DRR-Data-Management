@@ -327,13 +327,13 @@ def import_state_indicators(df: pd.DataFrame, state: Geography):
         try:
             indicator = Indicators.objects.get(slug=indicator_slug.lower(), geography=state)
             print("Already Exists! Updating")
-            indicator.name = row.indicatorTitle.strip()
+            indicator.name = str(getattr(row, 'indicatorTitle', '')).strip()
             indicator.long_description = str(getattr(row, 'indicatorDescription', '')).strip() or None
             indicator.category = str(getattr(row, 'indicatorCategory', '')).strip() or None
             indicator.unit = _get_indicator_unit_form_row(row)
             indicator.data_source = str(getattr(row, 'datasource', '')).strip() or None
             indicator.parent = _get_indicator_parent_from_row(row, state)
-            indicator.is_visible = True if row.visible_on_platform == "y" else False
+            indicator.is_visible = str(getattr(row, 'visible_on_platform', '')) == "y"
             indicator.save()
             print("updated Indicator -", row.indicatorSlug)
         except Indicators.DoesNotExist:
