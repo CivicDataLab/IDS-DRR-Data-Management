@@ -325,7 +325,7 @@ def import_state_indicators(df: pd.DataFrame, state: Geography):
         indicator_slug = getattr(row, 'indicatorSlug', '')
         print("Processing Indicator -", indicator_slug)
         try:
-            Indicators.objects.get(slug=indicator_slug.lower(), geography=state)
+            indicator = Indicators.objects.get(slug=indicator_slug.lower(), geography=state)
             print("Already Exists! Updating")
             indicator.name = row.indicatorTitle.strip()
             indicator.long_description = row.indicatorDescription.strip()
