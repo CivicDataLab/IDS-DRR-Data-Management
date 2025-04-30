@@ -289,12 +289,16 @@ def filter_indicators(df, indicators):
         print(f"Indicators: {', '.join(missing)} missing")
     return cleaned_indicator
 
+def get_indicators(state):
+    visible_indicators = Indicators.objects.filter(is_visible=True, geography__name__iexact=state)
+    topsis_score_indicator = Indicators.objects.get(slug="topsis-score", geography__name__iexact=state)
+    return [
+            indicator for indicator in visible_indicators] + [topsis_score_indicator]
 
 def update_data(state, district):
     files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
     if state:
-        indicators = [
-            indicator for indicator in Indicators.objects.filter(is_visible=True, geography__name__iexact=state)]
+        indicators = get_indicators(state)
         files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
         state_files = [
             filename for filename in files if state.lower() in filename.lower()]
@@ -315,8 +319,7 @@ def update_data(state, district):
             state = filename.split('/')[-1].replace("_data.csv", "")
             state = state.replace("_", " ")
             print(state)
-            indicators = [
-                indicator for indicator in Indicators.objects.filter(is_visible=True, geography__name__iexact=state)]
+            indicators = get_indicators(state)
             import_state_data(df, filter_indicators(df, indicators))
 
 
