@@ -301,7 +301,7 @@ def get_indicators(state):
 def update_data(state, district):
     files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
     if state:
-        indicators = get_indicators(state)
+        indicators = get_indicators(state.replace("_", " "))
         files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
         state_files = [
             filename for filename in files if state.lower() in filename.lower()]
