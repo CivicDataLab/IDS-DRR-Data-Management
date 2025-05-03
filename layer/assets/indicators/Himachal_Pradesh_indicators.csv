@@ -4,11 +4,11 @@ flood-hazard,Hazard,Hazards or Potential of a physical event that may cause loss
 max-rain,Maximum rainfall value in the region,Maximum rainfall value in the region,36,Hazard,Hazard,mm,IMD,,monthly,y,y,max,GODL,,
 mean-rain,Mean rainfall value in the region,Mean rainfall value in the region,33,Hazard,Hazard,mm,IMD,,monthly,y,y,mean,GODL,,
 sum-rain,Total Monthly Rainfall,Sum rainfall value in the region during the given month,55,Hazard,Hazard,mm,IMD,y,monthly,,,sum,GODL,,30-May: Round off (no decimal)
-mean-ndvi,Mean NDVI,Mean Normalised Difference Vegetation Index (NDVI) value for the region,71,Hazard,Hazard,(Ratio),SENTINEL,,,,,,Creative Commons CC BY-SA 3.0 IGO,,
-inundation-pct,Percentage Area Inundated,Percentage area of the region detected as inundated,51,Hazard,Hazard,(Ratio),BHUVAN,n,monthly,N,n,,GNU General Public License,,
-inundation-intensity-mean,Mean Intensity of Inundation,"Intensity is calculated by dividing number of times a pixel got inundated with the maximum number of times any pixel got inundated in the region. For instance, if a pixel A in region got inundated 5 times in a month and the pixel with maximum inundation saw 10 days of inundation. Then inundation intensity of pixel A is 5/10 = 0.5. This variable then calculates mean of inundation intensities of all pixels.",408,Hazard,Hazard,(Ratio),BHUVAN,,monthly,,,,GNU General Public License,,
-inundation-intensity-mean-nonzero,Mean intensity of inundation (removing 0 intensity pixels),Mean of inundation intensities of all pixels which were inundated atleast once in the month,91,Hazard,Hazard,(Ratio),BHUVAN,,monthly,n,y,mean,GNU General Public License,,
-inundation-intensity-sum,Sum of inundation intensities,Sum of inundation intensities of all pixels in the region,57,Hazard,Hazard,(Ratio),BHUVAN,n,monthly,n,y,sum,GNU General Public License,,"30-May: Percentage of Inundated Area, unit - %
+mean-ndvi,Mean NDVI,Mean Normalised Difference Vegetation Index (NDVI) value for the region,71,Hazard,Hazard,Ratio,SENTINEL,,,,,,Creative Commons CC BY-SA 3.0 IGO,,
+inundation-pct,Percentage Area Inundated,Percentage area of the region detected as inundated,51,Hazard,Hazard,Ratio,BHUVAN,n,monthly,N,n,,GNU General Public License,,
+inundation-intensity-mean,Mean Intensity of Inundation,"Intensity is calculated by dividing number of times a pixel got inundated with the maximum number of times any pixel got inundated in the region. For instance, if a pixel A in region got inundated 5 times in a month and the pixel with maximum inundation saw 10 days of inundation. Then inundation intensity of pixel A is 5/10 = 0.5. This variable then calculates mean of inundation intensities of all pixels.",408,Hazard,Hazard,Ratio,BHUVAN,,monthly,,,,GNU General Public License,,
+inundation-intensity-mean-nonzero,Mean intensity of inundation (removing 0 intensity pixels),Mean of inundation intensities of all pixels which were inundated atleast once in the month,91,Hazard,Hazard,Ratio,BHUVAN,,monthly,n,y,mean,GNU General Public License,,
+inundation-intensity-sum,Sum of inundation intensities,Sum of inundation intensities of all pixels in the region,57,Hazard,Hazard,Ratio,BHUVAN,n,monthly,n,y,sum,GNU General Public License,,"30-May: Percentage of Inundated Area, unit - %
 Upto 2 decimal points
 Work with data team for calculation"
 mean-daily-runoff,Mean Runoff,Average surface runoff for a month,34,Hazard,Hazard,mm/day,NRSC,y,monthly,y,,mean,,,
@@ -19,7 +19,7 @@ elevation-mean,Mean Elevation,Mean elevation of the region,28,Hazard,Hazard,m,NA
 slope-mean,Mean slope,Mean slope of the region,24,Hazard,Hazard,degrees,NASADEM,,one-time,,,,,,
 drainage-density,Drainage density,Drainage density is a measurement of the sum of the channel lengths per unit area,81,Hazard,Hazard,km / sq.km,NASADEM,,annually,y,y,mean,,,"30-May: Remove variable from platform (may be used for model, but not shown on platform)"
 distance-from-river,Distance from the river,Average distance from river,27,Hazard,Hazard,km,WRIS,,,,,,,,
-mean-ndbi,Mean NDBI,Mean Normalised Difference Building Index (NDBI) value for the region,69,Hazard,Hazard,(Ratio),SENTINEL,,,,,,Creative Commons CC BY-SA 3.0 IGO,,
+mean-ndbi,Mean NDBI,Mean Normalised Difference Building Index (NDBI) value for the region,69,Hazard,Hazard,Ratio,SENTINEL,,,,,,Creative Commons CC BY-SA 3.0 IGO,,
 exposure,Exposure,Exposures of vulnerable population and assets to hazards,56,Exposure,Overall Flood Risk,Score,,y,,,,,,,
 total-hhd,Total Number of Households*,Total number of households,26,Exposure,Exposure,,MISSION ANTYODAYA 2020,y,annually,y,y,sum,GODL,,"30-May: no unit, round off (no decimals)"
 sum-population,Population*,Total number of people residing in the region,45,Exposure,Exposure,,WORLDPOP,y,annually,y,y,sum,Creative Commons Attribution 4.0 International License,,"30-May: Remove population (not necessary since households number takes care of it)
@@ -29,12 +29,18 @@ schools-count,Number of Schools,Number of Schools in the region,31,Vulnerability
 rail-length,Length of rail in the region,Length of rail in the region,28,Vulnerability,Exposure,km,BHARATMAPS,y,annually,y,y,sum,,,
 road-length,Length of Road,Length of road in the region,28,Vulnerability,Exposure,km,BHARATMAPS,y,annually,y,y,sum,,,
 net-sown-area-in-hac,Net Sown Area,Net sown area in the region,27,Vulnerability,Exposure,hectares,MISSION ANTYODAYA 2020,y,annually,y,y,sum,GODL,,
-mean-sex-ratio,Mean Sex Ratio*,Number females per 1000 males,29,Vulnerability,Exposure,(Ratio),WORLDPOP,y,annually,y,y,mean,Creative Commons Attribution 4.0 International License,,
-vulnerability,Vulnerability,"Physical, Social, Economic, and Environmental vulnerabilities which increase susceptibility of an area or a community to impact of hazards",138,Vulnerability,Overall Flood Risk,Score,MODEL,y,,,,,,,"30-May: Add ""Score"""
-lives-missing,Lives missing?? Is data available?,,,,Vulnerability,,,n,monthly,,n,,,,
+mean-sex-ratio,Mean Sex Ratio*,Number females per 1000 males,29,Vulnerability,Exposure,Ratio,WORLDPOP,y,annually,y,y,mean,Creative Commons Attribution 4.0 International License,,
+vulnerability,Vulnerability,"Physical, Social, Economic, and Environmental vulnerabilities which increase susceptibility of an area or a community to impact of hazards",138,Vulnerability,Overall Flood Risk,Score,MODEL,y,,,,mean,,,"30-May: Add ""Score"""
+total-livestock-loss,Total count of livstock lost,Sum of all livestock types lost in disaster events,50,Vulnerability,Vulnerability,Count,HPSDMA,y,monthly,y,,sum,,,
+schools-damaged,Number of schools damaged,Number of schools damaged normalised against total number of schools,68,Vulnerability,Vulnerability,Count,HPSDMA,y,monthly,y,,sum,,,
+person-dead,Number of human lives lost,"Number of Lives lost, normalised against population",51,Vulnerability,Vulnerability,Count,HPSDMA,y,monthly,y,,sum,,,
+person-major-injury,Number of people with major injuries,"Number of injured people, normalised against population",55,Vulnerability,Vulnerability,Count,HPSDMA,y,monthly,y,,sum,,,
+structure-lost,Total built structures lost,"Total built structures lost, normalised against population",58,Vulnerability,Vulnerability,Count,HPSDMA,y,monthly,y,,sum,,,
+health-centres-lost,Total number of health centres lost,"Number of health centres lost, normalised against area population",65,Vulnerability,Vulnerability,Count,HPSDMA,y,monthly,y,,sum,,,
+roadlength,Length of roads damaged in ULB's,"Number of roads damaged, normalised against total road length in the region",75,Vulnerability,Vulnerability,km,HPSDMA,y,monthly,y,,sum,,,
 avg-electricity,Average availablity of domestic electricity,Average availablity of domestic electricity,43,Vulnerability,Vulnerability,hours,MISSION ANTYODAYA 2020,y,annually,y,y,mean,GODL,,
-tehsil-piped-hhds-pct,Percentage of households with piped water connection,Percentage of households with piped water connection,52,Vulnerability,Vulnerability,(Ratio),MISSION ANTYODAYA 2020,y,annually,y,y,mean,GODL,,
-tehsil-nosanitation-hhds-pct,Percentage of households without sanitation facilities,Percentage of households without sanitation facilities,54,Vulnerability,Vulnerability,(Ratio),MISSION ANTYODAYA 2020,y,annually,y,y,mean,GODL,,
+tehsil-piped-hhds-pct,Percentage of households with piped water connection,Percentage of households with piped water connection,52,Vulnerability,Vulnerability,Ratio,MISSION ANTYODAYA 2020,y,annually,y,y,mean,GODL,,
+tehsil-nosanitation-hhds-pct,Percentage of households without sanitation facilities,Percentage of households without sanitation facilities,54,Vulnerability,Vulnerability,Ratio,MISSION ANTYODAYA 2020,y,annually,y,y,mean,GODL,,
 sum-aged-population,Elderly population*,Number of people of ages greater than or equal to 65,52,Vulnerability,Vulnerability,Number,WORLDPOP,y,annually,y,y,sum,Creative Commons Attribution 4.0 International License,,
 sum-young-population,Children population*,Number of people of ages less than or equal to 5,48,Vulnerability,Vulnerability,Number,WORLDPOP,y,annually,,,,Creative Commons Attribution 4.0 International License,,
 avg-tele,Average availablity of telecom services,Average availablity of telecom services,39,Vulnerability,Vulnerability,category,MISSION ANTYODAYA 2020,n,monthly,n,n,,GODL,,
