@@ -291,9 +291,12 @@ def filter_indicators(df, indicators):
 
 def get_indicators(state):
     visible_indicators = Indicators.objects.filter(is_visible=True, geography__name__iexact=state)
-    topsis_score_indicator = Indicators.objects.get(slug="topsis-score", geography__name__iexact=state)
-    return [
-            indicator for indicator in visible_indicators] + [topsis_score_indicator]
+    indicators = [indicator for indicator in visible_indicators]
+    try:
+        topsis_score_indicator = Indicators.objects.get(slug="topsis-score", geography__name__iexact=state)
+        return indicators + [topsis_score_indicator]
+    except Indicators.DoesNotExist:
+        return indicators
 
 def update_data(state, district):
     files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
