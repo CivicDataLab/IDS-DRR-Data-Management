@@ -1,5 +1,5 @@
 indicatorSlug,indicatorTitle,indicatorDescription,descriptionlen,indicatorCategory,parent,unit,datasource,visible_on_platform,updateFreq,used_for_model,currently feeding into the model,District Level Aggregation,License,State (Owned),Comments
-risk-score,Overall Flood Risk,"Risk of disasters is a function of - hazard, vulnerability, exposure, and coping capacity (government response)",111,Overall Flood Risk,Overall Flood Risk,Score,MODEL,y,monthly,y,,,,,
+risk-score,Overall Flood Risk,"Risk of disasters is a function of - hazard, vulnerability, exposure, and coping capacity (government response)",111,Overall Flood Risk,,Score,MODEL,y,monthly,y,,,,,
 flood-hazard,Hazard,Hazards or Potential of a physical event that may cause loss of life or property,80,Hazard,Overall Flood Risk,Score,MODEL,y,monthly,y,,,,,"30-May: Add ""Score"""
 max-rain,Maximum rainfall value in the region,Maximum rainfall value in the region,36,Hazard,Hazard,mm,IMD,,monthly,y,y,max,GODL,,
 elevation-mean,Mean Elevation,Mean elevation of the region,28,Hazard,Hazard,m,NASADEM,y,one-time,y,,mean,,,30-May: Round off 2 decimal points
