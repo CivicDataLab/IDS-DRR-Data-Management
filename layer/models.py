@@ -79,8 +79,9 @@ class Indicators(models.Model):
         blank=True,
         help_text="Defines the type of indicator that is Raw, Derived, etc.",
     )
-    slug = models.SlugField(max_length=50, null=True, blank=True)
-    unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True, blank=True)
+    slug = models.SlugField(max_length=100, null=True, blank=True)
+    unit = models.ForeignKey(
+        Unit, on_delete=models.SET_NULL, null=True, blank=True)
     geography = models.ForeignKey(
         Geography, on_delete=models.PROTECT, null=True, blank=True
     )
@@ -89,7 +90,8 @@ class Indicators(models.Model):
     )
     data_source = models.CharField(max_length=100, null=True, blank=True)
     # page = models.ManyToManyField(Page, blank=True)
-    scheme = models.ForeignKey(Scheme, on_delete=models.PROTECT, null=True, blank=True)
+    scheme = models.ForeignKey(
+        Scheme, on_delete=models.PROTECT, null=True, blank=True)
     parent = models.ForeignKey(
         "self",
         blank=True,
@@ -116,7 +118,10 @@ class Data(models.Model):
     value = models.FloatField(null=True, blank=True)
     added = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
-    indicator = models.ForeignKey(Indicators, on_delete=models.CASCADE, null=False)
-    geography = models.ForeignKey(Geography, on_delete=models.PROTECT, null=False)
-    scheme = models.ForeignKey(Scheme, on_delete=models.PROTECT, null=True, blank=True)
+    indicator = models.ForeignKey(
+        Indicators, on_delete=models.CASCADE, null=False)
+    geography = models.ForeignKey(
+        Geography, on_delete=models.PROTECT, null=False)
+    scheme = models.ForeignKey(
+        Scheme, on_delete=models.PROTECT, null=True, blank=True)
     data_period = models.CharField(max_length=100, null=True, blank=True)
