@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,10 +28,12 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 CHART_API_BASE_URL = "https://api.dataspace.open-contracting.in/api/generate-dynamic-chart/"
 DATA_RESOURCE_MAP = {
-    "18":"5d343516-2587-48e0-a92e-96d2a07eb6da",
-    "21":"34ce79a3-81cd-4ca1-bf0a-6a66b97cae63",
-    "02":"452cddd4-ef23-47e0-9702-61fa74230851"
+    "18": "5d343516-2587-48e0-a92e-96d2a07eb6da",
+    "21": "34ce79a3-81cd-4ca1-bf0a-6a66b97cae63",
+    "02": "452cddd4-ef23-47e0-9702-61fa74230851"
 }
+
+STATE_LIST = os.getenv("STATE_LIST")
 
 CORS_ORIGIN_ALLOW_ALL = True
 # CORS_ORIGIN_WHITELIST = ['*']
@@ -110,11 +113,11 @@ WSGI_APPLICATION = "D4D_ContextLayer.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.contrib.gis.db.backends.postgis",
-        "NAME": "postgres",
-        "USER": "postgres",
-        "PASSWORD": "postgres",
-        "HOST": "localhost",
-        "PORT": 5432,
+        "NAME": os.getenv("POSTGRES_NAME"),
+        "USER": os.getenv("POSTGRES_USER"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
+        "HOST": os.getenv("POSTGRES_HOST"),
+        "PORT": os.getenv("POSTGRES_PORT"),
     }
 }
 
