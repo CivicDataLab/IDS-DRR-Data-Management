@@ -18,7 +18,7 @@ import geojson
 from D4D_ContextLayer.settings import DEFAULT_TIME_PERIOD
 from . import types
 from layer.models import Data, Geography, Indicators
-from D4D_ContextLayer.settings import DATA_RESOURCE_MAP
+from D4D_ContextLayer.settings import DATA_RESOURCE_MAP, STATE_LIST
 
 # from .mutation import Mutation
 
@@ -633,8 +633,7 @@ def get_child_indicators(parent_id: Optional[int] = None, state_code: Optional[s
 
 
 def get_states():
-    # TODO: Move the additional filter code='18' to env flag
-    all_states = Geography.objects.filter(type="STATE")
+    all_states = Geography.objects.filter(type="STATE", code__in=STATE_LIST)
     states = []
     for state in all_states:
         state_details = {"name": state.name, "slug": state.slug, "code": state.code,
