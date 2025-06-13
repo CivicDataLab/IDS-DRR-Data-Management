@@ -487,7 +487,7 @@ async def add_total_tender_awarded_value_chart(elements, time_period, geo_filter
             ],
         }
         try:
-            chart = await fetch_chart(client, chart_payload, "a165cb92-8c92-49d5-83bb-d8a875c61a57")
+            chart = await fetch_chart(client, chart_payload, DATA_RESOURCE_MAP[geo_filter])
 
             # image_table_data = [[Image(chart, width=500, height=300)]]
             # table_with_images = await get_table(image_table_data, [500, 200], TableStyle([
@@ -560,8 +560,8 @@ async def add_losses_and_damages_times_series(elements, time_period_prev_months_
         }
 
         try:
-            chart1 = await fetch_chart(client, chart_payload1, "a165cb92-8c92-49d5-83bb-d8a875c61a57")
-            chart2 = await fetch_chart(client, chart_payload2, "a165cb92-8c92-49d5-83bb-d8a875c61a57")
+            chart1 = await fetch_chart(client, chart_payload1, DATA_RESOURCE_MAP[geo_filter])
+            chart2 = await fetch_chart(client, chart_payload2, DATA_RESOURCE_MAP[geo_filter])
             elements.append(
                 Paragraph("Total Population Affected by Floods", body_style))
             elements.append(Image(chart1, width=500, height=275))
@@ -928,7 +928,8 @@ async def append_insights_section(elements, time_period, state, time_period_pars
             f"For most at risk district, {major_indicators_districts_top_3[0]['geography'].name.title()}, public contracts totalling to INR {cumulative_total_flood_value_0} have been awarded in past 3 years for flood management related activities and projects. Out of this, INR {cumulative_sdrf_value_0} has been spent on flood related tenders through SDRF.",
             f"For {major_indicators_districts_top_3[1]['geography'].name.title()}, public contracts totalling to INR {cumulative_total_flood_value_1} have been awarded in past 3 years for flood management related activities and projects and for {major_indicators_districts_top_3[2]['geography'].name.title()}, public contracts totalling to INR {cumulative_total_flood_value_2} have been awarded.",
             f"For {major_indicators_districts_top_3[0]['geography'].name.title()}, Risk is high because of {indicator_mapping[sort_data_dict_and_return_highest_key(major_indicators_districts_top_3[0]['indicators'])[1][0]]} and {indicator_mapping[sort_data_dict_and_return_highest_key(major_indicators_districts_top_3[0]['indicators'])[2][0]]} showing need of more targetted intervention to address these.",
-            f"{major_indicators_districts_top_3[0]['geography'].name.title()} has received {cumulative_tender_value} amount in terms of flood related tenders in past 3 years despite having among the highest Risk score",
+            f"{major_indicators_districts_top_3[0]['geography'].name.title()} has received {cumulative_tender_value} amount in terms of flood related tenders in past 3 years despite having among the highest Risk score" if major_indicators_districts_top_3[
+                0]['geography'].name else "Major indicators district name is null",
             f"{district_that_received_minimum_amount_flood_tenders.name.title()} needs significant effort on Government Response as least money has been received despite having among the highest Risk score.",
             f"{district_with_highest_hazard_score.name.title()} needs effort on Hazard risk reduction as {area_inundated_pct_for_dist_with_high_hazard} of its area experienced inundation this month.",
             f"{district_with_highest_exposure.name.title()} needs effort on exposure risk reduction, seeing that Total Population Exposed this month is {total_population_exposed_for_dist_with_highest_exposure}."

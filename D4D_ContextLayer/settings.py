@@ -26,7 +26,7 @@ SECRET_KEY = "django-insecure-pn452gc08m0cfvwv#ti*$r$-0sx$_c%(ptt&gap^gg=f4p7yql
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
-CHART_API_BASE_URL = "https://api.dev.dataspace.open-contracting.in/api/generate-dynamic-chart/"
+CHART_API_BASE_URL = "https://api.dataspace.open-contracting.in/api/generate-dynamic-chart/"
 DATA_RESOURCE_MAP = {
     "18": "f43b0ccb-67a8-4a63-a0b0-75a86ecb8ad1",
     "21": "34ce79a3-81cd-4ca1-bf0a-6a66b97cae63",
