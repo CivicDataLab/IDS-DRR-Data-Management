@@ -3,10 +3,8 @@ services:
     image: postgis/postgis:14-3.5
     restart: always
     container_name: "context_layer_PG"
-    environment:
-      - POSTGRES_NAME=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+    env_file:
+      - .env
     ports:
       - "54321:5432"
     volumes:
