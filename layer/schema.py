@@ -519,7 +519,7 @@ def get_indicators(indc_filter: Optional[types.IndicatorFilter] = None, state_co
 
     Returns:
         list: A list of dictionaries, where each dictionary represents an indicator and contains
-            the following keys: 'name', 'slug', 'long_description', 'short_description', 
+            the following keys: 'name', 'slug', 'long_description', 'short_description',
             'data_source', and 'unit__name'.
 
     Note:
@@ -633,7 +633,8 @@ def get_child_indicators(parent_id: Optional[int] = None, state_code: Optional[s
 
 
 def get_states():
-    all_states = Geography.objects.filter(type="STATE")
+    all_states = Geography.objects.filter(type="STATE", code__in=[
+        state.strip() for state in STATE_LIST.split(",")])
     states = []
     for state in all_states:
         state_details = {"name": state.name, "slug": state.slug, "code": state.code,
