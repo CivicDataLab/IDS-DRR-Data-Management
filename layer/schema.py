@@ -633,8 +633,7 @@ def get_child_indicators(parent_id: Optional[int] = None, state_code: Optional[s
 
 
 def get_states():
-    all_states = Geography.objects.filter(type="STATE", code__in=[
-        state.strip() for state in STATE_LIST.split(",")])
+    all_states = Geography.objects.filter(type="STATE", code__in=STATE_LIST)
     states = []
     for state in all_states:
         state_details = {"name": state.name, "slug": state.slug, "code": state.code,
