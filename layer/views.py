@@ -922,30 +922,35 @@ async def append_insights_section(elements, time_period, state, time_period_pars
         factors_scoring_lowest = ', '.join(
             [f"{item['geography'].name.title()} is {indicator_mapping[sort_data_dict_and_return_highest_key(item['indicators'])[1][0]]}" for item in major_indicators_districts_top_3])
 
-        # main insights
-        main_insights = [
-            f"As per {time_period_string}, most at risk districts are {', '.join([item['geography'].name.title() for item in major_indicators_districts_top_3])}. The factors scoring lowest for {factors_scoring_lowest}",
-            f"For most at risk district, {major_indicators_districts_top_3[0]['geography'].name.title()}, public contracts totalling to INR {cumulative_total_flood_value_0} have been awarded in past 3 years for flood management related activities and projects. Out of this, INR {cumulative_sdrf_value_0} has been spent on flood related tenders through SDRF.",
-            f"For {major_indicators_districts_top_3[1]['geography'].name.title()}, public contracts totalling to INR {cumulative_total_flood_value_1} have been awarded in past 3 years for flood management related activities and projects and for {major_indicators_districts_top_3[2]['geography'].name.title()}, public contracts totalling to INR {cumulative_total_flood_value_2} have been awarded.",
-            f"For {major_indicators_districts_top_3[0]['geography'].name.title()}, Risk is high because of {indicator_mapping[sort_data_dict_and_return_highest_key(major_indicators_districts_top_3[0]['indicators'])[1][0]]} and {indicator_mapping[sort_data_dict_and_return_highest_key(major_indicators_districts_top_3[0]['indicators'])[2][0]]} showing need of more targetted intervention to address these.",
-            f"{major_indicators_districts_top_3[0]['geography'].name.title()} has received {cumulative_tender_value} amount in terms of flood related tenders in past 3 years despite having among the highest Risk score" if major_indicators_districts_top_3[
-                0]['geography'].name else "Major indicators district name is null",
-            f"{district_that_received_minimum_amount_flood_tenders.name.title()} needs significant effort on Government Response as least money has been received despite having among the highest Risk score.",
-            f"{district_with_highest_hazard_score.name.title()} needs effort on Hazard risk reduction as {area_inundated_pct_for_dist_with_high_hazard} of its area experienced inundation this month.",
-            f"{district_with_highest_exposure.name.title()} needs effort on exposure risk reduction, seeing that Total Population Exposed this month is {total_population_exposed_for_dist_with_highest_exposure}."
-        ]
+        try:
+            # main insights
+            main_insights = [
+                f"As per {time_period_string}, most at risk districts are {', '.join([item['geography'].name.title() for item in major_indicators_districts_top_3])}. The factors scoring lowest for {factors_scoring_lowest}",
+                f"For most at risk district, {major_indicators_districts_top_3[0]['geography'].name.title()}, public contracts totalling to INR {cumulative_total_flood_value_0} have been awarded in past 3 years for flood management related activities and projects. Out of this, INR {cumulative_sdrf_value_0} has been spent on flood related tenders through SDRF.",
+                f"For {major_indicators_districts_top_3[1]['geography'].name.title()}, public contracts totalling to INR {cumulative_total_flood_value_1} have been awarded in past 3 years for flood management related activities and projects and for {major_indicators_districts_top_3[2]['geography'].name.title()}, public contracts totalling to INR {cumulative_total_flood_value_2} have been awarded.",
+                f"For {major_indicators_districts_top_3[0]['geography'].name.title()}, Risk is high because of {indicator_mapping[sort_data_dict_and_return_highest_key(major_indicators_districts_top_3[0]['indicators'])[1][0]]} and {indicator_mapping[sort_data_dict_and_return_highest_key(major_indicators_districts_top_3[0]['indicators'])[2][0]]} showing need of more targetted intervention to address these.",
+                f"{major_indicators_districts_top_3[0]['geography'].name.title()} has received {cumulative_tender_value} amount in terms of flood related tenders in past 3 years despite having among the highest Risk score" if major_indicators_districts_top_3[
+                    0]['geography'].name else "Major indicators district name is null",
+                f"{district_that_received_minimum_amount_flood_tenders.name.title()} needs significant effort on Government Response as least money has been received despite having among the highest Risk score.",
+                f"{district_with_highest_hazard_score.name.title()} needs effort on Hazard risk reduction as {area_inundated_pct_for_dist_with_high_hazard} of its area experienced inundation this month.",
+                f"{district_with_highest_exposure.name.title()} needs effort on exposure risk reduction, seeing that Total Population Exposed this month is {total_population_exposed_for_dist_with_highest_exposure}."
+            ]
 
-        prepare_array = [ListItem(Paragraph(item, body_style))
-                         for item in main_insights]
+            prepare_array = [ListItem(Paragraph(item, body_style))
+                             for item in main_insights]
 
-        elements.append(ListFlowable(prepare_array,  bulletType='1',  # Use '1' for numbered list
-                                     start='1',       # Start numbering from 1
-                                     # Overall indentation of the list (adjust as needed)
-                                     leftIndent=12,
-                                     # Indent the numbers by 18 points (adjust as needed)
-                                     bulletFontSize=10,  # Set the font size of the numbers to match the text
-                                     bulletColor=colors.black,
-                                     bulletFormat="%s."))
+            elements.append(ListFlowable(prepare_array,  bulletType='1',  # Use '1' for numbered list
+                                         start='1',       # Start numbering from 1
+                                         # Overall indentation of the list (adjust as needed)
+                                         leftIndent=12,
+                                         # Indent the numbers by 18 points (adjust as needed)
+                                         bulletFontSize=10,  # Set the font size of the numbers to match the text
+                                         bulletColor=colors.black,
+                                         bulletFormat="%s."))
+        except Exception as e:
+            print(e)
+            elements.append(
+                Paragraph("Error fetching Insights data", body_style))
 
         elements.append(Spacer(1, 20))
 
