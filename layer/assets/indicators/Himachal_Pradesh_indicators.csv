@@ -1,6 +1,5 @@
 indicatorSlug,indicatorTitle,indicatorDescription,descriptionlen,indicatorCategory,parent,unit,datasource,visible_on_platform,updateFreq,used_for_model,currently feeding into the model,District Level Aggregation,License,adminLevel,cumulativeIndicator,State (Owned),Comments
 risk-score,Overall Flood Risk,"Risk of disasters is a function of - hazard, vulnerability, exposure, and coping capacity (government response)",111,Overall Flood Risk,,Score,MODEL,y,,y,,,,,,,
-topsis-score,Topsis model output,Output score of the topsis model. Useful for knowing the exact risk score value for ranking geographies by actual risk. Not for external use,140,Overall Flood Risk,Overall Flood Risk,Score,MODEL,n,monthly,y,,,,,,,
 flood-hazard,Hazard,Hazards or Potential of a physical event that may cause loss of life or property,80,Hazard,Overall Flood Risk,Score,MODEL,y,,y,,,,tehsil,,,"30-May: Add ""Score"""
 max-rain,Maximum rainfall value in the region,Maximum rainfall value in the region,36,Hazard,Hazard,mm,IMD,n,monthly,y,y,max,GODL,tehsil,,,
 mean-rain,Mean rainfall value in the region,Mean rainfall value in the region,33,Hazard,Hazard,mm,IMD,n,monthly,y,y,mean,GODL,tehsil,,,
@@ -38,6 +37,7 @@ person-dead,Number of human lives lost,"Number of Lives lost, normalised against
 person-major-injury,Number of people with major injuries,"Number of injured people, normalised against population",55,Vulnerability,Vulnerability,Count,HPSDMA,y,monthly,y,,sum,,tehsil,,,
 structure-lost,Total built structures lost,"Total built structures lost, normalised against population",58,Vulnerability,Vulnerability,Count,HPSDMA,y,monthly,y,,sum,,tehsil,,,
 health-centres-lost,Total number of health centres lost,"Number of health centres lost, normalised against area population",65,Vulnerability,Vulnerability,Count,HPSDMA,y,monthly,y,,sum,,tehsil,,,
+total-infrastructure-damage,Total Infrastructure Damage,"Sum of roads, bridges and embankments damaged",45,Vulnerability,Vulnerability,Number,HPSDMA,y,monthly,n,n,sum,,tehsil,,,
 roadlength,Length of roads damaged in ULB's,"Number of roads damaged, normalised against total road length in the region",75,Vulnerability,Vulnerability,km,HPSDMA,y,monthly,y,,sum,,tehsil,,,
 avg-electricity,Average availability of domestic electricity,Average availability of domestic electricity,44,Vulnerability,Vulnerability,hours,MISSION ANTYODAYA 2020,y,annually,y,y,mean,GODL,tehsil,,,
 tehsil-piped-hhds-pct,Percentage of households with piped water connection,Percentage of households with piped water connection,52,Vulnerability,Vulnerability,Ratio,MISSION ANTYODAYA 2020,y,annually,y,y,mean,GODL,tehsil,,,
