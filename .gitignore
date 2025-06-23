@@ -154,4 +154,5 @@ public/
 .env
 bar_chart.png
 sink.py
-*.png
+layer/assets/charts
+report_config.json
