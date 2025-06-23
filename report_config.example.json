@@ -1,0 +1,54 @@
+{
+  "18": {
+    "RESOURCE_ID": "",
+    "SECTION_1": {
+      "title": "<section title>",
+      "sub_title": "<section sub title>",
+      "description": "<section description>",
+      "TABLE_2": {
+        "title": "<table title>",
+        "columns": [
+          {
+            "label": "<table column label>",
+            "slug": "<table column slug>",
+            "cumulative": false
+          }
+        ]
+      }
+    },
+    "SECTION_2": {
+      "title": "<section title>",
+      "sub_title": "<section sub title>",
+      "description": "<section description>",
+      "CHARTS": [
+        {
+          "title": "<chart title>",
+          "description": "<chart description>",
+          "chart_type": "MULTILINE",
+          "x_axis_column": "timeperiod",
+          "x_axis_label": "<x axis label>",
+          "y_axis_label": "<y axis label>",
+          "show_legend": "true",
+          "filter": "<chart filter to show specific indicator>"
+        }
+      ]
+    },
+    "SECTION_3": {
+      "title": "<section title>",
+      "sub_title": "<section sub title>",
+      "description": "<section description>",
+      "CHARTS": [
+        {
+          "title": "<chart title>",
+          "description": "<chart description>",
+          "chart_type": "GROUPED_BAR_VERTICAL",
+          "x_axis_column": "financial-year",
+          "x_axis_label": "<x axis label>",
+          "y_axis_label": "<y axis label>",
+          "show_legend": "true",
+          "filter": "<chart filter to show specific indicator>"
+        }
+      ]
+    }
+  }
+}
