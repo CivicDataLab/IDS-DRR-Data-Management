@@ -74,7 +74,7 @@ class Indicators(models.Model):
         help_text="Describes the type sub-indicators",
     )
     type = models.CharField(
-        max_length=20,
+        max_length=50,
         null=True,
         blank=True,
         help_text="Defines the type of indicator that is Raw, Derived, etc.",
