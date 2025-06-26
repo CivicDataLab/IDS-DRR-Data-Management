@@ -34,9 +34,10 @@ ALLOWED_HOSTS = ["*"]
 CHART_API_BASE_URL = os.getenv("CHART_API_BASE_URL")
 
 # Whitelisted indicators while importing data
-WHITELIST_INDICATORS = (
-    os.getenv("WHITELIST_INDICATORS").split(",").map(lambda x: x.strip())
-)
+WHITELIST_INDICATORS = [
+    x.strip() for x in os.getenv("WHITELIST_INDICATORS", "").split(",")
+]
+
 
 STATE_LIST = [state.strip() for state in os.getenv("STATE_LIST").split(",")]
 
