@@ -30,17 +30,13 @@ SECRET_KEY = "django-insecure-pn452gc08m0cfvwv#ti*$r$-0sx$_c%(ptt&gap^gg=f4p7yql
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ["*"]
 CHART_API_BASE_URL = os.getenv("CHART_API_BASE_URL")
-DATA_RESOURCE_MAP = {
-    "18": os.getenv("DATA_RESOURCE_MAP_18"),
-    "21": os.getenv("DATA_RESOURCE_MAP_21"),
-    "02": os.getenv("DATA_RESOURCE_MAP_02")
-}
 
 # Whitelisted indicators while importing data
-WHITELIST_INDICATORS = os.getenv(
-    "WHITELIST_INDICATORS").split(",").map(lambda x: x.strip())
+WHITELIST_INDICATORS = (
+    os.getenv("WHITELIST_INDICATORS").split(",").map(lambda x: x.strip())
+)
 
 STATE_LIST = [state.strip() for state in os.getenv("STATE_LIST").split(",")]
 
@@ -48,26 +44,26 @@ CORS_ORIGIN_ALLOW_ALL = True
 # CORS_ORIGIN_WHITELIST = ['*']
 
 CORS_ALLOW_METHODS = [
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
 ]
 
 CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-    'referer',
-    'organization',
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+    "referer",
+    "organization",
 ]
 
 # Application definition
@@ -85,7 +81,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    'corsheaders.middleware.CorsMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
