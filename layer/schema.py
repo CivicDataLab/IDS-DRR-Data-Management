@@ -18,7 +18,6 @@ import geojson
 from D4D_ContextLayer.settings import DEFAULT_TIME_PERIOD
 from . import types
 from layer.models import Data, Geography, Indicators
-from D4D_ContextLayer.settings import STATE_LIST
 
 # from .mutation import Mutation
 
@@ -644,12 +643,13 @@ def get_child_indicators(
 def get_states():
     try:
         with open("report_config.json", "r") as f:
-            STATE_CONFIG_ALL = json.load(f)
+            state_config_all = json.load(f)
     except FileNotFoundError:
         print("Configuration file not found in get states function.")
         return []
 
-    all_states = Geography.objects.filter(type="STATE", code__in=STATE_LIST)
+    valid_state_codes = [k for k, v in state_config_all.items() if v.get("RESOURCE_ID")]
+    all_states = Geography.objects.filter(type="STATE", code__in=valid_state_codes)
     states = []
     for state in all_states:
         state_details = {
@@ -668,7 +668,7 @@ def get_states():
         ]
         state_centroid = state_geometry.centroid if state_geometry else None
         state_details["center"] = (state_centroid.y, state_centroid.x)
-        state_details["resource_id"] = STATE_CONFIG_ALL[state.code]["RESOURCE_ID"]
+        state_details["resource_id"] = state_config_all[state.code]["RESOURCE_ID"]
         states.append(state_details)
     return states
 

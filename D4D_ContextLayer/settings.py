@@ -38,9 +38,6 @@ WHITELIST_INDICATORS = [
     x.strip() for x in os.getenv("WHITELIST_INDICATORS", "").split(",")
 ]
 
-
-STATE_LIST = [state.strip() for state in os.getenv("STATE_LIST").split(",")]
-
 CORS_ORIGIN_ALLOW_ALL = True
 # CORS_ORIGIN_WHITELIST = ['*']
 
