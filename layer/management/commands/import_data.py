@@ -8,7 +8,7 @@ from django.contrib.gis.geos import GEOSGeometry, MultiPolygon, Polygon
 from django.core.management.base import BaseCommand, CommandError
 from django.db.models import Q
 from layer.models import Data, Geography, Indicators, Unit
-from django.conf.settings import WHITELIST_INDICATORS
+from D4D_ContextLayer.settings import WHITELIST_INDICATORS
 
 
 def migrate_indicators(filename="layer/assets/indicators/data_dict.csv"):
@@ -303,10 +303,10 @@ def get_indicators(state):
     )
     indicators = [indicator for indicator in visible_indicators]
     try:
-        whitelist_indicators = Indicators.objects.get(
+        whitelist_indicators = Indicators.objects.filter(
             slug__in=WHITELIST_INDICATORS, geography__name__iexact=state
         )
-        return indicators + [whitelist_indicators]
+        return indicators + list(whitelist_indicators)
     except Indicators.DoesNotExist:
         return indicators
 
