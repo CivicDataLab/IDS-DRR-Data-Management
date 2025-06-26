@@ -38,6 +38,10 @@ DATA_RESOURCE_MAP = {
     "02": os.getenv("DATA_RESOURCE_MAP_02")
 }
 
+# Whitelisted indicators while importing data
+WHITELIST_INDICATORS = os.getenv(
+    "WHITELIST_INDICATORS").split(",").map(lambda x: x.strip())
+
 STATE_LIST = [state.strip() for state in os.getenv("STATE_LIST").split(",")]
 
 CORS_ORIGIN_ALLOW_ALL = True
