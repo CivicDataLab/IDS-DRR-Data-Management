@@ -1037,46 +1037,6 @@ async def append_insights_section(
     if len(major_indicators_districts) >= 5:
         major_indicators_districts_top_3 = major_indicators_districts[:-2]
 
-        cumulative_sdrf_value_0 = (
-            await get_cumulative_indicator_value_for_last_three_years(
-                time_period_parsed.year,
-                "sdrf-tenders-awarded-value",
-                major_indicators_districts_top_3[0]["geography"].id,
-            )
-        )
-        cumulative_total_flood_value_0 = (
-            await get_cumulative_indicator_value_for_last_three_years(
-                time_period_parsed.year,
-                "total-tender-awarded-value",
-                major_indicators_districts_top_3[0]["geography"].id,
-            )
-        )
-
-        cumulative_total_flood_value_1 = (
-            await get_cumulative_indicator_value_for_last_three_years(
-                time_period_parsed.year,
-                "total-tender-awarded-value",
-                major_indicators_districts_top_3[1]["geography"].id,
-            )
-        )
-
-        cumulative_total_flood_value_2 = (
-            await get_cumulative_indicator_value_for_last_three_years(
-                time_period_parsed.year,
-                "total-tender-awarded-value",
-                major_indicators_districts_top_3[2]["geography"].id,
-            )
-        )
-
-        # Get the cumulative tender value for top district for last three years
-        cumulative_tender_value = (
-            await get_cumulative_indicator_value_for_last_three_years(
-                time_period_parsed.year,
-                "total-tender-awarded-value",
-                major_indicators_districts_top_3[0]["geography"].id,
-            )
-        )
-
         # Get district that received minimum amount from flood tenders for given time period
         district_that_received_minimum_amount_flood_tenders = (
             await get_district_that_received_min_max_given_indicator(
@@ -1087,43 +1047,16 @@ async def append_insights_section(
             )
         )
 
-        district_with_highest_hazard_score = (
-            await get_district_that_received_min_max_given_indicator(
-                major_indicators_districts, "flood-hazard", time_period, "max"
-            )
-        )
-
-        area_inundated_pct_for_dist_with_high_hazard = (
-            await get_indicator_value_for_specified_month(
-                time_period, "inundation-pct", district_with_highest_hazard_score.id
-            )
-        )
-
-        district_with_highest_exposure = (
-            await get_district_that_received_min_max_given_indicator(
-                major_indicators_districts, "exposure", time_period, "max"
-            )
-        )
-
-        total_population_exposed_for_dist_with_highest_exposure = (
-            await get_indicator_value_for_specified_month(
-                time_period,
-                "population-affected-total",
-                district_with_highest_exposure.id,
-            )
-        )
-
-        factors_scoring_lowest = ", ".join(
-            [
-                f"{item['geography'].name.title()} is {indicator_mapping[sort_data_dict_and_return_highest_key(item['indicators'])[1][0]]}"
-                for item in major_indicators_districts_top_3
-            ]
-        )
-
         # main insights
         main_insights = []
 
         try:
+            factors_scoring_lowest = ", ".join(
+                [
+                    f"{item['geography'].name.title()} is {indicator_mapping[sort_data_dict_and_return_highest_key(item['indicators'])[1][0]]}"
+                    for item in major_indicators_districts_top_3
+                ]
+            )
             main_insights.append(
                 f"As per {time_period_string}, most at risk districts are {', '.join([item['geography'].name.title() for item in major_indicators_districts_top_3])}. The factors scoring lowest for {factors_scoring_lowest}"
             )
@@ -1131,6 +1064,23 @@ async def append_insights_section(
             print(e)
 
         try:
+            # Cumulative Total Flood Value for Top District for last three years
+            cumulative_total_flood_value_0 = (
+                await get_cumulative_indicator_value_for_last_three_years(
+                    time_period_parsed.year,
+                    "total-tender-awarded-value",
+                    major_indicators_districts_top_3[0]["geography"].id,
+                )
+            )
+            # Cumulative SDRF Value for Top District for last three years
+            cumulative_sdrf_value_0 = (
+                await get_cumulative_indicator_value_for_last_three_years(
+                    time_period_parsed.year,
+                    "sdrf-tenders-awarded-value",
+                    major_indicators_districts_top_3[0]["geography"].id,
+                )
+            )
+
             main_insights.append(
                 f"For most at risk district, {major_indicators_districts_top_3[0]['geography'].name.title()}, public contracts totalling to INR {cumulative_total_flood_value_0} have been awarded in past 3 years for flood management related activities and projects. Out of this, INR {cumulative_sdrf_value_0} has been spent on flood related tenders through SDRF."
             )
@@ -1138,6 +1088,22 @@ async def append_insights_section(
             print(e)
 
         try:
+            # Cumulative Total Flood Value for Second District for last three years
+            cumulative_total_flood_value_1 = (
+                await get_cumulative_indicator_value_for_last_three_years(
+                    time_period_parsed.year,
+                    "total-tender-awarded-value",
+                    major_indicators_districts_top_3[1]["geography"].id,
+                )
+            )
+            # Cumulative Total Flood Value for Third District for last three years
+            cumulative_total_flood_value_2 = (
+                await get_cumulative_indicator_value_for_last_three_years(
+                    time_period_parsed.year,
+                    "total-tender-awarded-value",
+                    major_indicators_districts_top_3[2]["geography"].id,
+                )
+            )
             main_insights.append(
                 f"For {major_indicators_districts_top_3[1]['geography'].name.title()}, public contracts totalling to INR {cumulative_total_flood_value_1} have been awarded in past 3 years for flood management related activities and projects and for {major_indicators_districts_top_3[2]['geography'].name.title()}, public contracts totalling to INR {cumulative_total_flood_value_2} have been awarded."
             )
@@ -1152,6 +1118,14 @@ async def append_insights_section(
             print(e)
 
         try:
+            # Get the cumulative tender value for top district for last three years
+            cumulative_tender_value = (
+                await get_cumulative_indicator_value_for_last_three_years(
+                    time_period_parsed.year,
+                    "total-tender-awarded-value",
+                    major_indicators_districts_top_3[0]["geography"].id,
+                )
+            )
             main_insights.append(
                 f"{major_indicators_districts_top_3[0]['geography'].name.title()} has received {cumulative_tender_value} amount in terms of flood related tenders in past 3 years despite having among the highest Risk score"
                 if major_indicators_districts_top_3[0]["geography"].name
@@ -1168,13 +1142,52 @@ async def append_insights_section(
             print(e)
 
         try:
+            # Get district with highest hazard score
+            district_with_highest_hazard_score = (
+                await get_district_that_received_min_max_given_indicator(
+                    major_indicators_districts, "flood-hazard", time_period, "max"
+                )
+            )
+
+            # Get inundation percentage for district with highest hazard score
+            area_inundated_pct_for_dist_with_high_hazard = (
+                await get_indicator_value_for_specified_month(
+                    time_period, "inundation-pct", district_with_highest_hazard_score.id
+                )
+            )
+
+            peak_daily_rainfall_for_dist_with_high_hazard = (
+                await get_indicator_value_for_specified_month(
+                    time_period,
+                    "peak-daily-rainfall",
+                    district_with_highest_hazard_score.id,
+                )
+            )
+
             main_insights.append(
-                f"{district_with_highest_hazard_score.name.title()} needs effort on Hazard risk reduction as {area_inundated_pct_for_dist_with_high_hazard} of its area experienced inundation this month."
+                f"{district_with_highest_hazard_score.name.title()} needs effort on Hazard risk reduction as "
+                + f"{area_inundated_pct_for_dist_with_high_hazard} of its area experienced inundation this month."
+                if area_inundated_pct_for_dist_with_high_hazard != None
+                else f"it received {peak_daily_rainfall_for_dist_with_high_hazard}mm of peak daily rainfall this month."
             )
         except Exception as e:
             print(e)
 
         try:
+            # Get district with highest exposure score
+            district_with_highest_exposure = (
+                await get_district_that_received_min_max_given_indicator(
+                    major_indicators_districts, "exposure", time_period, "max"
+                )
+            )
+            # Get total population exposed for district with highest exposure score
+            total_population_exposed_for_dist_with_highest_exposure = (
+                await get_indicator_value_for_specified_month(
+                    time_period,
+                    "population-affected-total",
+                    district_with_highest_exposure.id,
+                )
+            )
             main_insights.append(
                 f"{district_with_highest_exposure.name.title()} needs effort on exposure risk reduction, seeing that Total Population Exposed this month is {total_population_exposed_for_dist_with_highest_exposure}."
             )
@@ -1235,7 +1248,7 @@ async def get_indicator_value_for_specified_month(time_period, indicator, distri
     results = await sync_to_async(list)(results)
 
     if len(results) == 0:
-        return 0
+        return None
 
     return results[0].value
 
