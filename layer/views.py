@@ -1164,12 +1164,17 @@ async def append_insights_section(
                 )
             )
 
-            main_insights.append(
-                f"{district_with_highest_hazard_score.name.title()} needs effort on Hazard risk reduction as "
-                + f"{area_inundated_pct_for_dist_with_high_hazard} of its area experienced inundation this month."
-                if area_inundated_pct_for_dist_with_high_hazard != None
-                else f"it received {peak_daily_rainfall_for_dist_with_high_hazard}mm of peak daily rainfall this month."
-            )
+            if (
+                area_inundated_pct_for_dist_with_high_hazard is not None
+                or peak_daily_rainfall_for_dist_with_high_hazard is not None
+            ):
+                main_insights.append(
+                    f"{district_with_highest_hazard_score.name.title()} needs effort on Hazard risk reduction as "
+                    + f"{area_inundated_pct_for_dist_with_high_hazard} of its area experienced inundation this month."
+                    if area_inundated_pct_for_dist_with_high_hazard is not None
+                    else f"{district_with_highest_hazard_score.name.title()} needs effort on Hazard risk reduction as "
+                    + f"it received {peak_daily_rainfall_for_dist_with_high_hazard}mm of peak daily rainfall this month."
+                )
         except Exception as e:
             print(e)
 
