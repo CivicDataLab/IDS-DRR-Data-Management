@@ -37,7 +37,6 @@ person-dead,Number of human lives lost,"Number of Lives lost, normalised against
 person-major-injury,Number of people with major injuries,"Number of injured people, normalised against population",55,Vulnerability,Vulnerability,Count,HPSDMA,y,monthly,y,,sum,,tehsil,,,
 structure-lost,Total built structures lost,"Total built structures lost, normalised against population",58,Vulnerability,Vulnerability,Count,HPSDMA,y,monthly,y,,sum,,tehsil,,,
 health-centres-lost,Total number of health centres lost,"Number of health centres lost, normalised against area population",65,Vulnerability,Vulnerability,Count,HPSDMA,y,monthly,y,,sum,,tehsil,,,
-total-infrastructure-damage,Total Infrastructure Damage,"Sum of roads, bridges and embankments damaged",45,Vulnerability,Vulnerability,Number,HPSDMA,y,monthly,n,n,sum,,tehsil,,,
 roadlength,Length of roads damaged in ULB's,"Number of roads damaged, normalised against total road length in the region",75,Vulnerability,Vulnerability,km,HPSDMA,y,monthly,y,,sum,,tehsil,,,
 avg-electricity,Average availability of domestic electricity,Average availability of domestic electricity,44,Vulnerability,Vulnerability,hours,MISSION ANTYODAYA 2020,y,annually,y,y,mean,GODL,tehsil,,,
 tehsil-piped-hhds-pct,Percentage of households with piped water connection,Percentage of households with piped water connection,52,Vulnerability,Vulnerability,Ratio,MISSION ANTYODAYA 2020,y,annually,y,y,mean,GODL,tehsil,,,
