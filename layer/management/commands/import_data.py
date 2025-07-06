@@ -209,6 +209,27 @@ def migrate_geojson():
                     name = ft["properties"]["block_name"]
                     dtcode = f'21-{ft["properties"]["dtcode11"]}'
                     parent_geo_obj = Geography.objects.get(code=dtcode, type="DISTRICT")
+                elif file_name == "uttar_pradesh_district":
+                    geo_type = "DISTRICT"
+                    code = "-".join(ft["properties"]["object_id"].split("-")[:2])
+                    name = ft["properties"]["dtname"]
+                    state = ft["properties"]["stname"]
+
+                    try:
+                        parent_geo_obj = Geography.objects.get(
+                            name__iexact=state.capitalize(), type="STATE"
+                        )
+                    except Geography.DoesNotExist:
+                        parent_geo_obj = Geography(
+                            name=state.capitalize(), code="09", type="STATE"
+                        )
+                        parent_geo_obj.save()
+                elif file_name == "uttar_pradesh_subdistrict":
+                    geo_type = "SUB DISTRICT"
+                    code = ft["properties"]["object_id"]
+                    name = ft["properties"]["sdtname"]
+                    dtcode = "-".join(code.split("-")[:2])
+                    parent_geo_obj = Geography.objects.get(code=dtcode, type="DISTRICT")
                 try:
                     geo_object = Geography.objects.get(
                         code=code, parentId=parent_geo_obj
@@ -326,6 +347,7 @@ def update_data(state, district):
             filename,
             index_col="object-id",
             dtype={"object-id": str, "sdtcode11": str, "objectid": str},
+            low_memory=False,
         )
         if district:
             import_state_data(df, filter_indicators(df, indicators), district)
@@ -348,7 +370,7 @@ def update_data(state, district):
 def import_state_indicators(df: pd.DataFrame, state: Geography):
     for row in df.itertuples(index=False):
         indicator_slug = getattr(row, "indicatorSlug", "")
-        print("Processing Indicator -", indicator_slug)
+        print("\n\nProcessing Indicator -", indicator_slug)
         try:
             indicator = Indicators.objects.get(
                 slug=indicator_slug.lower(), geography=state
