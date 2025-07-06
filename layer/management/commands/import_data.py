@@ -230,6 +230,28 @@ def migrate_geojson():
                     name = ft["properties"]["sdtname"]
                     dtcode = "-".join(code.split("-")[:2])
                     parent_geo_obj = Geography.objects.get(code=dtcode, type="DISTRICT")
+                elif file_name == "bihar_district":
+                    geo_type = "DISTRICT"
+                    state_code = "-".join(ft["properties"]["object_id"].split("-")[:1])
+                    code = "-".join(ft["properties"]["object_id"].split("-")[:2])
+                    name = ft["properties"]["dtname"]
+                    state = ft["properties"]["stname"]
+
+                    try:
+                        parent_geo_obj = Geography.objects.get(
+                            name__iexact=state.capitalize(), type="STATE"
+                        )
+                    except Geography.DoesNotExist:
+                        parent_geo_obj = Geography(
+                            name=state.capitalize(), code=state_code, type="STATE"
+                        )
+                        parent_geo_obj.save()
+                elif file_name == "bihar_subdistrict":
+                    geo_type = "BLOCK"
+                    code = ft["properties"]["object_id"]
+                    name = ft["properties"]["sdtname"]
+                    dtcode = "-".join(code.split("-")[:2])
+                    parent_geo_obj = Geography.objects.get(code=dtcode, type="DISTRICT")
                 try:
                     geo_object = Geography.objects.get(
                         code=code, parentId=parent_geo_obj
