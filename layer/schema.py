@@ -599,6 +599,7 @@ def get_district_rev_circle(geo_filter: types.GeoFilter):
         "REVENUE CIRCLE",
         "TEHSIL",
         "BLOCK",
+        "SUB DISTRICT",
     ]:
         geo_object = Geography.objects.filter(
             type=geo_filter.type.upper().strip().replace("-", " ")
