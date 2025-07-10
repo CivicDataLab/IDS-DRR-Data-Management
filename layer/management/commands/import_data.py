@@ -9,6 +9,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db.models import Q
 from layer.models import Data, Geography, Indicators, Unit
 from D4D_ContextLayer.settings import WHITELIST_INDICATORS
+import sys
 
 
 def migrate_indicators(filename="layer/assets/indicators/data_dict.csv"):
@@ -303,7 +304,6 @@ def import_geography_data(df, indicators, g_code):
     except Exception as e:
         print(f"Geography location for: {g_code} is missing")
     else:
-        print(f"Updating datapoints for: {geography_obj.name}")
         for row in rows.itertuples():
             if Data.objects.filter(
                 geography__code=geography_obj.code, data_period=row.timeperiod
@@ -330,7 +330,13 @@ def import_state_data(df, indicators, g_code=None):
     if g_code:
         import_geography_data(df, indicators, g_code)
     else:
-        [import_geography_data(df, indicators, g_code) for g_code in df.index.unique()]
+        for i, g_code in enumerate(df.index.unique()):
+            msg = f"Updating datapoints: {((i + 1) / len(df.index.unique())) * 100:.2f}% complete"
+            sys.stdout.write("\033[F")  # Move cursor up
+            sys.stdout.write("\033[K")  # Clear line
+            sys.stdout.write(msg + "\n")  # Print new status
+            sys.stdout.flush()
+            import_geography_data(df, indicators, g_code)
 
 
 def filter_indicators(df, indicators):
@@ -356,6 +362,7 @@ def get_indicators(state):
 
 def update_data(state, district):
     files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
+    print("\n!! PROCESSING DATA !!\n")
     if state:
         indicators = get_indicators(state.replace("_", " "))
         files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
@@ -372,8 +379,10 @@ def update_data(state, district):
             low_memory=False,
         )
         if district:
+            print(f"\n\n{district} \n\n")
             import_state_data(df, filter_indicators(df, indicators), district)
         else:
+            print(f"\n\n{state} \n\n")
             import_state_data(df, filter_indicators(df, indicators))
     else:
         for filename in files:
@@ -384,20 +393,27 @@ def update_data(state, district):
             )
             state = filename.split("/")[-1].replace("_data.csv", "")
             state = state.replace("_", " ")
-            print(state)
+            print(f"\n\n{state} \n\n")
             indicators = get_indicators(state)
             import_state_data(df, filter_indicators(df, indicators))
 
 
 def import_state_indicators(df: pd.DataFrame, state: Geography):
-    for row in df.itertuples(index=False):
+    for i, row in enumerate(df.itertuples(index=False)):
         indicator_slug = getattr(row, "indicatorSlug", "")
-        print("\n\nProcessing Indicator -", indicator_slug)
+
+        percent = ((i + 1) / len(df)) * 100
+        msg = f"{state.name}: {percent:.2f}% complete"
+
+        sys.stdout.write("\033[F")  # ANSI: move cursor up
+        sys.stdout.write("\033[K")  # ANSI: clear line
+        sys.stdout.write(msg + "\n")  # Print the new line
+        sys.stdout.flush()
+
         try:
             indicator = Indicators.objects.get(
                 slug=indicator_slug.lower(), geography=state
             )
-            print("Already Exists! Updating")
             indicator.name = str(getattr(row, "indicatorTitle", "")).strip()
             indicator.long_description = (
                 str(getattr(row, "indicatorDescription", "")).strip() or None
@@ -410,10 +426,11 @@ def import_state_indicators(df: pd.DataFrame, state: Geography):
             indicator.parent = _get_indicator_parent_from_row(row, state)
             indicator.is_visible = str(getattr(row, "visible_on_platform", "")) == "y"
             indicator.save()
-            print("updated Indicator -", row.indicatorSlug)
+            # print("\rUpdated already existing indicator", flush=True)
+
         except Indicators.DoesNotExist:
-            unit = getattr(row, "unit", "")
-            print("Processing Unit -", unit)
+            # unit = getattr(row, "unit", "")
+            # print("\rProcessing Unit -", unit, flush=True)
             unit_obj = _get_indicator_unit_form_row(row)
             parent_obj = _get_indicator_parent_from_row(row, state)
 
@@ -430,11 +447,14 @@ def import_state_indicators(df: pd.DataFrame, state: Geography):
                 geography=state,
             )
             indicator_obj.save()
-            print("Added indicator to the database.")
+            # print("\rAdded indicator to the database.", flush=True)
+
+    print("\n")
 
 
 def update_indicators(state):
     files = glob.glob(os.getcwd() + "/layer/assets/indicators/*_indicators.csv")
+    print("\n!! PROCESSING INDICATORS !!\n\n")
     if state:
         state_files = [
             filename for filename in files if state.lower() in filename.lower()
