@@ -708,6 +708,12 @@ async def generate_report(request):
                 time_period, state.code
             )
 
+            if len(top_vulnerable_districts_data_obj) < 5:
+                return HttpResponse(
+                    "Error generating report. Vulnerable Districts not found for the given state",
+                    status=500,
+                )
+
             elements.append(
                 Paragraph(
                     f"As of {time_period_string}, the following 5 districts in {state.name} faced highest risk - ",
