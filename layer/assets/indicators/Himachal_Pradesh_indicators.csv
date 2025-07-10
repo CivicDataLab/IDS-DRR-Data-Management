@@ -1,5 +1,6 @@
 indicatorSlug,indicatorTitle,indicatorDescription,descriptionlen,indicatorCategory,parent,unit,datasource,visible_on_platform,updateFreq,used_for_model,currently feeding into the model,District Level Aggregation,License,adminLevel,cumulativeIndicator,State (Owned),Comments
 risk-score,Overall Flood Risk,"Risk of disasters is a function of - hazard, vulnerability, exposure, and coping capacity (government response)",111,Overall Flood Risk,,Score,MODEL,y,,y,,,,,,,
+topsis-score,Topsis model output,Output score of the topsis model. Useful for knowing the exact risk score value for ranking geographies by actual risk. Not for external use,140,Overall Flood Risk,Overall Flood Risk,Score,MODEL,,n,monthly,y,,,,,,
 flood-hazard,Hazard,Hazards or Potential of a physical event that may cause loss of life or property,80,Hazard,Overall Flood Risk,Score,MODEL,y,,y,,,,tehsil,,,"30-May: Add ""Score"""
 max-rain,Maximum rainfall value in the region,Maximum rainfall value in the region,36,Hazard,Hazard,mm,IMD,n,monthly,y,y,max,GODL,tehsil,,,
 mean-rain,Mean rainfall value in the region,Mean rainfall value in the region,33,Hazard,Hazard,mm,IMD,n,monthly,y,y,mean,GODL,tehsil,,,
