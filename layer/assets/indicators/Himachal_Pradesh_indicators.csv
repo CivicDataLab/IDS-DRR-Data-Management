@@ -13,8 +13,8 @@ inundation-intensity-sum,Sum of inundation intensities,Sum of inundation intensi
 Upto 2 decimal points
 Work with data team for calculation"
 mean-daily-runoff,Mean Runoff,Average surface runoff for a month,34,Hazard,Hazard,mm/day,NRSC,y,monthly,y,,mean,,tehsil,,,
-sum-runoff,Total Runoff per month,Total Runoff per month,22,Hazard,Hazard,mm/month,NRSC,y,monthly,,,sum,,tehsil,,,
-peak-runoff,Highest Daily Runoff,Highest Daily Runoff,20,Hazard,Hazard,mm/day,NRSC,y,monthly,,,max,,tehsil,,,
+sum-runoff,Total Runoff per month,Total Runoff per month,22,Hazard,Hazard,mm/month,NRSC,n,monthly,,,sum,,tehsil,,,
+peak-runoff,Highest Daily Runoff,Highest Daily Runoff,20,Hazard,Hazard,mm/day,NRSC,n,monthly,n,,max,,tehsil,,,
 mean-cn,Mean Curve Number,Curve Numbers help in estimation of Surface runoff,50,Hazard,Hazard,,GCN250,n,annually,n,,,MIT License,tehsil,,,
 elevation-mean,Mean Elevation,Mean elevation of the region,28,Hazard,Hazard,m,NASADEM,y,one-time,y,,mean,,tehsil,,,30-May: Round off 2 decimal points
 slope-mean,Mean slope,Mean slope of the region,24,Hazard,Hazard,degrees,NASADEM,y,one-time,y,,,,tehsil,,,
@@ -38,6 +38,7 @@ person-dead,Number of human lives lost,"Number of Lives lost, normalised against
 person-major-injury,Number of people with major injuries,"Number of injured people, normalised against population",55,Vulnerability,Vulnerability,Count,HPSDMA,y,monthly,y,,sum,,tehsil,,,
 structure-lost,Total built structures lost,"Total built structures lost, normalised against population",58,Vulnerability,Vulnerability,Count,HPSDMA,y,monthly,y,,sum,,tehsil,,,
 health-centres-lost,Total number of health centres lost,"Number of health centres lost, normalised against area population",65,Vulnerability,Vulnerability,Count,HPSDMA,y,monthly,y,,sum,,tehsil,,,
+total-infrastructure-damage,Total Infrastructure Damage,"Sum of roads, bridges and embankments damaged",45,Vulnerability,Vulnerability,Number,HPSDMA,y,monthly,n,n,sum,,tehsil,,,
 roadlength,Length of roads damaged in ULB's,"Number of roads damaged, normalised against total road length in the region",75,Vulnerability,Vulnerability,km,HPSDMA,y,monthly,y,,sum,,tehsil,,,
 avg-electricity,Average availability of domestic electricity,Average availability of domestic electricity,44,Vulnerability,Vulnerability,hours,MISSION ANTYODAYA 2020,y,annually,y,y,mean,GODL,tehsil,,,
 tehsil-piped-hhds-pct,Percentage of households with piped water connection,Percentage of households with piped water connection,52,Vulnerability,Vulnerability,Ratio,MISSION ANTYODAYA 2020,y,annually,y,y,mean,GODL,tehsil,,,
@@ -54,9 +55,24 @@ composite-vulnerability-index,Composite Vulnerability Index,,0,Vulnerability,Vul
 government-response,Government Response,"Government Response with respect to capacities or resources that can reduce the level of risk, or the effects of disasters",122,Government Response,Overall Flood Risk,Score,MODEL,y,,,,,,tehsil,,,"30-May: Add ""Score"""
 total-tender-awarded-value,Total Value of Flood Tenders,Total value of flood related tenders,36,Government Response,Government Response,INR,https://hptenders.gov.in/,y,monthly,y,y,sum,,tehsil,total-tender-awarded-value-fy-cumsum,,"30-May: Add Total Number of Flood Related Tenders above
 No unit"
-sopd-tenders-awarded-value,Total value of flood tenders granted under SOPD Scheme,SOPD Scheme is the State Owned Priority Development Scheme. This variable gives information of total value of tenders that were granted under SOPD Scheme,153,Government Response,Government Response,INR,https://hptenders.gov.in/,n,monthly,n,,sum,,tehsil,sopd-tenders-awarded-value-fy-cumsum,,
-sdrf-tenders-awarded-value,Total Value of Flood Tenders Under SDRF,This variable gives information of total value of tenders that were granted under State Disaster Response Fund,110,Government Response,Government Response,INR,https://hptenders.gov.in/,n,monthly,n,y,sum,,tehsil,sdrf-tenders-awarded-value-fy-cumsum,,
+lwss-tenders-awarded-value,Total value of flood tenders granted under SOPD Scheme,SOPD Scheme is the State Owned Priority Development Scheme. This variable gives information of total value of tenders that were granted under SOPD Scheme,153,Government Response,Government Response,INR,https://hptenders.gov.in/,n,monthly,n,,sum,,tehsil,sopd-tenders-awarded-value-fy-cumsum,,
+sdrf-tenders-awarded-value,Total Value of Flood Tenders Under SDRF,This variable gives information of total value of tenders that were granted under State Disaster Response Fund,110,Government Response,Government Response,INR,https://hptenders.gov.in/,y,monthly,n,y,sum,,tehsil,sdrf-tenders-awarded-value-fy-cumsum,,
+ndrf-tenders-awarded-value,Total Value of Flood Tenders Under NDRF,This variable gives information of total value of tenders that were granted under National Disaster Response Fund,113,Government Response,Government Response,INR,https://hptenders.gov.in/,n,monthly,n,,sum,,tehsil,ndrf-tenders-awarded-value-fy-cumsum,,
+sdmf-tenders-awarded-value,Total Value of Flood Tenders Under SDMF,This variable gives information of total value of tenders that were granted under State Disaster Mitigation Fund,112,Government Response,Government Response,INR,https://hptenders.gov.in/,n,monthly,n,,sum,,tehsil,sdmf-tenders-awarded-value-fy-cumsum,,
+wss-tenders-awarded-value,Total Value of Flood Tenders Under WSS,This variable gives information of total value of tenders that were granted under Water Supply Scheme Fund,106,Government Response,Government Response,INR,https://hptenders.gov.in/,n,monthly,n,,sum,,tehsil,wss-tenders-awarded-value-fy-cumsum,,
 restoration-measures-tenders-awarded-value,Repairs and Restoration Flood Tenders : Total Value  ,This variable gives sum of all tenders that are flagged as Restoration Measures,79,Government Response,Government Response,INR,https://hptenders.gov.in/,y,monthly,n,,sum,,tehsil,restoration-measures-tenders-awarded-value-fy-cumsum,,"30-May: Add ""Total Value of Flood Tenders for Preparedness"""
 immediate-measures-tenders-awarded-value,Immediate Measure Flood Tenders : Total Value,This variable gives sum of all tenders that are flagged as Immediate Measures,77,Government Response,Government Response,INR,https://hptenders.gov.in/,y,monthly,y,,sum,,tehsil,immediate-measures-tenders-awarded-value-fy-cumsum,,
 others-tenders-awarded-value,Other flood tenders : Total value of non restoration and preparedness tenders,"Every flood related tender is flagged as either ""Preparedness"", ""Immediate Measure"" or ""Other"" based on keywords. This column gives sum of all tenders that are flagged as Other",176,Government Response,Government Response,INR,https://hptenders.gov.in/,y,monthly,n,,sum,,tehsil,others-tenders-awarded-value-fy-cumsum,,
 relief-and-mitigation-sanction-value,Disaster relief and mitigation funds : Total Value (not available at Tehsil level),"Total value of funds received under SDRF, SDMF and NDRF funds received, as extracted from SEC meeting documents",111,Government Response,Government Response,INR,https://hpsdma.nic.in/Index1.aspx?lid=5328&lsid=8974&pid=8973&lev=3&langid=1,y,monthly,y,y,sum,,district,relief-and-mitigation-sanction-value-fy-cumsum,,
+preparedness-measures-tenders-awarded-value,Preparedness Measures Flood Tenders : Total Value  ,,0,Government Response,Government Response,INR,,y,monthly,n,,sum,,tehsil,preparedness-measures-tenders-awarded-value-fy-cumsum,,
+total-tender-awarded-value-fy-cumsum,,,,,,,,n,monthly,n,,sum,,tehsil,,,
+lwss-tenders-awarded-value-fy-cumsum,,,,,,,,n,monthly,n,,sum,,tehsil,,,
+sdrf-tenders-awarded-value-fy-cumsum,,,,,,,,n,monthly,n,,sum,,tehsil,,,
+ndrf-tenders-awarded-value-fy-cumsum,,,,,,,,n,monthly,n,,sum,,tehsil,,,
+sdmf-tenders-awarded-value-fy-cumsum,,,,,,,,n,monthly,n,,sum,,tehsil,,,
+wss-tenders-awarded-value-fy-cumsum,,,,,,,,n,monthly,n,,sum,,tehsil,,,
+restoration-measures-tenders-awarded-value-fy-cumsum,,,,,,,,n,monthly,n,,sum,,tehsil,,,
+immediate-measures-tenders-awarded-value-fy-cumsum,,,,,,,,n,monthly,n,,sum,,tehsil,,,
+others-tenders-awarded-value-fy-cumsum,,,,,,,,n,monthly,n,,sum,,tehsil,,,
+relief-and-mitigation-sanction-value-fy-cumsum,,,,,,,,n,monthly,n,,sum,,tehsil,,,
+preparedness-measures-tenders-awarded-value-fy-cumsum,,,,,,,,n,monthly,n,,sum,,tehsil,,,
