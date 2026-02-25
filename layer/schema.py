@@ -670,7 +670,11 @@ def get_states():
         state_centroid = state_geometry.centroid if state_geometry else None
         state_details["center"] = (state_centroid.y, state_centroid.x)
         state_details["resource_id"] = state_config_all[state.code]["RESOURCE_ID"]
-        latest_data = Data.objects.filter(geography__code=state.code).order_by("-data_period").first()
+        latest_data = Data.objects.filter(
+            Q(geography__code=state.code) | 
+            Q(geography__parentId__code=state.code) | 
+            Q(geography__parentId__parentId__code=state.code)
+        ).order_by("-data_period").first()
         state_details["latest_time_period"] = latest_data.data_period if latest_data else None
         states.append(state_details)
     return states
