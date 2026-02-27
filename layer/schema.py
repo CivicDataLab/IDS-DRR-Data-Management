@@ -651,6 +651,24 @@ def get_states():
 
     valid_state_codes = [k for k, v in state_config_all.items() if v.get("RESOURCE_ID")]
     all_states = Geography.objects.filter(type="STATE", code__in=valid_state_codes)
+    
+    # Optimize: Pre-fetch all time periods for all states in one query
+    from django.db.models import Value, CharField
+    state_time_periods = {}
+    for state_code in valid_state_codes:
+        time_periods = (
+            Data.objects.filter(
+                Q(geography__code=state_code) | 
+                Q(geography__parentId__code=state_code) | 
+                Q(geography__parentId__parentId__code=state_code)
+            )
+            .values_list("data_period", flat=True)
+            .annotate(custom_ordering=F("data_period"))
+            .distinct()
+            .order_by("-custom_ordering")
+        )
+        state_time_periods[state_code] = list(time_periods)
+    
     states = []
     for state in all_states:
         state_details = {
@@ -670,12 +688,12 @@ def get_states():
         state_centroid = state_geometry.centroid if state_geometry else None
         state_details["center"] = (state_centroid.y, state_centroid.x)
         state_details["resource_id"] = state_config_all[state.code]["RESOURCE_ID"]
-        latest_data = Data.objects.filter(
-            Q(geography__code=state.code) | 
-            Q(geography__parentId__code=state.code) | 
-            Q(geography__parentId__parentId__code=state.code)
-        ).order_by("-data_period").first()
-        state_details["latest_time_period"] = latest_data.data_period if latest_data else None
+        
+        # Get time periods from pre-fetched data
+        time_periods_list = state_time_periods.get(state.code, [])
+        state_details["time_periods"] = time_periods_list
+        state_details["latest_time_period"] = time_periods_list[0] if time_periods_list else None
+        
         states.append(state_details)
     return states
 
