@@ -173,3 +173,33 @@ DEFAULT_TIME_PERIOD = "2024_08"
 
 # ASGI application class to use
 ASGI_APPLICATION = "D4D_ContextLayer.asgi.application"
+
+# Cache configuration
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "PARSER_CLASS": "redis.connection.HiredisParser",
+            "CONNECTION_POOL_CLASS_KWARGS": {
+                "max_connections": 50,
+                "retry_on_timeout": True,
+            },
+            "SOCKET_CONNECT_TIMEOUT": 5,
+            "SOCKET_TIMEOUT": 5,
+        },
+        "KEY_PREFIX": "ids_drr",
+        "TIMEOUT": 60 * 15,
+    }
+}
+
+# Cache timeout settings for different query types (in seconds)
+CACHE_TIMEOUTS = {
+    "states": 60 * 60 * 24,
+    "indicators": 60 * 60 * 12,
+    "map_data": 60 * 30,
+    "table_data": 60 * 15,
+    "time_trends": 60 * 20,
+    "time_periods": 60 * 60 * 6,
+}

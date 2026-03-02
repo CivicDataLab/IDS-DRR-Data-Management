@@ -31,3 +31,5 @@ typing-extensions==4.7.1
 tzdata==2025.1
 urllib3==2.3.0
 uvicorn==0.30.6
+redis==5.0.1
+django-redis==5.4.0

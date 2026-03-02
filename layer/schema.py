@@ -18,6 +18,7 @@ import geojson
 from D4D_ContextLayer.settings import DEFAULT_TIME_PERIOD
 from . import types
 from layer.models import Data, Geography, Indicators
+from layer.cache_utils import cache_query
 
 # from .mutation import Mutation
 
@@ -31,6 +32,7 @@ def bounding_box(coord_list):
     return ret
 
 
+@cache_query('table_data')
 def get_district_data(
     indc_filter: types.IndicatorFilter,
     data_filter: types.DataFilter,
@@ -105,6 +107,7 @@ def get_district_data(
     return data_list
 
 
+@cache_query('table_data')
 def get_table_data(
     indc_filter: Optional[types.IndicatorFilter] = None,
     data_filter: Optional[types.DataFilter] = None,
@@ -195,6 +198,7 @@ def get_table_data(
     return data_list
 
 
+@cache_query('time_trends')
 def get_time_trends(
     indc_filter: types.IndicatorFilter,
     data_filter: types.DataFilter,
@@ -276,6 +280,7 @@ def get_time_trends(
     return data_dict
 
 
+@cache_query('table_data')
 def get_revenue_data(
     indc_filter: types.IndicatorFilter,
     data_filter: types.DataFilter,
@@ -359,6 +364,7 @@ def get_revenue_data(
     return data_list
 
 
+@cache_query('map_data')
 def get_revenue_map_data(
     indc_filter: types.IndicatorFilter,
     data_filter: types.DataFilter,
@@ -432,6 +438,7 @@ def get_revenue_map_data(
     return geo_json
 
 
+@cache_query('map_data')
 def get_district_map_data(
     indc_filter: types.IndicatorFilter,
     data_filter: types.DataFilter,
@@ -498,6 +505,7 @@ def get_district_map_data(
     return geo_json
 
 
+@cache_query('indicators')
 def get_indicators(
     indc_filter: Optional[types.IndicatorFilter] = None,
     state_code: Optional[int] = None,
@@ -560,6 +568,7 @@ def get_indicators(
 #     return data_list
 
 
+@cache_query('time_periods')
 def get_timeperiod():
     # Use annotation to create a custom field for sorting
     data = (
@@ -577,6 +586,7 @@ def get_timeperiod():
     return time_list
 
 
+@cache_query('map_data')
 def get_district_rev_circle(geo_filter: types.GeoFilter):
     starttime = timeit.default_timer()
     data_dict = {}
@@ -622,6 +632,7 @@ def get_district_rev_circle(geo_filter: types.GeoFilter):
     return data_dict
 
 
+@cache_query('indicators')
 def get_child_indicators(
     parent_id: Optional[int] = None, state_code: Optional[str] = None
 ) -> typing.List:
@@ -641,6 +652,7 @@ def get_child_indicators(
     return indicator_list
 
 
+@cache_query('states')
 def get_states():
     try:
         with open("report_config.json", "r") as f:
