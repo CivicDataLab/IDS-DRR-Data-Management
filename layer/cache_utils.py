@@ -69,24 +69,29 @@ def cache_query(cache_type: str, timeout: Optional[int] = None):
     return decorator
 
 
-def invalidate_cache_pattern(pattern: str):
+def invalidate_cache_pattern(pattern: str, verbose: bool = False):
     """
     Invalidate all cache keys matching a pattern.
     
     Args:
         pattern: Pattern to match cache keys (e.g., 'get_states_*')
+        verbose: If True, print invalidation messages (default: False)
     """
     try:
         cache.delete_pattern(f"*{pattern}*")
-        print(f"Invalidated cache pattern: {pattern}")
+        if verbose:
+            print(f"Invalidated cache pattern: {pattern}")
     except Exception as e:
         print(f"Error invalidating cache pattern {pattern}: {e}")
 
 
-def invalidate_data_caches():
+def invalidate_data_caches(verbose: bool = False):
     """
     Invalidate all data-dependent caches.
     Should be called when data is updated.
+    
+    Args:
+        verbose: If True, print invalidation messages (default: False)
     """
     patterns = [
         'get_district_data_*',
@@ -98,13 +103,16 @@ def invalidate_data_caches():
         'get_timeperiod_*',
     ]
     for pattern in patterns:
-        invalidate_cache_pattern(pattern)
+        invalidate_cache_pattern(pattern, verbose=verbose)
 
 
-def invalidate_geography_caches():
+def invalidate_geography_caches(verbose: bool = False):
     """
     Invalidate geography-dependent caches.
     Should be called when geography data is updated.
+    
+    Args:
+        verbose: If True, print invalidation messages (default: False)
     """
     patterns = [
         'get_states_*',
@@ -113,20 +121,23 @@ def invalidate_geography_caches():
         'get_revenue_map_data_*',
     ]
     for pattern in patterns:
-        invalidate_cache_pattern(pattern)
+        invalidate_cache_pattern(pattern, verbose=verbose)
 
 
-def invalidate_indicator_caches():
+def invalidate_indicator_caches(verbose: bool = False):
     """
     Invalidate indicator-dependent caches.
     Should be called when indicators are updated.
+    
+    Args:
+        verbose: If True, print invalidation messages (default: False)
     """
     patterns = [
         'get_indicators_*',
         'get_child_indicators_*',
     ]
     for pattern in patterns:
-        invalidate_cache_pattern(pattern)
+        invalidate_cache_pattern(pattern, verbose=verbose)
 
 
 def clear_all_caches():
