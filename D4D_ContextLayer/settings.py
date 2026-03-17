@@ -11,6 +11,12 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,38 +30,38 @@ SECRET_KEY = "django-insecure-pn452gc08m0cfvwv#ti*$r$-0sx$_c%(ptt&gap^gg=f4p7yql
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
-CHART_API_BASE_URL = "https://api.dataspace.open-contracting.in/api/generate-dynamic-chart/"
-DATA_RESOURCE_MAP = {
-    "18":"5d343516-2587-48e0-a92e-96d2a07eb6da",
-    "21":"34ce79a3-81cd-4ca1-bf0a-6a66b97cae63",
-    "02":"452cddd4-ef23-47e0-9702-61fa74230851"
-}
+ALLOWED_HOSTS = ["*"]
+CHART_API_BASE_URL = os.getenv("CHART_API_BASE_URL")
+
+# Whitelisted indicators while importing data
+WHITELIST_INDICATORS = [
+    x.strip() for x in os.getenv("WHITELIST_INDICATORS", "").split(",")
+]
 
 CORS_ORIGIN_ALLOW_ALL = True
 # CORS_ORIGIN_WHITELIST = ['*']
 
 CORS_ALLOW_METHODS = [
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
 ]
 
 CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-    'referer',
-    'organization',
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+    "referer",
+    "organization",
 ]
 
 # Application definition
@@ -73,7 +79,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    'corsheaders.middleware.CorsMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -110,11 +116,11 @@ WSGI_APPLICATION = "D4D_ContextLayer.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.contrib.gis.db.backends.postgis",
-        "NAME": "postgres",
-        "USER": "postgres",
-        "PASSWORD": "postgres",
-        "HOST": "localhost",
-        "PORT": 5432,
+        "NAME": os.getenv("POSTGRES_NAME"),
+        "USER": os.getenv("POSTGRES_USER"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
+        "HOST": os.getenv("POSTGRES_HOST"),
+        "PORT": os.getenv("POSTGRES_PORT"),
     }
 }
 
@@ -167,3 +173,32 @@ DEFAULT_TIME_PERIOD = "2024_08"
 
 # ASGI application class to use
 ASGI_APPLICATION = "D4D_ContextLayer.asgi.application"
+
+# Cache configuration
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CONNECTION_POOL_CLASS_KWARGS": {
+                "max_connections": 50,
+                "retry_on_timeout": True,
+            },
+            "SOCKET_CONNECT_TIMEOUT": 5,
+            "SOCKET_TIMEOUT": 5,
+        },
+        "KEY_PREFIX": "ids_drr",
+        "TIMEOUT": 60 * 15,  # 15 minutes default timeout
+    }
+}
+
+# Cache timeout settings for different query types (in seconds)
+CACHE_TIMEOUTS = {
+    "states": 60 * 60 * 24,
+    "indicators": 60 * 60 * 12,
+    "map_data": 60 * 30,
+    "table_data": 60 * 15,
+    "time_trends": 60 * 20,
+    "time_periods": 60 * 60 * 6,
+}
