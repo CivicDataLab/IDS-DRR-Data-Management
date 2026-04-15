@@ -18,6 +18,8 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+production = os.getenv("DJANGO_ENV") == "production"
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -25,12 +27,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-pn452gc08m0cfvwv#ti*$r$-0sx$_c%(ptt&gap^gg=f4p7yql"
+SECRET_KEY = os.getenv("SECRET_KEY", "!!!SECRET_KEY!!!")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", str(not production)) == "True"
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = [".localhost", "127.0.0.1", "[::1]", "0.0.0.0"]
+if "ALLOWED_HOSTS" in os.environ:
+    ALLOWED_HOSTS.extend(os.getenv("ALLOWED_HOSTS", "").split(","))
 CHART_API_BASE_URL = os.getenv("CHART_API_BASE_URL")
 
 # Whitelisted indicators while importing data
