@@ -1,7 +1,201 @@
 {
-  "02": { "RESOURCE_ID": "placeholder" },
-  "09": { "RESOURCE_ID": "placeholder" },
-  "10": { "RESOURCE_ID": "placeholder" },
-  "18": { "RESOURCE_ID": "placeholder" },
-  "21": { "RESOURCE_ID": "placeholder" }
+  "18": {
+    "RESOURCE_ID": "placeholder",
+    "TRANSFORMED_RESOURCE_ID": "",
+    "SECTION_1": {
+      "title": "Flood Risk Overview",
+      "sub_title": "Key Indicators",
+      "description": "Overview of flood risk indicators for the state",
+      "TABLE_2": {
+        "title": "Highlights",
+        "columns": [
+          { "label": "% Area Inundated", "slug": "inundation-intensity-sum", "cumulative": false },
+          { "label": "District Population", "slug": "sum-population", "cumulative": false },
+          { "label": "Lives Lost (Confirmed + Missing)", "slug": "human-live-lost", "cumulative": false },
+          { "label": "Population Affected (peak of the month)", "slug": "population-affected-total", "cumulative": false },
+          { "label": "Crop Area Affected (Hectares)", "slug": "crop-area", "cumulative": false },
+          { "label": "No. of Infra structure Damage", "slug": "total-infrastructure-damage", "cumulative": false },
+          { "label": "Cumulative Flood tenders for current F.Y (INR)", "slug": "total-tender-awarded-value", "cumulative": true }
+        ]
+      }
+    },
+    "SECTION_2": {
+      "title": "Losses and Damages",
+      "sub_title": "Time Series for previous three months",
+      "description": "",
+      "CHARTS": [
+        {
+          "title": "Total Population Affected by Floods",
+          "description": "",
+          "chart_type": "MULTILINE",
+          "x_axis_column": "timeperiod",
+          "x_axis_label": "Time Period",
+          "y_axis_label": "Population",
+          "show_legend": "true",
+          "filter": "population-affected-total"
+        },
+        {
+          "title": "Total Instances of Infrastructure Damage",
+          "description": "",
+          "chart_type": "MULTILINE",
+          "x_axis_column": "timeperiod",
+          "x_axis_label": "Time Period",
+          "y_axis_label": "Instances",
+          "show_legend": "true",
+          "filter": "total-infrastructure-damage"
+        }
+      ]
+    },
+    "SECTION_3": {
+      "title": "Government Response",
+      "sub_title": "E-Tenders Data Insights",
+      "description": "For identified high risk districts, e-tenders related to floods in previous 3 financial years",
+      "CHARTS": [
+        {
+          "title": "Previous 3 years SDRF disbursements for at risk districts",
+          "description": "",
+          "chart_type": "GROUPED_BAR_VERTICAL",
+          "x_axis_column": "financial-year",
+          "x_axis_label": "Financial Year",
+          "y_axis_label": "Value (INR)",
+          "show_legend": "true",
+          "filter": "sdrf-sanctions-awarded-value"
+        },
+        {
+          "title": "Previous 3 years e-tenders for at-risk districts",
+          "description": "",
+          "chart_type": "GROUPED_BAR_VERTICAL",
+          "x_axis_column": "financial-year",
+          "x_axis_label": "Financial Year",
+          "y_axis_label": "Value (INR)",
+          "show_legend": "true",
+          "filter": "total-tender-awarded-value"
+        }
+      ]
+    }
+  },
+  "02": {
+    "RESOURCE_ID": "placeholder",
+    "TRANSFORMED_RESOURCE_ID": "",
+    "SECTION_1": {
+      "title": "Flood Risk Overview",
+      "sub_title": "Key Indicators",
+      "description": "Overview of flood risk indicators for the state",
+      "TABLE_2": {
+        "title": "District Risk Assessment",
+        "columns": [
+          { "label": "Risk Score", "slug": "risk-score", "cumulative": false },
+          { "label": "Hazard", "slug": "flood-hazard", "cumulative": false },
+          { "label": "Exposure", "slug": "exposure", "cumulative": false },
+          { "label": "Vulnerability", "slug": "vulnerability", "cumulative": false },
+          { "label": "Govt. Response", "slug": "government-response", "cumulative": false }
+        ]
+      }
+    },
+    "SECTION_2": {
+      "title": "Losses and Damages",
+      "sub_title": "Trend Analysis",
+      "description": "Time series analysis of losses and damages across top at-risk districts",
+      "CHARTS": []
+    },
+    "SECTION_3": {
+      "title": "Government Response",
+      "sub_title": "E-Tender Data Insights",
+      "description": "Analysis of government tender data for flood response",
+      "CHARTS": []
+    }
+  },
+  "09": {
+    "RESOURCE_ID": "placeholder",
+    "TRANSFORMED_RESOURCE_ID": "",
+    "SECTION_1": {
+      "title": "Flood Risk Overview",
+      "sub_title": "Key Indicators",
+      "description": "Overview of flood risk indicators for the state",
+      "TABLE_2": {
+        "title": "District Risk Assessment",
+        "columns": [
+          { "label": "Risk Score", "slug": "risk-score", "cumulative": false },
+          { "label": "Hazard", "slug": "flood-hazard", "cumulative": false },
+          { "label": "Exposure", "slug": "exposure", "cumulative": false },
+          { "label": "Vulnerability", "slug": "vulnerability", "cumulative": false },
+          { "label": "Govt. Response", "slug": "government-response", "cumulative": false }
+        ]
+      }
+    },
+    "SECTION_2": {
+      "title": "Losses and Damages",
+      "sub_title": "Trend Analysis",
+      "description": "Time series analysis of losses and damages across top at-risk districts",
+      "CHARTS": []
+    },
+    "SECTION_3": {
+      "title": "Government Response",
+      "sub_title": "E-Tender Data Insights",
+      "description": "Analysis of government tender data for flood response",
+      "CHARTS": []
+    }
+  },
+  "10": {
+    "RESOURCE_ID": "placeholder",
+    "TRANSFORMED_RESOURCE_ID": "",
+    "SECTION_1": {
+      "title": "Flood Risk Overview",
+      "sub_title": "Key Indicators",
+      "description": "Overview of flood risk indicators for the state",
+      "TABLE_2": {
+        "title": "District Risk Assessment",
+        "columns": [
+          { "label": "Risk Score", "slug": "risk-score", "cumulative": false },
+          { "label": "Hazard", "slug": "flood-hazard", "cumulative": false },
+          { "label": "Exposure", "slug": "exposure", "cumulative": false },
+          { "label": "Vulnerability", "slug": "vulnerability", "cumulative": false },
+          { "label": "Govt. Response", "slug": "government-response", "cumulative": false }
+        ]
+      }
+    },
+    "SECTION_2": {
+      "title": "Losses and Damages",
+      "sub_title": "Trend Analysis",
+      "description": "Time series analysis of losses and damages across top at-risk districts",
+      "CHARTS": []
+    },
+    "SECTION_3": {
+      "title": "Government Response",
+      "sub_title": "E-Tender Data Insights",
+      "description": "Analysis of government tender data for flood response",
+      "CHARTS": []
+    }
+  },
+  "21": {
+    "RESOURCE_ID": "placeholder",
+    "TRANSFORMED_RESOURCE_ID": "",
+    "SECTION_1": {
+      "title": "Flood Risk Overview",
+      "sub_title": "Key Indicators",
+      "description": "Overview of flood risk indicators for the state",
+      "TABLE_2": {
+        "title": "District Risk Assessment",
+        "columns": [
+          { "label": "Risk Score", "slug": "risk-score", "cumulative": false },
+          { "label": "Hazard", "slug": "flood-hazard", "cumulative": false },
+          { "label": "Exposure", "slug": "exposure", "cumulative": false },
+          { "label": "Vulnerability", "slug": "vulnerability", "cumulative": false },
+          { "label": "Govt. Response", "slug": "government-response", "cumulative": false }
+        ]
+      }
+    },
+    "SECTION_2": {
+      "title": "Losses and Damages",
+      "sub_title": "Trend Analysis",
+      "description": "Time series analysis of losses and damages across top at-risk districts",
+      "CHARTS": []
+    },
+    "SECTION_3": {
+      "title": "Government Response",
+      "sub_title": "E-Tender Data Insights",
+      "description": "Analysis of government tender data for flood response",
+      "CHARTS": []
+    }
+  }
 }
