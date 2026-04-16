@@ -1,4 +1,5 @@
 import glob
+import io
 import json
 import os
 import time
@@ -6,8 +7,12 @@ import time
 import pandas as pd
 from django.contrib.gis.geos import GEOSGeometry, MultiPolygon, Polygon
 from django.core.management.base import BaseCommand, CommandError
+from django.db import connection
 from django.db.models import Q
+from django.db.models.signals import post_delete
 from layer.models import Data, Geography, Indicators, Unit
+from layer.signals import invalidate_data_cache
+from layer.cache_utils import invalidate_data_caches
 from D4D_ContextLayer.settings import WHITELIST_INDICATORS
 import sys
 
@@ -121,7 +126,7 @@ def migrate_geojson():
 
     for filename in sorted_files:
         with open(filename) as f:
-            print(f"Adding data from {os.path.basename(filename)} to database....")
+            print(f"Importing {filename} ...")
             data = json.load(f)
 
             file_name = data["name"]
@@ -271,65 +276,82 @@ def migrate_geojson():
                 geo_object.save()
 
 
-def addDataRow(row, geography_obj, indicator):
-    data_obj = Data(
-        value=row[f"{indicator.slug}"],
-        indicator=indicator,
-        geography=geography_obj,
-        data_period=row.timeperiod,
-    )
-    return data_obj
-
-
-def import_geography_data(df, indicators, g_code):
-    rows = df[df.index == g_code]
-    if rows.empty:
-        print(f"No entries in the state for geography code: {g_code}")
-        return
-    try:
-        geography_obj = Geography.objects.get(Q(code=g_code), ~Q(type="STATE"))
-    except Exception as e:
-        print(f"Geography location for: {g_code} is missing")
-    else:
-        for row in rows.itertuples():
-            if Data.objects.filter(
-                geography__code=geography_obj.code, data_period=row.timeperiod
-            ).count():
-                Data.objects.filter(
-                    geography__code=geography_obj.code, data_period=row.timeperiod
-                ).all().delete()
-        for index, row in rows.iterrows():
-            data_objects = []
-            for indicator in indicators:
-                if indicator.slug in df.columns:
-                    data_objects.append(addDataRow(row, geography_obj, indicator))
-                else:
-                    print(
-                        f"Indicator {indicator.slug} missing for {geography_obj.name}"
-                    )
-            Data.objects.bulk_create(data_objects)
-        updated_data_count = Data.objects.filter(
-            geography__code=geography_obj.code
-        ).count()
-
-
 def import_state_data(df, indicators, g_code=None):
     if g_code:
-        import_geography_data(df, indicators, g_code)
+        g_codes = [g_code]
     else:
-        for i, g_code in enumerate(df.index.unique()):
-            msg = f"Updating datapoints: {((i + 1) / len(df.index.unique())) * 100:.2f}% complete"
-            sys.stdout.write("\033[F")  # Move cursor up
-            sys.stdout.write("\033[K")  # Clear line
-            sys.stdout.write(msg + "\n")  # Print new status
-            sys.stdout.flush()
-            import_geography_data(df, indicators, g_code)
+        g_codes = df.index.unique().tolist()
+
+    geographies = dict(
+        Geography.objects.filter(code__in=g_codes)
+        .exclude(type="STATE")
+        .values_list("code", "pk")
+    )
+
+    for code in g_codes:
+        if code not in geographies:
+            print(f"Geography location for: {code} is missing")
+    if not geographies:
+        print("No matching geographies found, skipping data import")
+        return
+
+    rows = df[df.index.isin(geographies)]
+
+    # Disconnect post_delete signal so Django can DELETE directly without
+    # SELECTing all rows first to fire per-instance signals.
+    post_delete.disconnect(invalidate_data_cache, sender=Data)
+    try:
+        print(f"Deleting existing data for {len(geographies)} geographies...", end=" ", flush=True)
+        start = time.time()
+        Data.objects.filter(
+            geography_id__in=list(geographies.values()),
+            data_period__in=rows["timeperiod"].unique().tolist(),
+        ).delete()
+        print(f"{time.time() - start:.1f}s")
+
+        melted = rows.reset_index().melt(
+            id_vars=["object-id", "timeperiod"],
+            value_vars=[ind.slug for ind in indicators],
+            var_name="slug",
+            value_name="value",
+        )
+
+        # Map to foreign key IDs in vectorized pandas.
+        melted["indicator_id"] = melted["slug"].map({ind.slug: ind.pk for ind in indicators})
+        melted["geography_id"] = melted["object-id"].map(geographies)
+
+        # COPY bypasses Django's ORM, so set added/modified manually
+        # to emulate auto_now_add and auto_now on the Data model.
+        now = pd.Timestamp.now(tz="UTC")
+        melted["added"] = now
+        melted["modified"] = now
+
+        print(f"Creating {len(melted)} data points...", end=" ", flush=True)
+        start = time.time()
+        # Build a TSV buffer for PostgreSQL COPY, which expects tab-separated
+        # values with \N for NULLs and no header row.
+        buf = io.StringIO()
+        melted[["value", "indicator_id", "geography_id", "timeperiod", "added", "modified"]].to_csv(
+            buf, sep="\t", header=False, index=False, na_rep="\\N",
+        )
+        buf.seek(0)
+        with connection.cursor() as cursor:
+            cursor.copy_from(
+                buf,
+                Data._meta.db_table,
+                columns=("value", "indicator_id", "geography_id", "data_period", "added", "modified"),
+            )
+        print(f"{time.time() - start:.1f}s")
+    finally:
+        post_delete.connect(invalidate_data_cache, sender=Data)
+        # Perform the post_delete signal once.
+        invalidate_data_caches()
 
 
 def filter_indicators(df, indicators):
     cleaned_indicator = [ind for ind in indicators if ind.slug in df.columns]
     if missing := [ind.slug for ind in indicators if ind.slug not in df.columns]:
-        print(f"Indicators: {', '.join(missing)} missing")
+        print(f"Missing indicators: {', '.join(missing)}")
     return cleaned_indicator
 
 
@@ -349,7 +371,6 @@ def get_indicators(state):
 
 def update_data(state, district):
     files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
-    print("\n!! PROCESSING DATA !!\n")
     if state:
         indicators = get_indicators(state.replace("_", " "))
         files = glob.glob(os.getcwd() + "/layer/assets/data/*_data.csv")
@@ -366,10 +387,10 @@ def update_data(state, district):
             low_memory=False,
         )
         if district:
-            print(f"\n\n{district} \n\n")
+            print(f"\nImporting {district!r} data:")
             import_state_data(df, filter_indicators(df, indicators), district)
         else:
-            print(f"\n\n{state} \n\n")
+            print(f"\nImporting {state!r} data:")
             import_state_data(df, filter_indicators(df, indicators))
     else:
         for filename in files:
@@ -380,22 +401,14 @@ def update_data(state, district):
             )
             state = filename.split("/")[-1].replace("_data.csv", "")
             state = state.replace("_", " ")
-            print(f"\n\n{state} \n\n")
+            print(f"\nImporting {state!r} data:")
             indicators = get_indicators(state)
             import_state_data(df, filter_indicators(df, indicators))
 
 
 def import_state_indicators(df: pd.DataFrame, state: Geography):
-    for i, row in enumerate(df.itertuples(index=False)):
+    for row in df.itertuples(index=False):
         indicator_slug = getattr(row, "indicatorSlug", "")
-
-        percent = ((i + 1) / len(df)) * 100
-        msg = f"{state.name}: {percent:.2f}% complete"
-
-        sys.stdout.write("\033[F")  # ANSI: move cursor up
-        sys.stdout.write("\033[K")  # ANSI: clear line
-        sys.stdout.write(msg + "\n")  # Print the new line
-        sys.stdout.flush()
 
         try:
             indicator = Indicators.objects.get(
@@ -436,12 +449,9 @@ def import_state_indicators(df: pd.DataFrame, state: Geography):
             indicator_obj.save()
             # print("\rAdded indicator to the database.", flush=True)
 
-    print("\n")
-
 
 def update_indicators(state):
     files = glob.glob(os.getcwd() + "/layer/assets/indicators/*_indicators.csv")
-    print("\n!! PROCESSING INDICATORS !!\n\n")
     if state:
         state_files = [
             filename for filename in files if state.lower() in filename.lower()
@@ -507,9 +517,17 @@ class Command(BaseCommand):
         Returns:
             None
         """
-        migrate_geojson()
-        # migrate_indicators()
         state = options.get("state", None)
         district = options.get("district", None)
+
+        start = time.time()
+        migrate_geojson()
+        print(f"Geojson: {time.time() - start:.1f}s")
+
+        start = time.time()
         update_indicators(state)
+        print(f"Indicators: {time.time() - start:.1f}s")
+
+        start = time.time()
         update_data(state, district)
+        print(f"Data: {time.time() - start:.1f}s")

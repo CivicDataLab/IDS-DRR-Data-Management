@@ -125,3 +125,8 @@ class Data(models.Model):
     scheme = models.ForeignKey(
         Scheme, on_delete=models.PROTECT, null=True, blank=True)
     data_period = models.CharField(max_length=100, null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["geography", "data_period"]),
+        ]
