@@ -6,4 +6,5 @@ class LayerConfig(AppConfig):
     name = 'layer'
 
     def ready(self):
+        import layer.checks
         import layer.signals
