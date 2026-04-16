@@ -271,21 +271,8 @@ def migrate_geojson():
                 geo_object.save()
 
 
-if Data.objects.last() is not None:
-    counter = Data.objects.last().pk
-else:
-    counter = 0
-
-
-def generate_pk():
-    global counter
-    counter += 1
-    return counter
-
-
 def addDataRow(row, geography_obj, indicator):
     data_obj = Data(
-        pk=generate_pk(),
         value=row[f"{indicator.slug}"],
         indicator=indicator,
         geography=geography_obj,
