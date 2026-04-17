@@ -1,0 +1,80 @@
+"""Import indicator definitions from CSV files."""
+
+import pandas as pd
+from django.core.management.base import CommandError
+from django.core.management.color import color_style
+
+from layer.models import Geography, Indicators, Unit
+
+style = color_style()
+
+REQUIRED_COLUMNS = {
+    "indicatorSlug",
+    "indicatorTitle",
+    "indicatorDescription",
+    "indicatorCategory",
+    "unit",
+    "datasource",
+    "parent",
+    "visible_on_platform",
+}
+
+
+def import_indicators(specs, config_dir):
+    """
+    Import indicator definitions for each state in ``specs``.
+
+    Each spec is a ``[[states]]`` entry from the configuration file with
+    ``name`` and ``indicators`` (a path relative to ``config_dir``). Raises
+    ``CommandError`` if the CSV is missing any of the required columns.
+    """
+    for spec in specs:
+        # Read the configuration.
+        name = spec["name"]
+        path = config_dir / spec["indicators"]
+
+        # Read the indicator definitions.
+        df = pd.read_csv(path)
+        if missing := REQUIRED_COLUMNS - set(df.columns):
+            raise CommandError(f"{path}: missing columns {', '.join(sorted(missing))}")
+
+        state_geography = Geography.objects.get(name__iexact=name, type="STATE")
+
+        # Upsert the indicator definitions.
+        for row in df.itertuples(index=False):
+            slug = str(row.indicatorSlug).lower().strip()
+            if not slug:
+                continue
+
+            # Get or create the unit.
+            if not row.unit or isinstance(row.unit, float):  # NaN
+                unit = None
+            else:
+                unit, created = Unit.objects.get_or_create(name=row.unit.lower())
+                if created:
+                    print(f"Imported unit {unit.name!r}")
+
+            # Get the parent.
+            if not row.parent or isinstance(row.parent, float):  # NaN
+                parent = None
+            else:
+                try:
+                    parent = Indicators.objects.get(name=row.parent.strip(), geography=state_geography)
+                except Indicators.DoesNotExist:
+                    print(style.WARNING(f"Missing parent indicator {row.parent.strip()!r} for {slug!r}"))
+                    parent = None
+
+            # Upsert the indicator definition.
+            Indicators.objects.update_or_create(
+                slug=slug,
+                geography=state_geography,
+                defaults={
+                    "name": str(row.indicatorTitle).strip(),
+                    "long_description": str(row.indicatorDescription).strip() or None,
+                    "category": str(row.indicatorCategory).strip() or None,
+                    "unit": unit,
+                    "data_source": str(row.datasource).strip() or None,
+                    "parent": parent,
+                    "is_visible": str(row.visible_on_platform) == "y",
+                },
+            )
