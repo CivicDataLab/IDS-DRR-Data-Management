@@ -25,8 +25,9 @@ production = os.getenv("DJANGO_ENV") == "production"
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 CONFIG_PATH = Path(os.getenv("CONFIG_PATH", BASE_DIR / "config.toml"))
-CONFIG = tomllib.loads(CONFIG_PATH.read_text()) if CONFIG_PATH.is_file() else {}
 CONFIG_DIR = CONFIG_PATH.parent
+CONFIG = tomllib.loads(CONFIG_PATH.read_text()) if CONFIG_PATH.is_file() else {}
+_platform = CONFIG.get("platform", {})
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -43,7 +44,7 @@ if "ALLOWED_HOSTS" in os.environ:
 CHART_API_BASE_URL = os.getenv("CHART_API_BASE_URL")
 
 # Whitelisted indicators while importing data
-WHITELIST_INDICATORS = [
+WHITELIST_INDICATORS = _platform.get("whitelist_indicators") or [
     x.strip() for x in os.getenv("WHITELIST_INDICATORS", "").split(",")
 ]
 
@@ -178,7 +179,7 @@ STRAWBERRY_DJANGO = {
 }
 
 # Default period for table data
-DEFAULT_TIME_PERIOD = "2024_08"
+DEFAULT_TIME_PERIOD = _platform.get("default_time_period", "2024_08")
 
 # ASGI application class to use
 ASGI_APPLICATION = "D4D_ContextLayer.asgi.application"
