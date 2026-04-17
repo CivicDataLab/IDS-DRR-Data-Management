@@ -7,6 +7,7 @@ from typing import Optional
 import strawberry
 import strawberry_django
 from dateutil.relativedelta import relativedelta
+from django.conf import settings
 from django.contrib.gis.db.models.functions import Centroid, MakeValid
 from django.contrib.gis.db.models.aggregates import Union
 from django.core.serializers import serialize
@@ -19,6 +20,7 @@ from D4D_ContextLayer.settings import DEFAULT_TIME_PERIOD
 from . import types
 from layer.models import Data, Geography, Indicators
 from layer.cache_utils import cache_query
+from layer.report import load_reports
 
 # from .mutation import Mutation
 
@@ -640,21 +642,23 @@ def get_child_indicators(
 
 @cache_query('states')
 def get_states():
-    try:
-        with open("report_config.json", "r") as f:
-            state_config_all = json.load(f)
-    except FileNotFoundError:
-        logger.error("Configuration file not found in get states function.")
+    specs = settings.CONFIG.get("states", [])
+    names = [spec["name"] for spec in specs if not spec.get("hidden", False)]
+    if not names:
+        logger.error("No [[states]] configured." if not specs else "All [[states]] entries are hidden.")
         return []
 
-    valid_state_codes = [k for k, v in state_config_all.items() if v.get("RESOURCE_ID")]
-    all_states = Geography.objects.filter(type="STATE", code__in=valid_state_codes)
-    
-    # Optimize: Pre-fetch all time periods for all states in one query
-    from django.db.models import Value, CharField
-    state_time_periods = {}
-    for state_code in valid_state_codes:
-        time_periods = (
+    name_filter = Q()
+    for name in names:
+        name_filter |= Q(name__iexact=name)
+    state_geographies = Geography.objects.filter(name_filter, type="STATE")
+
+    reports = load_reports()
+
+    states = []
+    for state_geography in state_geographies:
+        state_code = state_geography.code
+        time_periods = list(
             Data.objects.filter(
                 Q(geography__code=state_code) | 
                 Q(geography__parentId__code=state_code) | 
@@ -665,34 +669,24 @@ def get_states():
             .distinct()
             .order_by("-custom_ordering")
         )
-        state_time_periods[state_code] = list(time_periods)
-    
-    states = []
-    for state in all_states:
-        state_details = {
-            "name": state.name,
-            "slug": state.slug,
-            "code": state.code,
-            "child_type": Geography.objects.filter(parentId__parentId__code=state.code)
-            .first()
-            .type,
-        }
-        valid_geometries = Geography.objects.filter(parentId=state).annotate(
+        valid_geometries = Geography.objects.filter(parentId=state_geography).annotate(
             valid_geom=MakeValid("geom")
         )
         state_geometry = valid_geometries.aggregate(union_geometry=Union("valid_geom"))[
             "union_geometry"
         ]
         state_centroid = state_geometry.centroid if state_geometry else None
-        state_details["center"] = (state_centroid.y, state_centroid.x)
-        state_details["resource_id"] = state_config_all[state.code]["RESOURCE_ID"]
-        
-        # Get time periods from pre-fetched data
-        time_periods_list = state_time_periods.get(state.code, [])
-        state_details["time_periods"] = time_periods_list
-        state_details["latest_time_period"] = time_periods_list[0] if time_periods_list else None
-        
-        states.append(state_details)
+        grandchild = Geography.objects.filter(parentId__parentId__code=state_code).first()
+        states.append({
+            "name": state_geography.name,
+            "slug": state_geography.slug,
+            "code": state_code,
+            "child_type": grandchild.type if grandchild else None,
+            "center": (state_centroid.y, state_centroid.x) if state_centroid else None,
+            "resource_id": reports.get(state_code, {}).get("RESOURCE_ID"),
+            "time_periods": time_periods,
+            "latest_time_period": time_periods[0] if time_periods else None,
+        })
     return states
 
 
