@@ -32,8 +32,10 @@ from reportlab.platypus import (
     ListItem,
 )
 
+from django.conf import settings
 from D4D_ContextLayer.settings import DEFAULT_TIME_PERIOD, CHART_API_BASE_URL
 from layer.models import Data, Geography, Indicators
+from layer.report import load_reports
 
 from collections import defaultdict
 import json
@@ -628,11 +630,12 @@ async def cleanup_temp_files():
 
 async def generate_report(request):
     if request.method == "GET":
-        try:
-            with open("report_config.json", "r") as f:
-                report_config_all = json.load(f)
-        except FileNotFoundError:
-            logger.error("Configuration file not found")
+        report_config_all = await sync_to_async(load_reports)()
+        if not report_config_all:
+            logger.error(
+                "No [reports.states] in the configuration file and no report_config.json in %s",
+                settings.BASE_DIR,
+            )
             return HttpResponse(
                 "Error generating report: Configuration file missing", status=500
             )
