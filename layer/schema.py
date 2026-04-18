@@ -594,8 +594,8 @@ def get_district_rev_circle(geo_filter: types.GeoFilter):
             )
         data_dict = data_list
     elif geo_filter.type.upper().strip().replace("-", " ") in settings.CONFIG.get(
-        "geography", {}
-    ).get("subdistrict_types", []):
+        "subdistrict_types", []
+    ):
         geo_object = Geography.objects.filter(
             type=geo_filter.type.upper().strip().replace("-", " ")
         )
