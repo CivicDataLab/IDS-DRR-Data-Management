@@ -33,7 +33,6 @@ from reportlab.platypus import (
 )
 
 from django.conf import settings
-from D4D_ContextLayer.settings import DEFAULT_TIME_PERIOD, CHART_API_BASE_URL
 from layer.models import Data, Geography, Indicators
 from layer.report import load_reports
 
@@ -169,7 +168,7 @@ async def fetch_chart(client, chart_payload, resource_id):
     try:
         timeout = httpx.Timeout(10.0, read=None)
         response = await client.post(
-            f"{CHART_API_BASE_URL}{resource_id}/?response_type=file",
+            f"{settings.CHART_API_BASE_URL}{resource_id}/?response_type=file",
             json=chart_payload,
             timeout=timeout,
         )
@@ -641,7 +640,7 @@ async def generate_report(request):
             )
 
         geo_code = request.GET.get("geo_code", "18")
-        time_period = request.GET.get("time_period", DEFAULT_TIME_PERIOD)
+        time_period = request.GET.get("time_period", settings.DEFAULT_TIME_PERIOD)
         time_period_parsed = datetime.datetime.strptime(time_period, "%Y_%m")
         time_period_string = time_period_parsed.strftime("%B %Y")
 
@@ -863,7 +862,7 @@ async def generate_report(request):
         section_2_config = state_report_config["SECTION_2"]
         resource_id = state_report_config.get("TRANSFORMED_RESOURCE_ID")
 
-        if CHART_API_BASE_URL and resource_id and section_2_config.get("CHARTS"):
+        if settings.CHART_API_BASE_URL and resource_id and section_2_config.get("CHARTS"):
             elements.append(Paragraph(section_2_config["title"], heading_1_style))
 
             # time_period_str = ', '.join([datetime.datetime.strptime(
@@ -887,7 +886,7 @@ async def generate_report(request):
         # Section 3 - Government Response
         section_3_config = state_report_config["SECTION_3"]
 
-        if CHART_API_BASE_URL and resource_id and section_3_config.get("CHARTS"):
+        if settings.CHART_API_BASE_URL and resource_id and section_3_config.get("CHARTS"):
             elements.append(Paragraph(section_3_config["title"], heading_1_style))
 
             # E-tenders Data Insights sub-section
