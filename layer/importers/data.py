@@ -4,13 +4,13 @@ import io
 import time
 
 import pandas as pd
+from django.conf import settings
 from django.core.management.base import CommandError
 from django.core.management.color import color_style
 from django.db import connection
 from django.db.models import Q
 from django.db.models.signals import post_delete
 
-from D4D_ContextLayer.settings import WHITELIST_INDICATORS
 from layer.cache_utils import invalidate_data_caches
 from layer.models import Data, Geography, Indicators
 from layer.signals import invalidate_data_cache
@@ -105,7 +105,7 @@ def import_values(specs, config_dir, code=None):
         # Load visible and allow-list indicators, as a {slug: pk} dict.
         indicators = dict(
             Indicators.objects.filter(geography__name__iexact=name)
-            .filter(Q(is_visible=True) | Q(slug__in=WHITELIST_INDICATORS))
+            .filter(Q(is_visible=True) | Q(slug__in=settings.WHITELIST_INDICATORS))
             .values_list("slug", "pk")
         )
         if not indicators:

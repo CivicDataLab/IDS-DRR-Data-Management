@@ -16,7 +16,6 @@ from strawberry.scalars import JSON
 from strawberry_django.optimizer import DjangoOptimizerExtension
 import geojson
 
-from D4D_ContextLayer.settings import DEFAULT_TIME_PERIOD
 from . import types
 from layer.models import Data, Geography, Indicators
 from layer.cache_utils import cache_query
@@ -137,7 +136,7 @@ def get_table_data(
     if data_filter:
         data_obj = data_obj.filter(data_period=data_filter.data_period)
     else:
-        data_obj = data_obj.filter(data_period=DEFAULT_TIME_PERIOD)
+        data_obj = data_obj.filter(data_period=settings.DEFAULT_TIME_PERIOD)
 
     # Filter by indicator
     if indc_filter:
