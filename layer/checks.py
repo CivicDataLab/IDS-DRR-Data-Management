@@ -3,7 +3,7 @@ from django.core.checks import Warning, register
 
 
 @register()
-def config_toml_present(app_configs, **kwargs):
+def configuration_file_present(app_configs, **kwargs):
     """
     Warn when no configuration file has been supplied.
 
