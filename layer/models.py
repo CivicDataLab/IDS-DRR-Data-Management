@@ -11,22 +11,9 @@ class Unit(models.Model):
 
 
 class Geography(models.Model):
-    class GeoTypes(models.TextChoices):
-        COUNTRY = "COUNTRY"
-        STATE = "STATE"
-        UT = "UT"
-        DISTRICT = "DISTRICT"
-        BLOCK = "BLOCK"
-        VILLAGE = "VILLAGE"
-        REVENUE_CIRCLE = "REVENUE CIRCLE"
-        SUBDISTRICT = "SUB DISTRICT"
-        TEHSIL = "TEHSIL"
-        # LA_CONSTITUTENCY = "LA_CONSTITUTENCY"
-        # PA_CONSTITUTANCY = "PA_CONSTITUTANCY"
-
     name = models.CharField(max_length=100, unique=False)
     code = models.CharField(max_length=20, null=True)  # unique=True)
-    type = models.CharField(max_length=15, choices=GeoTypes.choices)
+    type = models.CharField(max_length=32)
     parentId = models.ForeignKey(
         "self", on_delete=models.CASCADE, null=True, default="", blank=True
     )
