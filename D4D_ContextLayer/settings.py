@@ -14,7 +14,11 @@ from pathlib import Path
 import os
 import tomllib
 
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
+from pydantic import ValidationError
+
+from D4D_ContextLayer.config import Config
 
 # Load environment variables from .env file
 load_dotenv()
@@ -27,6 +31,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 CONFIG_PATH = Path(os.getenv("CONFIG_PATH", BASE_DIR / "config.toml"))
 CONFIG_DIR = CONFIG_PATH.parent
 CONFIG = tomllib.loads(CONFIG_PATH.read_text()) if CONFIG_PATH.is_file() else {}
+
+try:
+    Config.model_validate(CONFIG)
+except ValidationError as exc:
+    raise ImproperlyConfigured(f"Invalid {CONFIG_PATH}:\n{exc}") from exc
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/

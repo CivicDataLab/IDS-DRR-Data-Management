@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from django.contrib.gis.geos import GEOSGeometry, MultiPolygon, Polygon
+from django.core.management.base import CommandError
 
 from layer.models import Geography
 
@@ -28,11 +29,16 @@ def _resolve_parent(parent_spec, properties):
 
         if "create_code" in parent_spec:
             code = parent_spec["create_code"]
-        else:
+        elif "create_code_template" in parent_spec:
             code = _render_code(
                 parent_spec["create_code_template"],
                 properties,
                 parent_spec.get("create_code_prefix_parts"),
+            )
+        else:
+            raise CommandError(
+                f"Parent {parent_type} {name!r} does not exist and neither "
+                f"`create_code` nor `create_code_template` is set to create it."
             )
 
         parent = Geography(name=name.capitalize(), code=code, type=parent_type)
