@@ -1,7 +1,5 @@
 """Pydantic schema for configuration file."""
 
-from typing import Literal
-
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
@@ -82,64 +80,8 @@ class StateSpec(_Strict):
     name: str
     indicators: str
     data: str
+    resource_id: str = ""
     hidden: bool = False
-
-
-class ReportColumn(_Strict):
-    label: str
-    slug: str
-    cumulative: bool
-
-
-class ReportTable(_Strict):
-    columns: list[ReportColumn]
-
-
-class ReportChart(_Strict):
-    title: str
-    description: str
-    chart_type: str
-    x_axis_column: str
-    x_axis_label: str
-    y_axis_label: str
-    show_legend: Literal["true", "false"]
-    filter: str
-
-
-class ReportSection1(_Strict):
-    """Flood Risk Overview."""
-
-    TABLE_2: ReportTable
-
-
-class ReportSection2(_Strict):
-    """Losses and Damages, rendered only when CHARTS is non-empty."""
-
-    title: str
-    sub_title: str
-    CHARTS: list[ReportChart] = Field(default_factory=list)
-
-
-class ReportSection3(_Strict):
-    """Government Response, rendered only when CHARTS is non-empty."""
-
-    title: str
-    sub_title: str
-    description: str
-    CHARTS: list[ReportChart] = Field(default_factory=list)
-
-
-class StateReport(_Strict):
-    RESOURCE_ID: str = ""
-    TRANSFORMED_RESOURCE_ID: str = ""
-    SECTION_1: ReportSection1
-    SECTION_2: ReportSection2
-    SECTION_3: ReportSection3
-
-
-class ReportsSpec(_Strict):
-    enabled: bool = False
-    states: dict[str, StateReport] = Field(default_factory=dict)
 
 
 class Config(_Strict):
@@ -148,7 +90,7 @@ class Config(_Strict):
     subdistrict_types: list[str] = Field(default_factory=list)
     geojson: list[GeojsonSpec] = Field(default_factory=list)
     states: list[StateSpec] = Field(default_factory=list)
-    reports: ReportsSpec = Field(default_factory=ReportsSpec)
+    reports_enabled: bool = False
 
     @field_validator("states")
     @classmethod

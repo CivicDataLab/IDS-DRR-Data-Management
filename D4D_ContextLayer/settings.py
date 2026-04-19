@@ -49,7 +49,6 @@ DEBUG = os.getenv("DEBUG", str(not production)) == "True"
 ALLOWED_HOSTS = [".localhost", "127.0.0.1", "[::1]", "0.0.0.0"]
 if "ALLOWED_HOSTS" in os.environ:
     ALLOWED_HOSTS.extend(os.getenv("ALLOWED_HOSTS", "").split(","))
-CHART_API_BASE_URL = os.getenv("CHART_API_BASE_URL")
 
 # Whitelisted indicators while importing data
 WHITELIST_INDICATORS = CONFIG.get("whitelist_indicators") or [
@@ -94,6 +93,8 @@ INSTALLED_APPS = [
     "django.contrib.gis",
     "layer",
 ]
+if CONFIG.get("reports_enabled"):
+    INSTALLED_APPS.append("reports")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

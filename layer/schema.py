@@ -19,7 +19,6 @@ import geojson
 from . import types
 from layer.models import Data, Geography, Indicators
 from layer.cache_utils import cache_query
-from layer.report import load_reports
 
 # from .mutation import Mutation
 
@@ -639,17 +638,15 @@ def get_child_indicators(
 @cache_query('states')
 def get_states():
     specs = settings.CONFIG.get("states", [])
-    names = [spec["name"] for spec in specs if not spec.get("hidden", False)]
-    if not names:
+    visible = {spec["name"].lower(): spec.get("resource_id", "") for spec in specs if not spec.get("hidden", False)}
+    if not visible:
         logger.error("No [[states]] configured." if not specs else "All [[states]] entries are hidden.")
         return []
 
     name_filter = Q()
-    for name in names:
+    for name in visible:
         name_filter |= Q(name__iexact=name)
     state_geographies = Geography.objects.filter(name_filter, type="STATE")
-
-    reports = load_reports()
 
     states = []
     for state_geography in state_geographies:
@@ -679,7 +676,7 @@ def get_states():
             "code": state_code,
             "child_type": grandchild.type if grandchild else None,
             "center": (state_centroid.y, state_centroid.x) if state_centroid else None,
-            "resource_id": reports.get(state_code, {}).get("RESOURCE_ID"),
+            "resource_id": visible.get(state_geography.name.lower(), ""),
             "time_periods": time_periods,
             "latest_time_period": time_periods[0] if time_periods else None,
         })
