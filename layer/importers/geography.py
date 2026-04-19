@@ -1,7 +1,6 @@
 """Import geographic features from GeoJSON files."""
 
 import json
-from pathlib import Path
 
 from django.contrib.gis.geos import GEOSGeometry, MultiPolygon, Polygon
 from django.core.management.base import CommandError

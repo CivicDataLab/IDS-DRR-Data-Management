@@ -1,8 +1,6 @@
 from django.contrib.gis.db import models
 from django.utils.text import slugify
 
-# from django.db import models
-
 
 class Unit(models.Model):
     name = models.CharField(null=False, unique=True)
@@ -76,7 +74,6 @@ class Indicators(models.Model):
         Department, on_delete=models.PROTECT, null=True, blank=True
     )
     data_source = models.CharField(max_length=100, null=True, blank=True)
-    # page = models.ManyToManyField(Page, blank=True)
     scheme = models.ForeignKey(
         Scheme, on_delete=models.PROTECT, null=True, blank=True)
     parent = models.ForeignKey(

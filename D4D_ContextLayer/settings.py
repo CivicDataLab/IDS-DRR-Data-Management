@@ -56,7 +56,6 @@ WHITELIST_INDICATORS = CONFIG.get("whitelist_indicators") or [
 ]
 
 CORS_ORIGIN_ALLOW_ALL = True
-# CORS_ORIGIN_WHITELIST = ['*']
 
 CORS_ALLOW_METHODS = [
     "DELETE",
