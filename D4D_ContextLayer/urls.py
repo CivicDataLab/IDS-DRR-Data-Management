@@ -16,9 +16,8 @@ Including another URLconf
 """
 from django.conf import settings
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 
-from layer import views
 from layer.schema import schema
 from strawberry.django.views import GraphQLView
 
@@ -26,9 +25,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("graphql", GraphQLView.as_view(schema=schema)),
 ]
-
-# The /report endpoint generates a flood-risk PDF hardwired to the IDS-DRR
-# India data model (indicator slugs, Indian fiscal year, currency, annexures).
-# To opt-in, set [reports].enabled = true in the configuration file.
-if settings.CONFIG.get("reports", {}).get("enabled"):
-    urlpatterns.append(path("report", views.generate_report))
+if settings.CONFIG.get("reports_enabled"):
+    urlpatterns.append(path("report", include("reports.urls")))
