@@ -8,7 +8,7 @@ import strawberry
 import strawberry_django
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.contrib.gis.db.models.functions import Centroid, MakeValid
+from django.contrib.gis.db.models.functions import MakeValid
 from django.contrib.gis.db.models.aggregates import Union
 from django.core.serializers import serialize
 from django.db.models import F, Q
@@ -19,8 +19,6 @@ import geojson
 from . import types
 from layer.models import Data, Geography, Indicators
 from layer.cache_utils import cache_query
-
-# from .mutation import Mutation
 
 logger = logging.getLogger(__name__)
 
@@ -299,19 +297,6 @@ def get_revenue_data(
             mapping each to it's relevant data fields.
     """
 
-    # try:
-    #     # Set the type filter based on state.
-    #     geo_obj = Geography.objects.get(code__in=geo_filter.state_code, type="STATE")
-    #     if geo_obj.name.title() == "Himachal Pradesh":
-    #         geo_type = "TEHSIL"
-    #     else:
-    #         geo_type = "REVENUE CIRCLE"
-    #
-    #     # Geo object to iterate over.
-    #     geo_queryset = Geography.objects.filter(type=geo_type)
-    # except Geography.DoesNotExist:
-    #     raise GraphQLError("Invalid state code!!")
-
     geo_queryset = Geography.objects.filter(code__in=geo_filter.code)
 
     rc_data_queryset = Data.objects.filter(
@@ -379,16 +364,6 @@ def get_revenue_map_data(
         dict: A GeoJSON-like dictionary representing revenue circle features with
         associated indicator data.
     """
-
-    # Convert geography objects to a GeoJson format.
-    # try:
-    #     geo_object = Geography.objects.get(code__in=geo_filter.code, type="STATE")
-    #     if geo_object.name.title() == "Himachal Pradesh":
-    #         geo_type = "TEHSIL"
-    #     else:
-    #         geo_type = "REVENUE CIRCLE"
-    # except Geography.DoesNotExist:
-    #     raise GraphQLError("Invalid state code!!")
 
     geo_json = json.loads(
         serialize(
@@ -544,18 +519,6 @@ def get_indicators(
     return data_list
 
 
-# def get_model_indicators() -> list:
-#     data_list = []
-
-#     indc_obj = Indicators.objects.filter(
-#         Q(parent__slug="risk-score") | Q(slug="risk-score")
-#     )
-#     for data in indc_obj:
-#         data_list.append({"name": data.name, "slug": data.slug})
-
-#     return data_list
-
-
 @cache_query('time_periods')
 def get_timeperiod():
     # Use annotation to create a custom field for sorting
@@ -568,8 +531,6 @@ def get_timeperiod():
 
     # Create CustomDataPeriodList objects directly in the query
     time_list = [types.CustomDataPeriodList(value=time) for time in data]
-    # for time in data:
-    #     time_list.append({"value":time})
 
     return time_list
 
@@ -704,7 +665,6 @@ class Query:  # camelCase
 
 schema = strawberry.Schema(
     query=Query,
-    # mutation=Mutation,
     extensions=[
         DjangoOptimizerExtension,
     ],

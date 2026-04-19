@@ -31,9 +31,6 @@ class UnitFilter:
 @strawberry_django.type(models.Unit, fields="__all__", filters=UnitFilter)
 class Unit:
     pass
-    # name: auto
-    # description: Optional[str]
-    # symbol: auto
 
 
 @strawberry_django.filter(models.Geography)
@@ -61,12 +58,6 @@ class Geography:
     code: auto
     type: auto
     parentId: Optional["Geography"]
-
-
-# @strawberry_django.type(models.Page)
-# class Page:
-#     name: Optional[str] = None
-#     description: Optional[str] = None
 
 
 @strawberry_django.type(models.Department)
@@ -107,12 +98,6 @@ class Data:
     geography: "Geography"
     scheme: Optional["Scheme"] = None
     data_period: Optional[str]
-
-
-# @strawberry.type
-# class BarChart:
-#     x: list[str]
-#     y: list[str]
 
 
 @strawberry.type
