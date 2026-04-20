@@ -1,5 +1,5 @@
 import json
-import timeit
+import logging
 import typing
 from datetime import datetime
 from typing import Optional
@@ -21,6 +21,8 @@ from layer.models import Data, Geography, Indicators
 from layer.cache_utils import cache_query
 
 # from .mutation import Mutation
+
+logger = logging.getLogger(__name__)
 
 
 def bounding_box(coord_list):
@@ -52,7 +54,6 @@ def get_district_data(
         list[dict]: A list containing dictionary of districts
             mapping each to it's relevant data fields.
     """
-    starttime = timeit.default_timer()
     data_list = []
     data_dict = {}
 
@@ -103,7 +104,6 @@ def get_district_data(
         reverse=True,
     )
 
-    print("The time difference is :", timeit.default_timer() - starttime)
     return data_list
 
 
@@ -127,7 +127,6 @@ def get_table_data(
         list[dict]: A list containing dictionary of districts
             mapping each to it's relevant data fields.
     """
-    starttime = timeit.default_timer()
     data_list = []
     data_dict = {}
     data_obj = Data.objects.filter(indicator__is_visible=True)
@@ -194,7 +193,6 @@ def get_table_data(
     # Prioritize district values at the top
     data_list = sorted(data_list, key=lambda d: d.get("type") != "DISTRICT")
 
-    print("The time difference is :", timeit.default_timer() - starttime)
     return data_list
 
 
@@ -204,7 +202,6 @@ def get_time_trends(
     data_filter: types.DataFilter,
     geo_filter: types.GeoFilter,
 ) -> dict:
-    starttime = timeit.default_timer()
     """Retrieve time trends data based on specified filters.
 
     Args:
@@ -276,7 +273,6 @@ def get_time_trends(
 
         data_dict[indc_filter.slug][time] = data_list
 
-    print("The time difference is :", timeit.default_timer() - starttime)
     return data_dict
 
 
@@ -286,7 +282,6 @@ def get_revenue_data(
     data_filter: types.DataFilter,
     geo_filter: Optional[types.GeoFilter] = None,
 ) -> list[dict]:
-    starttime = timeit.default_timer()
     data_list = []
     data_dict = {}
     """Retrieve revenue circle-specific data based on specified filters.
@@ -360,7 +355,6 @@ def get_revenue_data(
         reverse=True,
     )
 
-    print("The time difference is :", timeit.default_timer() - starttime)
     return data_list
 
 
@@ -385,7 +379,6 @@ def get_revenue_map_data(
         dict: A GeoJSON-like dictionary representing revenue circle features with
         associated indicator data.
     """
-    starttime = timeit.default_timer()
 
     # Convert geography objects to a GeoJson format.
     # try:
@@ -434,7 +427,6 @@ def get_revenue_map_data(
         rc["properties"].pop("pk", None)
         rc.pop("id", None)
 
-    print("The time difference is :", timeit.default_timer() - starttime)
     return geo_json
 
 
@@ -458,7 +450,6 @@ def get_district_map_data(
         dict: A GeoJSON-like dictionary representing district features with
         associated indicator data.
     """
-    starttime = timeit.default_timer()
 
     # Convert geography objects to a GeoJson format.
     geo_json = json.loads(
@@ -501,7 +492,6 @@ def get_district_map_data(
             district["properties"].pop("pk", None)
             district.pop("id", None)
 
-    print("The time difference is :", timeit.default_timer() - starttime)
     return geo_json
 
 
@@ -530,7 +520,6 @@ def get_indicators(
     Note:
         The function also prints the execution time, which might be useful for performance monitoring.
     """
-    start_time = timeit.default_timer()
     data_list = []
 
     indcators = Indicators.objects.filter(is_visible=True)
@@ -552,7 +541,6 @@ def get_indicators(
     for data in data_queryset:
         data_list.append(data)
 
-    print("The time difference is :", timeit.default_timer() - start_time)
     return data_list
 
 
@@ -588,7 +576,6 @@ def get_timeperiod():
 
 @cache_query('map_data')
 def get_district_rev_circle(geo_filter: types.GeoFilter):
-    starttime = timeit.default_timer()
     data_dict = {}
     data_list = []
 
@@ -628,7 +615,6 @@ def get_district_rev_circle(geo_filter: types.GeoFilter):
                 data_dict[f"{data.parentId.name}"] = data_list
                 data_list = []
 
-    print("The time difference is :", timeit.default_timer() - starttime)
     return data_dict
 
 
@@ -658,7 +644,7 @@ def get_states():
         with open("report_config.json", "r") as f:
             state_config_all = json.load(f)
     except FileNotFoundError:
-        print("Configuration file not found in get states function.")
+        logger.error("Configuration file not found in get states function.")
         return []
 
     valid_state_codes = [k for k, v in state_config_all.items() if v.get("RESOURCE_ID")]

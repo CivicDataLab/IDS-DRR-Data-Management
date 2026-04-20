@@ -1,10 +1,13 @@
 import hashlib
 import json
+import logging
 from functools import wraps
 from typing import Any, Callable, Optional
 
 from django.core.cache import cache
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 
 def generate_cache_key(*args, **kwargs) -> str:
@@ -48,11 +51,11 @@ def cache_query(cache_type: str, timeout: Optional[int] = None):
             # Try to get from cache
             cached_result = cache.get(cache_key_base)
             if cached_result is not None:
-                print(f"Cache HIT for {func.__name__}")
+                logger.debug("Cache HIT for %s", func.__name__)
                 return cached_result
             
             # Cache miss - execute function
-            print(f"Cache MISS for {func.__name__}")
+            logger.debug("Cache MISS for %s", func.__name__)
             result = func(*args, **kwargs)
             
             # Determine timeout
@@ -80,9 +83,9 @@ def invalidate_cache_pattern(pattern: str, verbose: bool = False):
     try:
         cache.delete_pattern(f"*{pattern}*")
         if verbose:
-            print(f"Invalidated cache pattern: {pattern}")
+            logger.info("Invalidated cache pattern: %s", pattern)
     except Exception as e:
-        print(f"Error invalidating cache pattern {pattern}: {e}")
+        logger.error("Error invalidating cache pattern %s", pattern, exc_info=True)
 
 
 def invalidate_data_caches(verbose: bool = False):
@@ -147,6 +150,6 @@ def clear_all_caches():
     """
     try:
         cache.clear()
-        print("All caches cleared successfully")
+        logger.info("All caches cleared successfully")
     except Exception as e:
-        print(f"Error clearing all caches: {e}")
+        logger.error("Error clearing all caches", exc_info=True)

@@ -1,4 +1,5 @@
 import datetime
+import logging
 from faker import Faker
 import os
 from functools import lru_cache
@@ -37,6 +38,8 @@ from layer.models import Data, Geography, Indicators
 from collections import defaultdict
 import json
 
+logger = logging.getLogger(__name__)
+
 
 chart_colors = ["#89672A", "#3B8F44", "#C41C8D", "#FB4E93", "#7B4DD9"]
 
@@ -55,8 +58,6 @@ def register_font(
 
         if font_url_italic:
             pdfmetrics.registerFont(TTFont(f"{font_name}-Italic", font_url_italic))
-
-        print(f"{font_name} registered successfully.")  # Success message
 
         return True  # Indicate success
     else:
@@ -175,12 +176,10 @@ async def fetch_chart(client, chart_payload, resource_id):
                 f.write(response.content)
             return output_path
         else:
-            print(
-                f"Failed to fetch chart:::::::::::::::: {response.status_code}, {response.text}"
-            )
+            logger.error("Failed to fetch chart: %s %s", response.status_code, response.text)
             return None
     except Exception as e:
-        print(f"Error fetching chart: {e}")
+        logger.error("Error fetching chart", exc_info=True)
         return None
 
 
@@ -352,7 +351,6 @@ async def get_district_highlights(time_period, geo_filter, table_indicators):
                         time_period, indicator, district["geography"]
                 )
             )
-            print(indicator, district["indicators"][indicator])
 
     sorted_result = []
     for dist in districts:
@@ -426,7 +424,7 @@ def add_header_footer(canvas_obj, doc):
             mask="auto",
         )
     except Exception as e:
-        print(f"Error loading header image: {e}")
+        logger.error("Error loading header image", exc_info=True)
 
     # Header
     # header_text = "IDS-DRR | Intelligent Data Solution for Disaster Risk Reduction"
@@ -447,7 +445,7 @@ def add_header_footer(canvas_obj, doc):
             mask="auto",
         )
     except Exception as e:
-        print(f"Error loading header image: {e}")
+        logger.error("Error loading header image", exc_info=True)
 
     # Footer
     footer_text = f"State Report: {page_level_state} | {page_level_time_period}"
@@ -634,7 +632,7 @@ async def generate_report(request):
             with open("report_config.json", "r") as f:
                 report_config_all = json.load(f)
         except FileNotFoundError:
-            print("Configuration file not found")
+            logger.error("Configuration file not found")
             return HttpResponse(
                 "Error generating report: Configuration file missing", status=500
             )
@@ -1071,7 +1069,7 @@ async def append_insights_section(
                 f"As per {time_period_string}, most at risk districts are {', '.join([item['geography'].name.title() for item in major_indicators_districts_top_3])}. The factors scoring lowest for {factors_scoring_lowest}"
             )
         except Exception as e:
-            print(e)
+            logger.error("Error generating report insight", exc_info=True)
 
         try:
             # Cumulative Total Flood Value for Top District for last three years
@@ -1095,7 +1093,7 @@ async def append_insights_section(
                 f"For most at risk district, {major_indicators_districts_top_3[0]['geography'].name.title()}, public contracts totalling to INR {cumulative_total_flood_value_0} have been awarded in past 3 years for flood management related activities and projects. Out of this, INR {cumulative_sdrf_value_0} has been spent on flood related tenders through SDRF."
             )
         except Exception as e:
-            print(e)
+            logger.error("Error generating report insight", exc_info=True)
 
         try:
             # Cumulative Total Flood Value for Second District for last three years
@@ -1118,14 +1116,14 @@ async def append_insights_section(
                 f"For {major_indicators_districts_top_3[1]['geography'].name.title()}, public contracts totalling to INR {cumulative_total_flood_value_1} have been awarded in past 3 years for flood management related activities and projects and for {major_indicators_districts_top_3[2]['geography'].name.title()}, public contracts totalling to INR {cumulative_total_flood_value_2} have been awarded."
             )
         except Exception as e:
-            print(e)
+            logger.error("Error generating report insight", exc_info=True)
 
         try:
             main_insights.append(
                 f"For {major_indicators_districts_top_3[0]['geography'].name.title()}, Risk is high because of {indicator_mapping[sort_data_dict_and_return_highest_key(major_indicators_districts_top_3[0]['indicators'])[1][0]]} and {indicator_mapping[sort_data_dict_and_return_highest_key(major_indicators_districts_top_3[0]['indicators'])[2][0]]} showing need of more targetted intervention to address these."
             )
         except Exception as e:
-            print(e)
+            logger.error("Error generating report insight", exc_info=True)
 
         try:
             # Get the cumulative tender value for top district for last three years
@@ -1142,14 +1140,14 @@ async def append_insights_section(
                 else "Major indicators district name is null"
             )
         except Exception as e:
-            print(e)
+            logger.error("Error generating report insight", exc_info=True)
 
         try:
             main_insights.append(
                 f"{district_that_received_minimum_amount_flood_tenders.name.title()} needs significant effort on Government Response as least money has been received despite having among the highest Risk score."
             )
         except Exception as e:
-            print(e)
+            logger.error("Error generating report insight", exc_info=True)
 
         try:
             # Get district with highest hazard score
@@ -1186,7 +1184,7 @@ async def append_insights_section(
                     + f"it received {peak_daily_rainfall_for_dist_with_high_hazard}mm of peak daily rainfall this month."
                 )
         except Exception as e:
-            print(e)
+            logger.error("Error generating report insight", exc_info=True)
 
         try:
             # Get district with highest exposure score
@@ -1207,7 +1205,7 @@ async def append_insights_section(
                 f"{district_with_highest_exposure.name.title()} needs effort on exposure risk reduction, seeing that Total Population Exposed this month is {total_population_exposed_for_dist_with_highest_exposure}."
             )
         except Exception as e:
-            print(e)
+            logger.error("Error generating report insight", exc_info=True)
 
         if len(main_insights) > 0:
             prepare_array = [
