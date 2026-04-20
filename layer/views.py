@@ -349,7 +349,7 @@ async def get_district_highlights(time_period, geo_filter, table_indicators):
         for indicator in cumulative_indicators:
             district["indicators"][indicator] = (
                 await get_cumulative_value_for_financial_year(
-                    time_period, indicator, district["geography"]
+                        time_period, indicator, district["geography"]
                 )
             )
             print(indicator, district["indicators"][indicator])
@@ -860,46 +860,50 @@ async def generate_report(request):
         # Section 2 - Losses and Damages
 
         section_2_config = state_report_config["SECTION_2"]
-        elements.append(Paragraph(section_2_config["title"], heading_1_style))
+        resource_id = state_report_config.get("TRANSFORMED_RESOURCE_ID")
 
-        # time_period_str = ', '.join([datetime.datetime.strptime(
-        #     period, "%Y_%m").strftime("%B %Y") for period in time_period_prev_months_array])
+        if CHART_API_BASE_URL and resource_id and section_2_config.get("CHARTS"):
+            elements.append(Paragraph(section_2_config["title"], heading_1_style))
 
-        elements.append(Paragraph(section_2_config["sub_title"], heading_2_style))
+            # time_period_str = ', '.join([datetime.datetime.strptime(
+            #     period, "%Y_%m").strftime("%B %Y") for period in time_period_prev_months_array])
 
-        elements = await add_section_2_charts_time_series(
-            elements,
-            time_period_prev_months_array,
-            time_period,
-            state.code,
-            section_2_config["CHARTS"],
-            state_report_config["TRANSFORMED_RESOURCE_ID"],
-        )
+            elements.append(Paragraph(section_2_config["sub_title"], heading_2_style))
 
-        # add page break
-        elements.append(PageBreak())
+            elements = await add_section_2_charts_time_series(
+                elements,
+                time_period_prev_months_array,
+                time_period,
+                state.code,
+                section_2_config["CHARTS"],
+                resource_id,
+            )
+
+            # add page break
+            elements.append(PageBreak())
 
         # --------------------------------------------------------
         # Section 3 - Government Response
         section_3_config = state_report_config["SECTION_3"]
 
-        elements.append(Paragraph(section_3_config["title"], heading_1_style))
+        if CHART_API_BASE_URL and resource_id and section_3_config.get("CHARTS"):
+            elements.append(Paragraph(section_3_config["title"], heading_1_style))
 
-        # E-tenders Data Insights sub-section
-        # Insert Link to Assam Tenders Dashboard in heading later
-        elements.append(Paragraph(section_3_config["sub_title"], heading_2_style))
+            # E-tenders Data Insights sub-section
+            # Insert Link to Assam Tenders Dashboard in heading later
+            elements.append(Paragraph(section_3_config["sub_title"], heading_2_style))
 
-        elements.append(Paragraph(section_3_config["description"], body_style))
+            elements.append(Paragraph(section_3_config["description"], body_style))
 
-        elements = await add_section_3_charts(
-            elements,
-            time_period,
-            state.code,
-            section_3_config["CHARTS"],
-            state_report_config["TRANSFORMED_RESOURCE_ID"],
-        )
+            elements = await add_section_3_charts(
+                elements,
+                time_period,
+                state.code,
+                section_3_config["CHARTS"],
+                resource_id,
+            )
 
-        elements.append(PageBreak())
+            elements.append(PageBreak())
 
         # --------------------------------------------------------
         # Section 4 - Key Insights
