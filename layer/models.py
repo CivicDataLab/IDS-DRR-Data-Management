@@ -16,6 +16,7 @@ class Geography(models.Model):
         "self", on_delete=models.CASCADE, null=True, default="", blank=True
     )
     geom = models.MultiPolygonField(null=True, blank=True)
+    simple_geom = models.MultiPolygonField(null=True, blank=True)
     slug = models.SlugField(max_length=200, null=True, blank=True)
 
     def save(self, *args, **kwargs):

@@ -2,10 +2,24 @@
 
 import json
 
+from django.conf import settings
 from django.contrib.gis.geos import GEOSGeometry, MultiPolygon, Polygon
 from django.core.management.base import CommandError
+from django.db import connection
 
 from layer.models import Geography
+
+
+def _snap_to_grid(geom, size):
+    """Snap ``geom`` coordinates to ``size`` via ST_SnapToGrid."""
+    # GEOS's Python bindings don't expose ST_SnapToGrid like ST_SimplifyPreserveTopology.
+    with connection.cursor() as cursor:
+        cursor.execute(
+            # ST_MakeValid repairs any self-intersections.
+            "SELECT ST_MakeValid(ST_SnapToGrid(%s::geometry, %s::float))",
+            [geom.hexewkb.decode(), size],
+        )
+        return GEOSGeometry(cursor.fetchone()[0])
 
 
 def _render_code(template, properties, prefix_parts=None):
@@ -68,6 +82,9 @@ def import_geographies(specs, config_dir):
         code_prefix_parts = spec.get("code_prefix_parts")
         parent_spec = spec["parent"]
 
+        tolerance = settings.CONFIG.get("simplify_tolerance", 0.003)
+        grid_size = settings.CONFIG.get("snap_to_grid_size", 0.0001)
+
         # Read the geographic features.
         print(f"Importing {path} ....")
         data = json.loads(path.read_text())
@@ -79,6 +96,15 @@ def import_geographies(specs, config_dir):
             if isinstance(geom, Polygon):
                 geom = MultiPolygon([geom])
 
+            # ST_SimplifyPreserveTopology can collapse a MultiPolygon with a single ring to a Polygon.
+            simple_geom = geom.simplify(tolerance, preserve_topology=True)
+            if isinstance(simple_geom, Polygon):
+                simple_geom = MultiPolygon([simple_geom])
+            # Snap to the grid after simplification to not break the topology.
+            simple_geom = _snap_to_grid(simple_geom, grid_size)
+            if isinstance(simple_geom, Polygon):
+                simple_geom = MultiPolygon([simple_geom])
+
             code = _render_code(code_template, properties, code_prefix_parts)
             parent = _resolve_parent(parent_spec, properties)
 
@@ -89,5 +115,6 @@ def import_geographies(specs, config_dir):
                     "name": properties[name_field].capitalize(),
                     "type": geo_type,
                     "geom": geom,
+                    "simple_geom": simple_geom,
                 },
             )

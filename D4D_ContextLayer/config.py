@@ -84,13 +84,21 @@ class StateSpec(_Strict):
     hidden: bool = False
 
 
+class ChartTypeSpec(_Strict):
+    chart_type: str
+    state: str
+    geo_type: str
+
+
 class Config(_Strict):
     whitelist_indicators: list[str] = Field(default_factory=list)
     default_time_period: str = "2024_08"
     subdistrict_types: list[str] = Field(default_factory=list)
+    simplify_tolerance: float = Field(default=0.003, gt=0)
+    snap_to_grid_size: float = Field(default=0.0001, gt=0)
     geojson: list[GeojsonSpec] = Field(default_factory=list)
     states: list[StateSpec] = Field(default_factory=list)
-    reports_enabled: bool = False
+    chart_types: list[ChartTypeSpec] = Field(default_factory=list)
 
     @field_validator("states")
     @classmethod
