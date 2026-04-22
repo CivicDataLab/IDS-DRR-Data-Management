@@ -1,0 +1,11 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ids-drr-plugin"
+version = "0.0.0+stub"
+description = "Empty stub so data-management installs without a real ids-drr-plugin package. Deployments wanting to add endpoints, management commands, or other Django-app-shaped features install their own implementation on top, e.g.: pip install --no-deps -e ../ids-drr-plugin"
+
+[tool.hatch.build.targets.wheel]
+packages = ["plugin"]

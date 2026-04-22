@@ -14,16 +14,17 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.conf import settings
+
 from django.contrib import admin
 from django.urls import include, path
 
+from layer import views
 from layer.schema import schema
 from strawberry.django.views import GraphQLView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("graphql", GraphQLView.as_view(schema=schema)),
+    path("chart-types/<str:chart_type>", views.chart_type_geojson, name="chart_type_geojson"),
+    path("", include("plugin.urls")),
 ]
-if settings.CONFIG.get("reports_enabled"):
-    urlpatterns.append(path("report", include("reports.urls")))

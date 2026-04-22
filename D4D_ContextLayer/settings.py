@@ -91,9 +91,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.gis",
     "layer",
+    "plugin",
 ]
-if CONFIG.get("reports_enabled"):
-    INSTALLED_APPS.append("reports")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

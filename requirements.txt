@@ -31,4 +31,7 @@ urllib3==2.3.0
 uvicorn==0.30.6
 redis==5.0.1
 django-redis==5.4.0
--e ../ids-drr-reports
+# `ids-drr-plugin` is an optional package. This line installs a stub package from plugin-stub/
+# containing a Django app. Deployments can override it with (e.g. to add a PDF report view):
+#   pip install path/to/my-plugin
+./plugin-stub
