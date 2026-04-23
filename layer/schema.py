@@ -473,7 +473,7 @@ def get_district_map_data(
 @cache_query('indicators')
 def get_indicators(
     indc_filter: Optional[types.IndicatorFilter] = None,
-    state_code: Optional[int] = None,
+    state_code: Optional[str] = None,
 ) -> list:
     """
     Retrieve a list of indicators and associated data from the 'indicator' table.
