@@ -49,9 +49,11 @@ def import_indicators(specs, config_dir):
 
         # Upsert the indicator definitions.
         for row in df.itertuples(index=False):
-            slug = str(row.indicatorSlug).lower().strip()
-            if not slug:
+            # CSV sometimes has blank rows. pandas reads blanks as NaN. Skip those rows early.
+            slug = clean_value(row.indicatorSlug)
+            if slug is None:
                 continue
+            slug = slug.lower()
 
             # Get or create the unit.
             unit_name = clean_value(row.unit)
