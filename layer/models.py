@@ -101,6 +101,12 @@ class Indicators(models.Model):
     )
     display_order = models.IntegerField(default=1)
     is_visible = models.BooleanField(null=False, blank=True, default=False)
+    IDS_dataSpace = models.URLField(
+        max_length=500,
+        null=True,
+        blank=True,
+        help_text='Dataset link from the data dictionary (CSV column "IDS_dataSpace", e.g. sheet dev_data_dictionary-assam).',
+    )
 
     def save(self, *args, **kwargs):
         indc_obj = Indicators.objects.last()

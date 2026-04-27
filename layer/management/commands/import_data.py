@@ -410,9 +410,14 @@ def import_state_indicators(df: pd.DataFrame, state: Geography):
     for row in df.itertuples(index=False):
         indicator_slug = getattr(row, "indicatorSlug", "")
 
+        # CSV sometimes has blank rows; pandas reads blanks as NaN (float).
+        # Skip those rows early to avoid `.lower()` crashes.
+        if pd.isna(indicator_slug) or not str(indicator_slug).strip():
+            continue
+
         try:
             indicator = Indicators.objects.get(
-                slug=indicator_slug.lower(), geography=state
+                slug=str(indicator_slug).lower().strip(), geography=state
             )
             indicator.name = str(getattr(row, "indicatorTitle", "")).strip()
             indicator.long_description = (
@@ -425,6 +430,13 @@ def import_state_indicators(df: pd.DataFrame, state: Geography):
             indicator.data_source = str(getattr(row, "datasource", "")).strip() or None
             indicator.parent = _get_indicator_parent_from_row(row, state)
             indicator.is_visible = str(getattr(row, "visible_on_platform", "")) == "y"
+            if 'IDS_dataSpace' in df.columns:
+                raw = df.iloc[i]['IDS_dataSpace']
+                if pd.isna(raw):
+                    indicator.IDS_dataSpace = None
+                else:
+                    link = str(raw).strip()
+                    indicator.IDS_dataSpace = link or None
             indicator.save()
             # print("\rUpdated already existing indicator", flush=True)
 
@@ -446,6 +458,13 @@ def import_state_indicators(df: pd.DataFrame, state: Geography):
                 is_visible=str(getattr(row, "visible_on_platform", "")) == "y",
                 geography=state,
             )
+            if 'IDS_dataSpace' in df.columns:
+                raw = df.iloc[i]['IDS_dataSpace']
+                if pd.isna(raw):
+                    indicator_obj.IDS_dataSpace = None
+                else:
+                    link = str(raw).strip()
+                    indicator_obj.IDS_dataSpace = link or None
             indicator_obj.save()
             # print("\rAdded indicator to the database.", flush=True)
 
