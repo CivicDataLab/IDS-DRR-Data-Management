@@ -87,5 +87,6 @@ def import_indicators(specs, config_dir):
                     "data_source": str(row.datasource).strip() or None,
                     "parent": parent,
                     "is_visible": str(row.visible_on_platform) == "y",
+                    "IDS_dataSpace": clean_value(getattr(row, "IDS_dataSpace", None)),
                 },
             )

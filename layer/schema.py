@@ -490,7 +490,7 @@ def get_indicators(
     Returns:
         list: A list of dictionaries, where each dictionary represents an indicator and contains
             the following keys: 'name', 'slug', 'long_description', 'short_description',
-            'data_source', and 'unit__name'.
+            'data_source', 'unit__name', and 'IDS_dataSpace'.
 
     Note:
         The function also prints the execution time, which might be useful for performance monitoring.
@@ -512,6 +512,7 @@ def get_indicators(
         "short_description",
         "data_source",
         "unit__name",
+        "IDS_dataSpace",
     )
     for data in data_queryset:
         data_list.append(data)
@@ -591,6 +592,7 @@ def get_child_indicators(
                 "name": indicator.name,
                 "description": indicator.long_description,
                 "children": get_child_indicators(indicator.id),
+                "IDS_dataSpace": indicator.IDS_dataSpace,
             }
         )
     return indicator_list
