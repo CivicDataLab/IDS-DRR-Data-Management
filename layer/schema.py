@@ -548,6 +548,7 @@ def get_indicators(
         "short_description",
         "data_source",
         "unit__name",
+        "IDS_dataSpace",
     )
     for data in data_queryset:
         data_list.append(data)
@@ -647,6 +648,7 @@ def get_child_indicators(
                 "name": indicator.name,
                 "description": indicator.long_description,
                 "children": get_child_indicators(indicator.id),
+                "IDS_dataSpace": indicator.IDS_dataSpace,
             }
         )
     return indicator_list
