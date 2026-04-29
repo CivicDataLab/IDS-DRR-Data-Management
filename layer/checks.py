@@ -50,17 +50,21 @@ def chart_types_resolve_to_geographies(app_configs, **kwargs):
     from layer.models import Geography
 
     messages = []
+
+    try:
+        if not Geography.objects.exists():
+            return messages
+    except DatabaseError:  # e.g. not yet migrated
+        return messages
+
     for spec in settings.CONFIG.get("chart_types", []):
         chart_type = spec["chart_type"]
         state = spec["state"]
         geo_type = spec["geo_type"]
 
         state_match = Q(parentId__name__iexact=state) | Q(parentId__parentId__name__iexact=state)
-        try:
-            total = Geography.objects.filter(state_match, type=geo_type).count()
-            has_simple_geom = Geography.objects.filter(state_match, type=geo_type).exclude(simple_geom=None).count()
-        except DatabaseError:  # e.g. not yet migrated
-            return messages
+        total = Geography.objects.filter(state_match, type=geo_type).count()
+        has_simple_geom = Geography.objects.filter(state_match, type=geo_type).exclude(simple_geom=None).count()
 
         if total == 0:
             messages.append(
