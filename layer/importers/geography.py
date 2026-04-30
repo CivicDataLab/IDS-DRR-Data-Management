@@ -3,7 +3,7 @@
 import json
 
 from django.conf import settings
-from django.contrib.gis.geos import GEOSGeometry, MultiPolygon, Polygon
+from django.contrib.gis.geos import GEOSGeometry, GeometryCollection, MultiPolygon, Polygon
 from django.core.management.base import CommandError
 from django.db import connection
 
@@ -20,6 +20,25 @@ def _snap_to_grid(geom, size):
             [geom.hexewkb.decode(), size],
         )
         return GEOSGeometry(cursor.fetchone()[0])
+
+
+def _to_multipolygon(geom):
+    """Coerce a Polygon, MultiPolygon, or GeometryCollection into a MultiPolygon."""
+    if isinstance(geom, MultiPolygon):
+        return geom
+    if isinstance(geom, Polygon):
+        return MultiPolygon([geom])
+    if isinstance(geom, GeometryCollection):
+        polygons = []
+        for obj in geom:
+            if isinstance(obj, MultiPolygon):
+                polygons.extend(obj)
+            elif isinstance(obj, Polygon):
+                polygons.append(obj)
+        if not polygons:
+            raise ValueError("GeometryCollection contains no polygons")
+        return MultiPolygon(polygons)
+    raise TypeError(f"Unsupported geometry type: {type(geom).__name__}")
 
 
 def _render_code(template, properties, prefix_parts=None):
@@ -92,18 +111,12 @@ def import_geographies(specs, config_dir):
         # Upsert the geographic features.
         for feature in data["features"]:
             properties = feature["properties"]
-            geom = GEOSGeometry(json.dumps(feature["geometry"]))
-            if isinstance(geom, Polygon):
-                geom = MultiPolygon([geom])
+            geom = _to_multipolygon(GEOSGeometry(json.dumps(feature["geometry"])))
 
             # ST_SimplifyPreserveTopology can collapse a MultiPolygon with a single ring to a Polygon.
-            simple_geom = geom.simplify(tolerance, preserve_topology=True)
-            if isinstance(simple_geom, Polygon):
-                simple_geom = MultiPolygon([simple_geom])
+            simple_geom = _to_multipolygon(geom.simplify(tolerance, preserve_topology=True))
             # Snap to the grid after simplification to not break the topology.
-            simple_geom = _snap_to_grid(simple_geom, grid_size)
-            if isinstance(simple_geom, Polygon):
-                simple_geom = MultiPolygon([simple_geom])
+            simple_geom = _to_multipolygon(_snap_to_grid(simple_geom, grid_size))
 
             code = _render_code(code_template, properties, code_prefix_parts)
             parent = _resolve_parent(parent_spec, properties)
