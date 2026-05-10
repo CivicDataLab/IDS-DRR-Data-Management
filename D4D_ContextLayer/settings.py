@@ -12,8 +12,13 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import os
+import tomllib
 
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
+from pydantic import ValidationError
+
+from D4D_ContextLayer.config import Config
 
 # Load environment variables from .env file
 load_dotenv()
@@ -22,6 +27,15 @@ production = os.getenv("DJANGO_ENV") == "production"
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+CONFIG_PATH = Path(os.getenv("CONFIG_PATH", BASE_DIR / "config.toml"))
+CONFIG_DIR = CONFIG_PATH.parent
+CONFIG = tomllib.loads(CONFIG_PATH.read_text()) if CONFIG_PATH.is_file() else {}
+
+try:
+    Config.model_validate(CONFIG)
+except ValidationError as exc:
+    raise ImproperlyConfigured(f"Invalid {CONFIG_PATH}:\n{exc}") from exc
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -35,15 +49,13 @@ DEBUG = os.getenv("DEBUG", str(not production)) == "True"
 ALLOWED_HOSTS = [".localhost", "127.0.0.1", "[::1]", "0.0.0.0"]
 if "ALLOWED_HOSTS" in os.environ:
     ALLOWED_HOSTS.extend(os.getenv("ALLOWED_HOSTS", "").split(","))
-CHART_API_BASE_URL = os.getenv("CHART_API_BASE_URL")
 
 # Whitelisted indicators while importing data
-WHITELIST_INDICATORS = [
+WHITELIST_INDICATORS = CONFIG.get("whitelist_indicators") or [
     x.strip() for x in os.getenv("WHITELIST_INDICATORS", "").split(",")
 ]
 
 CORS_ORIGIN_ALLOW_ALL = True
-# CORS_ORIGIN_WHITELIST = ['*']
 
 CORS_ALLOW_METHODS = [
     "DELETE",
@@ -79,6 +91,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.gis",
     "layer",
+    "plugin",
 ]
 
 MIDDLEWARE = [
@@ -173,7 +186,7 @@ STRAWBERRY_DJANGO = {
 }
 
 # Default period for table data
-DEFAULT_TIME_PERIOD = "2024_08"
+DEFAULT_TIME_PERIOD = CONFIG.get("default_time_period", "2024_08")
 
 # ASGI application class to use
 ASGI_APPLICATION = "D4D_ContextLayer.asgi.application"

@@ -1,0 +1,13 @@
+# Dotfiles
+**/.*
+
+# Docker
+**/Dockerfile*
+
+# Documentation
+**/README.md
+**/LICENSE
+
+# Generated files
+**/__pycache__
+**/*.egg-info

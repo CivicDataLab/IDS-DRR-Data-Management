@@ -7,7 +7,8 @@ from typing import Optional
 import strawberry
 import strawberry_django
 from dateutil.relativedelta import relativedelta
-from django.contrib.gis.db.models.functions import Centroid, MakeValid
+from django.conf import settings
+from django.contrib.gis.db.models.functions import MakeValid
 from django.contrib.gis.db.models.aggregates import Union
 from django.core.serializers import serialize
 from django.db.models import F, Q
@@ -15,12 +16,9 @@ from strawberry.scalars import JSON
 from strawberry_django.optimizer import DjangoOptimizerExtension
 import geojson
 
-from D4D_ContextLayer.settings import DEFAULT_TIME_PERIOD
 from . import types
 from layer.models import Data, Geography, Indicators
 from layer.cache_utils import cache_query
-
-# from .mutation import Mutation
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +133,7 @@ def get_table_data(
     if data_filter:
         data_obj = data_obj.filter(data_period=data_filter.data_period)
     else:
-        data_obj = data_obj.filter(data_period=DEFAULT_TIME_PERIOD)
+        data_obj = data_obj.filter(data_period=settings.DEFAULT_TIME_PERIOD)
 
     # Filter by indicator
     if indc_filter:
@@ -299,19 +297,6 @@ def get_revenue_data(
             mapping each to it's relevant data fields.
     """
 
-    # try:
-    #     # Set the type filter based on state.
-    #     geo_obj = Geography.objects.get(code__in=geo_filter.state_code, type="STATE")
-    #     if geo_obj.name.title() == "Himachal Pradesh":
-    #         geo_type = "TEHSIL"
-    #     else:
-    #         geo_type = "REVENUE CIRCLE"
-    #
-    #     # Geo object to iterate over.
-    #     geo_queryset = Geography.objects.filter(type=geo_type)
-    # except Geography.DoesNotExist:
-    #     raise GraphQLError("Invalid state code!!")
-
     geo_queryset = Geography.objects.filter(code__in=geo_filter.code)
 
     rc_data_queryset = Data.objects.filter(
@@ -379,16 +364,6 @@ def get_revenue_map_data(
         dict: A GeoJSON-like dictionary representing revenue circle features with
         associated indicator data.
     """
-
-    # Convert geography objects to a GeoJson format.
-    # try:
-    #     geo_object = Geography.objects.get(code__in=geo_filter.code, type="STATE")
-    #     if geo_object.name.title() == "Himachal Pradesh":
-    #         geo_type = "TEHSIL"
-    #     else:
-    #         geo_type = "REVENUE CIRCLE"
-    # except Geography.DoesNotExist:
-    #     raise GraphQLError("Invalid state code!!")
 
     geo_json = json.loads(
         serialize(
@@ -498,7 +473,7 @@ def get_district_map_data(
 @cache_query('indicators')
 def get_indicators(
     indc_filter: Optional[types.IndicatorFilter] = None,
-    state_code: Optional[int] = None,
+    state_code: Optional[str] = None,
 ) -> list:
     """
     Retrieve a list of indicators and associated data from the 'indicator' table.
@@ -515,7 +490,7 @@ def get_indicators(
     Returns:
         list: A list of dictionaries, where each dictionary represents an indicator and contains
             the following keys: 'name', 'slug', 'long_description', 'short_description',
-            'data_source', and 'unit__name'.
+            'data_source', 'unit__name', and 'IDS_dataSpace'.
 
     Note:
         The function also prints the execution time, which might be useful for performance monitoring.
@@ -537,23 +512,12 @@ def get_indicators(
         "short_description",
         "data_source",
         "unit__name",
+        "IDS_dataSpace",
     )
     for data in data_queryset:
         data_list.append(data)
 
     return data_list
-
-
-# def get_model_indicators() -> list:
-#     data_list = []
-
-#     indc_obj = Indicators.objects.filter(
-#         Q(parent__slug="risk-score") | Q(slug="risk-score")
-#     )
-#     for data in indc_obj:
-#         data_list.append({"name": data.name, "slug": data.slug})
-
-#     return data_list
 
 
 @cache_query('time_periods')
@@ -568,8 +532,6 @@ def get_timeperiod():
 
     # Create CustomDataPeriodList objects directly in the query
     time_list = [types.CustomDataPeriodList(value=time) for time in data]
-    # for time in data:
-    #     time_list.append({"value":time})
 
     return time_list
 
@@ -592,12 +554,9 @@ def get_district_rev_circle(geo_filter: types.GeoFilter):
                 }
             )
         data_dict = data_list
-    elif geo_filter.type.upper().strip().replace("-", " ") in [
-        "REVENUE CIRCLE",
-        "TEHSIL",
-        "BLOCK",
-        "SUB DISTRICT",
-    ]:
+    elif geo_filter.type.upper().strip().replace("-", " ") in settings.CONFIG.get(
+        "subdistrict_types", []
+    ):
         geo_object = Geography.objects.filter(
             type=geo_filter.type.upper().strip().replace("-", " ")
         )
@@ -633,6 +592,7 @@ def get_child_indicators(
                 "name": indicator.name,
                 "description": indicator.long_description,
                 "children": get_child_indicators(indicator.id),
+                "IDS_dataSpace": indicator.IDS_dataSpace,
             }
         )
     return indicator_list
@@ -640,21 +600,21 @@ def get_child_indicators(
 
 @cache_query('states')
 def get_states():
-    try:
-        with open("report_config.json", "r") as f:
-            state_config_all = json.load(f)
-    except FileNotFoundError:
-        logger.error("Configuration file not found in get states function.")
+    specs = settings.CONFIG.get("states", [])
+    visible = {spec["name"].lower(): spec.get("resource_id", "") for spec in specs if not spec.get("hidden", False)}
+    if not visible:
+        logger.error("No [[states]] configured." if not specs else "All [[states]] entries are hidden.")
         return []
 
-    valid_state_codes = [k for k, v in state_config_all.items() if v.get("RESOURCE_ID")]
-    all_states = Geography.objects.filter(type="STATE", code__in=valid_state_codes)
-    
-    # Optimize: Pre-fetch all time periods for all states in one query
-    from django.db.models import Value, CharField
-    state_time_periods = {}
-    for state_code in valid_state_codes:
-        time_periods = (
+    name_filter = Q()
+    for name in visible:
+        name_filter |= Q(name__iexact=name)
+    state_geographies = Geography.objects.filter(name_filter, type="STATE")
+
+    states = []
+    for state_geography in state_geographies:
+        state_code = state_geography.code
+        time_periods = list(
             Data.objects.filter(
                 Q(geography__code=state_code) | 
                 Q(geography__parentId__code=state_code) | 
@@ -665,34 +625,24 @@ def get_states():
             .distinct()
             .order_by("-custom_ordering")
         )
-        state_time_periods[state_code] = list(time_periods)
-    
-    states = []
-    for state in all_states:
-        state_details = {
-            "name": state.name,
-            "slug": state.slug,
-            "code": state.code,
-            "child_type": Geography.objects.filter(parentId__parentId__code=state.code)
-            .first()
-            .type,
-        }
-        valid_geometries = Geography.objects.filter(parentId=state).annotate(
+        valid_geometries = Geography.objects.filter(parentId=state_geography).annotate(
             valid_geom=MakeValid("geom")
         )
         state_geometry = valid_geometries.aggregate(union_geometry=Union("valid_geom"))[
             "union_geometry"
         ]
         state_centroid = state_geometry.centroid if state_geometry else None
-        state_details["center"] = (state_centroid.y, state_centroid.x)
-        state_details["resource_id"] = state_config_all[state.code]["RESOURCE_ID"]
-        
-        # Get time periods from pre-fetched data
-        time_periods_list = state_time_periods.get(state.code, [])
-        state_details["time_periods"] = time_periods_list
-        state_details["latest_time_period"] = time_periods_list[0] if time_periods_list else None
-        
-        states.append(state_details)
+        grandchild = Geography.objects.filter(parentId__parentId__code=state_code).first()
+        states.append({
+            "name": state_geography.name,
+            "slug": state_geography.slug,
+            "code": state_code,
+            "child_type": grandchild.type if grandchild else None,
+            "center": (state_centroid.y, state_centroid.x) if state_centroid else None,
+            "resource_id": visible.get(state_geography.name.lower(), ""),
+            "time_periods": time_periods,
+            "latest_time_period": time_periods[0] if time_periods else None,
+        })
     return states
 
 
@@ -717,7 +667,6 @@ class Query:  # camelCase
 
 schema = strawberry.Schema(
     query=Query,
-    # mutation=Mutation,
     extensions=[
         DjangoOptimizerExtension,
     ],

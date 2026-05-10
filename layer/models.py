@@ -1,8 +1,6 @@
 from django.contrib.gis.db import models
 from django.utils.text import slugify
 
-# from django.db import models
-
 
 class Unit(models.Model):
     name = models.CharField(null=False, unique=True)
@@ -11,26 +9,14 @@ class Unit(models.Model):
 
 
 class Geography(models.Model):
-    class GeoTypes(models.TextChoices):
-        COUNTRY = "COUNTRY"
-        STATE = "STATE"
-        UT = "UT"
-        DISTRICT = "DISTRICT"
-        BLOCK = "BLOCK"
-        VILLAGE = "VILLAGE"
-        REVENUE_CIRCLE = "REVENUE CIRCLE"
-        SUBDISTRICT = "SUB DISTRICT"
-        TEHSIL = "TEHSIL"
-        # LA_CONSTITUTENCY = "LA_CONSTITUTENCY"
-        # PA_CONSTITUTANCY = "PA_CONSTITUTANCY"
-
     name = models.CharField(max_length=100, unique=False)
     code = models.CharField(max_length=20, null=True)  # unique=True)
-    type = models.CharField(max_length=15, choices=GeoTypes.choices)
+    type = models.CharField(max_length=32)
     parentId = models.ForeignKey(
         "self", on_delete=models.CASCADE, null=True, default="", blank=True
     )
     geom = models.MultiPolygonField(null=True, blank=True)
+    simple_geom = models.MultiPolygonField(null=True, blank=True)
     slug = models.SlugField(max_length=200, null=True, blank=True)
 
     def save(self, *args, **kwargs):
@@ -89,7 +75,6 @@ class Indicators(models.Model):
         Department, on_delete=models.PROTECT, null=True, blank=True
     )
     data_source = models.CharField(max_length=100, null=True, blank=True)
-    # page = models.ManyToManyField(Page, blank=True)
     scheme = models.ForeignKey(
         Scheme, on_delete=models.PROTECT, null=True, blank=True)
     parent = models.ForeignKey(
@@ -101,6 +86,12 @@ class Indicators(models.Model):
     )
     display_order = models.IntegerField(default=1)
     is_visible = models.BooleanField(null=False, blank=True, default=False)
+    IDS_dataSpace = models.URLField(
+        max_length=500,
+        null=True,
+        blank=True,
+        help_text='Dataset link from the indicators CSV column "IDS_dataSpace".',
+    )
 
     def save(self, *args, **kwargs):
         indc_obj = Indicators.objects.last()
