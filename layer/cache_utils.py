@@ -75,7 +75,7 @@ def cache_query(cache_type: str, timeout: int | None = None):
     return decorator
 
 
-def invalidate_cache_pattern(pattern: str, verbose: bool = False):
+def invalidate_cache_pattern(pattern: str, *, verbose: bool = False):
     """
     Invalidate all cache keys matching a pattern.
 
@@ -92,7 +92,7 @@ def invalidate_cache_pattern(pattern: str, verbose: bool = False):
         logger.exception("Error invalidating cache pattern %s", pattern)
 
 
-def invalidate_data_caches(verbose: bool = False):
+def invalidate_data_caches(*, verbose: bool = False):
     """
     Invalidate all data-dependent caches.
 
@@ -115,7 +115,7 @@ def invalidate_data_caches(verbose: bool = False):
         invalidate_cache_pattern(pattern, verbose=verbose)
 
 
-def invalidate_geography_caches(verbose: bool = False):
+def invalidate_geography_caches(*, verbose: bool = False):
     """
     Invalidate geography-dependent caches.
 
@@ -135,7 +135,7 @@ def invalidate_geography_caches(verbose: bool = False):
         invalidate_cache_pattern(pattern, verbose=verbose)
 
 
-def invalidate_indicator_caches(verbose: bool = False):
+def invalidate_indicator_caches(*, verbose: bool = False):
     """
     Invalidate indicator-dependent caches.
 
