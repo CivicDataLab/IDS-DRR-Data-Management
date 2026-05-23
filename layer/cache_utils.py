@@ -95,6 +95,7 @@ def invalidate_cache_pattern(pattern: str, verbose: bool = False):
 def invalidate_data_caches(verbose: bool = False):
     """
     Invalidate all data-dependent caches.
+
     Should be called when data is updated.
 
     Args:
@@ -117,6 +118,7 @@ def invalidate_data_caches(verbose: bool = False):
 def invalidate_geography_caches(verbose: bool = False):
     """
     Invalidate geography-dependent caches.
+
     Should be called when geography data is updated.
 
     Args:
@@ -136,6 +138,7 @@ def invalidate_geography_caches(verbose: bool = False):
 def invalidate_indicator_caches(verbose: bool = False):
     """
     Invalidate indicator-dependent caches.
+
     Should be called when indicators are updated.
 
     Args:
@@ -153,6 +156,7 @@ def invalidate_indicator_caches(verbose: bool = False):
 def clear_all_caches():
     """
     Clear all application caches.
+
     Use with caution - only for maintenance or major updates.
     """
     try:
