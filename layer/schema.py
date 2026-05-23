@@ -1,6 +1,7 @@
 import json
 import logging
 import typing
+from collections import defaultdict
 from datetime import datetime
 from typing import Optional
 
@@ -538,43 +539,40 @@ def get_timeperiod():
 
 @cache_query('map_data')
 def get_district_rev_circle(geo_filter: types.GeoFilter):
-    data_dict = {}
-    data_list = []
+    normalized_type = geo_filter.type.upper().strip().replace("-", " ")
 
-    if geo_filter.type.upper() == "DISTRICT":
-        geo_object = Geography.objects.filter(
-            type=geo_filter.type.upper().strip().replace("-", " "),
+    # List of districts within the states in geo_filter.code.
+    if normalized_type == "DISTRICT":
+        districts = Geography.objects.filter(
+            type=normalized_type,
             parentId__code__in=geo_filter.code,
         )
-        for data in geo_object:
-            data_list.append(
+        return [
+            {
+                district.type.lower().replace(" ", "-"): district.name,
+                "code": district.code,
+            }
+            for district in districts
+        ]
+
+    # Dict of each district's subdistricts, within the states in geo_filter.code.
+    if normalized_type in settings.CONFIG.get("subdistrict_types", []):
+        subdistricts = Geography.objects.filter(
+            type=normalized_type,
+            parentId__parentId__code__in=geo_filter.code,
+        ).select_related("parentId")
+        result = defaultdict(list)
+        for subdistrict in subdistricts:
+            result[subdistrict.parentId.name].append(
                 {
-                    f"{data.type.lower().replace(' ', '-')}": data.name,
-                    "code": data.code,
+                    subdistrict.type: subdistrict.name,
+                    "code": subdistrict.code,
+                    "district_code": subdistrict.parentId.code,
                 }
             )
-        data_dict = data_list
-    elif geo_filter.type.upper().strip().replace("-", " ") in settings.CONFIG.get(
-        "subdistrict_types", []
-    ):
-        geo_object = Geography.objects.filter(
-            type=geo_filter.type.upper().strip().replace("-", " ")
-        )
-        for data in geo_object:
-            rc_obj = geo_object.filter(parentId=data.parentId)
-            if rc_obj.exists():
-                for rc_data in rc_obj:
-                    data_list.append(
-                        {
-                            f"{data.type}": rc_data.name,
-                            "code": rc_data.code,
-                            "district_code": data.parentId.code,
-                        }
-                    )
-                data_dict[f"{data.parentId.name}"] = data_list
-                data_list = []
+        return dict(result)
 
-    return data_dict
+    return {}
 
 
 @cache_query('indicators')
