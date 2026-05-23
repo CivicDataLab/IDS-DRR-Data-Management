@@ -575,21 +575,19 @@ def get_district_rev_circle(geo_filter: types.GeoFilter):
 def get_child_indicators(
     parent_id: int | None = None, state_code: str | None = None
 ) -> list:
-    indicator_list = []
     indicators = Indicators.objects.filter(parent__id=parent_id, is_visible=True)
     if state_code:
         indicators = indicators.filter(geography__code=state_code)
-    for indicator in indicators:
-        indicator_list.append(
-            {
-                "slug": indicator.slug,
-                "name": indicator.name,
-                "description": indicator.long_description,
-                "children": get_child_indicators(indicator.id),
-                "IDS_dataSpace": indicator.IDS_dataSpace,
-            }
-        )
-    return indicator_list
+    return [
+        {
+            "slug": indicator.slug,
+            "name": indicator.name,
+            "description": indicator.long_description,
+            "children": get_child_indicators(indicator.id),
+            "IDS_dataSpace": indicator.IDS_dataSpace,
+        }
+        for indicator in indicators
+    ]
 
 
 @cache_query('states')
