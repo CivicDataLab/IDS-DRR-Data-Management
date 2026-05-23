@@ -648,22 +648,22 @@ def get_states():
 
 
 @strawberry.type
-class Query:  # camelCase
+class Query:
     indicators: JSON = strawberry_django.field(resolver=get_indicators)
-    districtViewData: JSON = strawberry_django.field(resolver=get_district_data)
-    tableData: JSON = strawberry_django.field(resolver=get_table_data)
-    indicatorsByCategory: JSON = strawberry_django.field(resolver=get_child_indicators)
-    districtMapData: JSON = strawberry_django.field(resolver=get_district_map_data)
-    getTimeTrends: JSON = strawberry_django.field(resolver=get_time_trends)
-    revCircleViewData: JSON = strawberry_django.field(resolver=get_revenue_data)
-    revCircleMapData: JSON = strawberry_django.field(resolver=get_revenue_map_data)
-    getDataTimePeriods: list[types.CustomDataPeriodList] = strawberry_django.field(
+    district_view_data: JSON = strawberry_django.field(resolver=get_district_data)
+    table_data: JSON = strawberry_django.field(resolver=get_table_data)
+    indicators_by_category: JSON = strawberry_django.field(resolver=get_child_indicators)
+    district_map_data: JSON = strawberry_django.field(resolver=get_district_map_data)
+    get_time_trends: JSON = strawberry_django.field(resolver=get_time_trends)
+    rev_circle_view_data: JSON = strawberry_django.field(resolver=get_revenue_data)
+    rev_circle_map_data: JSON = strawberry_django.field(resolver=get_revenue_map_data)
+    get_data_time_periods: list[types.CustomDataPeriodList] = strawberry_django.field(
         resolver=get_timeperiod
     )
-    getDistrictRevCircle: JSON = strawberry_django.field(
+    get_district_rev_circle: JSON = strawberry_django.field(
         resolver=get_district_rev_circle
     )
-    getStates: JSON = strawberry_django.field(resolver=get_states)
+    get_states: JSON = strawberry_django.field(resolver=get_states)
 
 
 schema = strawberry.Schema(

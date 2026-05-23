@@ -7,21 +7,6 @@ from strawberry import auto
 
 from . import models
 
-"""
-
-Type Name should be in PascalCase.
-Field Name should be in camelCase.
-
-This is as per Apollo Schema naming convention.
-Source:https://www.apollographql.com/docs/apollo-server/schema/schema/#naming-conventions
-
-class User: <This is Type Name>
-    name: str <This is Field Name>
-
-NOTE: Field names in a Type should match with its Model counterpart.
-
-"""
-
 
 @strawberry_django.filter(models.Unit)
 class UnitFilter:
@@ -57,7 +42,7 @@ class Geography:
     name: auto
     code: auto
     type: auto
-    parentId: Optional["Geography"]
+    parent_id: Optional["Geography"] = strawberry_django.field(field_name="parentId")
 
 
 @strawberry_django.type(models.Department)

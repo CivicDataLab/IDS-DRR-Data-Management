@@ -12,7 +12,7 @@ class Geography(models.Model):
     name = models.CharField(max_length=100, unique=False)
     code = models.CharField(max_length=20, null=True)  # unique=True)
     type = models.CharField(max_length=32)
-    parentId = models.ForeignKey(
+    parentId = models.ForeignKey(  # noqa: N815  # renaming would require a migration
         "self", on_delete=models.CASCADE, null=True, default="", blank=True
     )
     geom = models.MultiPolygonField(null=True, blank=True)
