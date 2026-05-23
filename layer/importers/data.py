@@ -78,7 +78,7 @@ def _replace_values(df, indicators, code=None):
         with connection.cursor() as cursor:
             cursor.copy_from(
                 buf,
-                Data._meta.db_table,
+                Data._meta.db_table,  # noqa: SLF001
                 columns=("value", "indicator_id", "geography_id", "data_period", "added", "modified"),
             )
         print(f"{time.time() - start:.1f}s")
