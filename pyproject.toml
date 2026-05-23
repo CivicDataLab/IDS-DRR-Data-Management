@@ -29,6 +29,7 @@ ignore-variadic-names = true
 "docs/*" = ["D100", "INP001"]
 "manage.py" = ["PLC0415"]
 "*/apps.py" = ["F401", "PLC0415"]
+"*/checks.py" = ["PLC0415"]
 "{*/signals,*/views,*/migrations/*}.py" = ["ARG001"]
 "{*/admin,*/routers,*/views,*/commands/*}.py" = ["ARG002"]
 "{*/admin,*/forms,*/models,*/routers,*/migrations/*,tests/*}.py" = ["RUF012"]
