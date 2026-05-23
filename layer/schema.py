@@ -95,13 +95,12 @@ def get_district_data(
             data_list.append(data_dict)
             data_dict = {}
 
-    data_list = sorted(
+    return sorted(
         data_list,
         key=lambda d: float(d[indc_filter.slug]["value"].split()[0]),
         reverse=True,
     )
 
-    return data_list
 
 
 @cache_query('table_data')
@@ -190,9 +189,8 @@ def get_table_data(
             data_dict = {}
 
     # Prioritize district values at the top
-    data_list = sorted(data_list, key=lambda d: d.get("type") != "DISTRICT")
+    return sorted(data_list, key=lambda d: d.get("type") != "DISTRICT")
 
-    return data_list
 
 
 @cache_query('time_trends')
@@ -240,7 +238,7 @@ def get_time_trends(
             .distinct()
             .order_by("custom_ordering")
         )
-        time_list = [time for time in list_queryset]
+        time_list = list(list_queryset)
 
     # Filter the data.
     data_queryset = Data.objects.filter(
@@ -337,13 +335,12 @@ def get_revenue_data(
             data_list.append(data_dict)
             data_dict = {}
 
-    data_list = sorted(
+    return sorted(
         data_list,
         key=lambda d: float(d[indc_filter.slug]["value"].split()[0]),
         reverse=True,
     )
 
-    return data_list
 
 
 @cache_query('map_data')
@@ -537,9 +534,8 @@ def get_timeperiod():
     )
 
     # Create CustomDataPeriodList objects directly in the query
-    time_list = [types.CustomDataPeriodList(value=time) for time in data]
+    return [types.CustomDataPeriodList(value=time) for time in data]
 
-    return time_list
 
 
 @cache_query('map_data')

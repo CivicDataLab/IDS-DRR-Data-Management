@@ -14,11 +14,11 @@ logger = logging.getLogger(__name__)
 def generate_cache_key(*args, **kwargs) -> str:
     """
     Generate a unique cache key based on function arguments.
-    
+
     Args:
         *args: Positional arguments
         **kwargs: Keyword arguments
-        
+
     Returns:
         str: A unique cache key hash
 
@@ -34,11 +34,11 @@ def generate_cache_key(*args, **kwargs) -> str:
 def cache_query(cache_type: str, timeout: int | None = None):
     """
     Decorator to cache query results with configurable timeout.
-    
+
     Args:
         cache_type: Type of cache (maps to CACHE_TIMEOUTS in settings)
         timeout: Optional custom timeout in seconds (overrides default)
-        
+
     Usage:
         @cache_query('map_data')
         def get_map_data(...):
@@ -78,7 +78,7 @@ def cache_query(cache_type: str, timeout: int | None = None):
 def invalidate_cache_pattern(pattern: str, verbose: bool = False):
     """
     Invalidate all cache keys matching a pattern.
-    
+
     Args:
         pattern: Pattern to match cache keys (e.g., 'get_states_*')
         verbose: If True, print invalidation messages (default: False)
@@ -96,7 +96,7 @@ def invalidate_data_caches(verbose: bool = False):
     """
     Invalidate all data-dependent caches.
     Should be called when data is updated.
-    
+
     Args:
         verbose: If True, print invalidation messages (default: False)
 
@@ -118,7 +118,7 @@ def invalidate_geography_caches(verbose: bool = False):
     """
     Invalidate geography-dependent caches.
     Should be called when geography data is updated.
-    
+
     Args:
         verbose: If True, print invalidation messages (default: False)
 
@@ -137,7 +137,7 @@ def invalidate_indicator_caches(verbose: bool = False):
     """
     Invalidate indicator-dependent caches.
     Should be called when indicators are updated.
-    
+
     Args:
         verbose: If True, print invalidation messages (default: False)
 
