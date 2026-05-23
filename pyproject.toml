@@ -30,6 +30,7 @@ ignore-variadic-names = true
 "{*/checks,*/signals,*/views,*/migrations/*}.py" = ["ARG001"]
 "{*/admin,*/routers,*/views,*/commands/*}.py" = ["ARG002"]
 "{*/admin,*/forms,*/models,*/routers,*/migrations/*,tests/*}.py" = ["RUF012"]
+"*/importers/*" = ["T201"]
 "*/migrations/*" = ["E501"]
 "tests/*" = [
     "D", "FBT003", "INP001", "PLR2004", "PT", "S", "TRY003",
