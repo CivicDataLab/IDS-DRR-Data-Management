@@ -10,6 +10,8 @@ certifi==2025.1.31
     # via requests
 charset-normalizer==3.4.1
     # via requests
+click==8.4.1
+    # via uvicorn
 django==4.2.3
     # via
     #   -r requirements.in
@@ -24,6 +26,8 @@ geojson==3.1.0
     # via -r requirements.in
 graphql-core==3.2.3
     # via strawberry-graphql
+h11==0.16.0
+    # via uvicorn
 idna==3.10
     # via requests
 ./plugin-stub
@@ -68,3 +72,5 @@ tzdata==2025.1
     # via pandas
 urllib3==2.3.0
     # via requests
+uvicorn==0.47.0
+    # via -r requirements.in
