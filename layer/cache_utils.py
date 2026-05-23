@@ -33,7 +33,7 @@ def generate_cache_key(*args, **kwargs) -> str:
 
 def cache_query(cache_type: str, timeout: int | None = None):
     """
-    Decorator to cache query results with configurable timeout.
+    Cache query results with configurable timeout.
 
     Args:
         cache_type: Type of cache (maps to CACHE_TIMEOUTS in settings)
