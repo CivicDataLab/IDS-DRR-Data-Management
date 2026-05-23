@@ -13,10 +13,7 @@ ignore = [
     "D1",
     "PTH",
     "E501",
-
-    # TODO Create issues for these lint errors.
-    "ERA001",
-    "T201",
+    "TRY003",
 ]
 
 [tool.ruff.lint.flake8-builtins]
