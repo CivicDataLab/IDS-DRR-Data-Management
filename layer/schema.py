@@ -1,24 +1,23 @@
 import json
 import logging
-import typing
 from collections import defaultdict
 from datetime import datetime
-from typing import Optional
 
 import strawberry
 import strawberry_django
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.contrib.gis.db.models.functions import MakeValid
 from django.contrib.gis.db.models.aggregates import Union
+from django.contrib.gis.db.models.functions import MakeValid
 from django.core.serializers import serialize
 from django.db.models import F, Q
 from strawberry.scalars import JSON
 from strawberry_django.optimizer import DjangoOptimizerExtension
 
-from . import types
-from layer.models import Data, Geography, Indicators
 from layer.cache_utils import cache_query
+from layer.models import Data, Geography, Indicators
+
+from . import types
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +35,8 @@ def get_district_data(
     data_filter: types.DataFilter,
     geo_filter: types.GeoFilter,
 ) -> list[dict]:
-    """Retrieve district-specific data based on specified filters.
+    """
+    Retrieve district-specific data based on specified filters.
 
     Args:
         indc_filter (types.IndicatorFilter): An IndicatorFilter object used
@@ -49,6 +49,7 @@ def get_district_data(
     Returns:
         list[dict]: A list containing dictionary of districts
             mapping each to it's relevant data fields.
+
     """
     data_list = []
     data_dict = {}
@@ -105,11 +106,12 @@ def get_district_data(
 
 @cache_query('table_data')
 def get_table_data(
-    indc_filter: Optional[types.IndicatorFilter] = None,
-    data_filter: Optional[types.DataFilter] = None,
-    geo_filter: Optional[types.GeoFilter] = None,
+    indc_filter: types.IndicatorFilter | None = None,
+    data_filter: types.DataFilter | None = None,
+    geo_filter: types.GeoFilter | None = None,
 ) -> list[dict]:
-    """Retrieve data to be displayed on table based on specified filters.
+    """
+    Retrieve data to be displayed on table based on specified filters.
 
     Args:
         indc_filter (types.IndicatorFilter, Optional): An IndicatorFilter object used
@@ -122,6 +124,7 @@ def get_table_data(
     Returns:
         list[dict]: A list containing dictionary of districts
             mapping each to it's relevant data fields.
+
     """
     data_list = []
     data_dict = {}
@@ -198,7 +201,8 @@ def get_time_trends(
     data_filter: types.DataFilter,
     geo_filter: types.GeoFilter,
 ) -> dict:
-    """Retrieve time trends data based on specified filters.
+    """
+    Retrieve time trends data based on specified filters.
 
     Args:
         indc_filter (types.IndicatorFilter): An IndicatorFilter object used
@@ -211,6 +215,7 @@ def get_time_trends(
     Returns:
         dict: A dictionary containing time trends data aggregated for each
         timestamp based on the specified filters.
+
     """
     # Parse the string into a datetime object.
     date_format = "%Y_%m"
@@ -219,12 +224,12 @@ def get_time_trends(
 
     # Get the list of data periods for the required time range.
     if data_filter.period == "3M":
-        for i in range(0, 4):
+        for i in range(4):
             tme = datetime_object - relativedelta(months=i)
             time_list.append(tme.strftime("%Y_%m"))
         time_list.reverse()
     elif data_filter.period == "1Y":
-        for i in range(0, 13):
+        for i in range(13):
             tme = datetime_object - relativedelta(months=i)
             time_list.append(tme.strftime("%Y_%m"))
         time_list.reverse()
@@ -276,7 +281,7 @@ def get_time_trends(
 def get_revenue_data(
     indc_filter: types.IndicatorFilter,
     data_filter: types.DataFilter,
-    geo_filter: Optional[types.GeoFilter] = None,
+    geo_filter: types.GeoFilter | None = None,
 ) -> list[dict]:
     data_list = []
     data_dict = {}
@@ -345,9 +350,10 @@ def get_revenue_data(
 def get_revenue_map_data(
     indc_filter: types.IndicatorFilter,
     data_filter: types.DataFilter,
-    geo_filter: Optional[types.GeoFilter] = None,
+    geo_filter: types.GeoFilter | None = None,
 ) -> dict:
-    """Retrieve revenue-circle map data based on specified filters.
+    """
+    Retrieve revenue-circle map data based on specified filters.
 
     Args:
         indc_filter (types.IndicatorFilter): An IndicatorFilter object used
@@ -361,8 +367,8 @@ def get_revenue_map_data(
     Returns:
         dict: A GeoJSON-like dictionary representing revenue circle features with
         associated indicator data.
-    """
 
+    """
     rcs = list(
         Geography.objects
         .filter(parentId__parentId__code__in=geo_filter.code)
@@ -411,9 +417,10 @@ def get_revenue_map_data(
 def get_district_map_data(
     indc_filter: types.IndicatorFilter,
     data_filter: types.DataFilter,
-    geo_filter: Optional[types.GeoFilter] = None,
+    geo_filter: types.GeoFilter | None = None,
 ) -> dict:
-    """Retrieve district map data based on specified filters.
+    """
+    Retrieve district map data based on specified filters.
 
     Args:
         indc_filter (types.IndicatorFilter): An IndicatorFilter object used
@@ -426,8 +433,8 @@ def get_district_map_data(
     Returns:
         dict: A GeoJSON-like dictionary representing district features with
         associated indicator data.
-    """
 
+    """
     # Convert geography objects to a GeoJson format.
     districts = list(
         Geography.objects.filter(type="DISTRICT", parentId__code__in=geo_filter.code)
@@ -470,8 +477,8 @@ def get_district_map_data(
 
 @cache_query('indicators')
 def get_indicators(
-    indc_filter: Optional[types.IndicatorFilter] = None,
-    state_code: Optional[str] = None,
+    indc_filter: types.IndicatorFilter | None = None,
+    state_code: str | None = None,
 ) -> list:
     """
     Retrieve a list of indicators and associated data from the 'indicator' table.
@@ -492,6 +499,7 @@ def get_indicators(
 
     Note:
         The function also prints the execution time, which might be useful for performance monitoring.
+
     """
     data_list = []
 
@@ -574,8 +582,8 @@ def get_district_rev_circle(geo_filter: types.GeoFilter):
 
 @cache_query('indicators')
 def get_child_indicators(
-    parent_id: Optional[int] = None, state_code: Optional[str] = None
-) -> typing.List:
+    parent_id: int | None = None, state_code: str | None = None
+) -> list:
     indicator_list = []
     indicators = Indicators.objects.filter(parent__id=parent_id, is_visible=True)
     if state_code:
@@ -611,8 +619,8 @@ def get_states():
         state_code = state_geography.code
         time_periods = list(
             Data.objects.filter(
-                Q(geography__code=state_code) | 
-                Q(geography__parentId__code=state_code) | 
+                Q(geography__code=state_code) |
+                Q(geography__parentId__code=state_code) |
                 Q(geography__parentId__parentId__code=state_code)
             )
             .values_list("data_period", flat=True)

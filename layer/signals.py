@@ -1,12 +1,12 @@
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
-from layer.models import Data, Geography, Indicators
 from layer.cache_utils import (
     invalidate_data_caches,
     invalidate_geography_caches,
     invalidate_indicator_caches,
 )
+from layer.models import Data, Geography, Indicators
 
 
 @receiver(post_save, sender=Data)

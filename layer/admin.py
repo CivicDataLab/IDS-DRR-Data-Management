@@ -2,6 +2,7 @@ from django.contrib import admin
 
 from .models import *
 
+
 class CustomUnitAdmin(admin.ModelAdmin):
     list_display = ["name", "symbol"]
     class Meta:
