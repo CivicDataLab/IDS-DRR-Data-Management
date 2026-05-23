@@ -46,7 +46,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "!!!SECRET_KEY!!!")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", str(not production)) == "True"
 
-ALLOWED_HOSTS = [".localhost", "127.0.0.1", "[::1]", "0.0.0.0"]
+ALLOWED_HOSTS = [".localhost", "127.0.0.1", "[::1]", "0.0.0.0"]  # noqa: S104
 if "ALLOWED_HOSTS" in os.environ:
     ALLOWED_HOSTS.extend(os.getenv("ALLOWED_HOSTS", "").split(","))
 
