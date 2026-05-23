@@ -36,6 +36,8 @@ numpy==2.0.2
     # via pandas
 pandas==2.2.2
     # via -r requirements.in
+psycopg2==2.9.12
+    # via -r requirements.in
 pydantic==2.10.5
     # via -r requirements.in
 pydantic-core==2.27.2

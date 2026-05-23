@@ -3,6 +3,7 @@ django-cors-headers
 django-redis
 geojson
 pandas
+psycopg2
 pydantic
 python-dateutil
 python-dotenv
