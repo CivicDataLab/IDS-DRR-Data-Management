@@ -20,7 +20,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.flake8-builtins]
-builtins-ignorelist = ["copyright"]
+builtins-ignorelist = ["copyright", "Warning"]
 
 [tool.ruff.lint.flake8-unused-arguments]
 ignore-variadic-names = true
