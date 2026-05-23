@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import *
+from .models import Data, Department, Geography, Indicators, Scheme, Unit
 
 
 class CustomUnitAdmin(admin.ModelAdmin):
