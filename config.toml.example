@@ -1,0 +1,106 @@
+# Example backend configuration. Copy to config.toml (or a location
+# pointed at by $CONFIG_PATH) and adapt for your deployment. File paths
+# in this file are resolved relative to this file.
+
+# Slugs always imported in addition to is_visible=True indicators.
+# Falls back to the WHITELIST_INDICATORS environment variable, if omitted.
+whitelist_indicators = ["topsis-score"]
+
+# Default data_period when a view doesn't specify one.
+default_time_period = "2024_08"
+
+# Geographic types below STATE and DISTRICT that should be treated as
+# "sub-district" in the frontend drill-down. Any Geography.type string
+# listed here will surface in the sub-district view. Case-insensitive.
+# Hyphens and spaces are interchangeable.
+subdistrict_types = ["BLOCK", "TEHSIL"]
+
+# Tolerance for the simplified geometry stored alongside each Geography
+# at import time, in degrees (SRID 4326). 0.003 is roughly 300 m.
+simplify_tolerance = 0.003
+
+# Grid size passed to ST_SnapToGrid, applied after simplification.
+# 0.0001 (≈11 m) trims some decimals off each coordinate.
+snap_to_grid_size = 0.0001
+
+# Chart-type values (from DataSpace) that render as echarts maps. Each
+# entry maps a chartType string to the geographies used to register the
+# map (Geography.type, filtered to a single state by name). The backend
+# exposes `GET /chart-types/<chart_type>` to serve the simplified GeoJSON.
+# [[chart_types]]
+# chart_type = "EXAMPLE_DISTRICT"
+# state = "Example State"
+# geo_type = "DISTRICT"
+
+# Each entry is imported by the `import_geojson` management command.
+#
+# Parents must be declared before any children.
+#
+#
+# [[geojson]] fields
+#   path               Path to a .geojson file (relative to this file).
+#   geo_type           Geography.type value for the imported features.
+#   name_field         Feature property for the display name.
+#   code_template      Format string for the geography code. Placeholders like
+#                      "{object_id}" reference feature properties.
+#   code_prefix_parts  Optional. Keep the first N "-"-separated parts of the
+#                      rendered code_template.
+#
+# [geojson.parent] fields
+#   type                        Geography.type value for the imported feature.
+#
+#   Either a "name lookup" (by name, creating the parent if no match):
+#
+#     name                      Literal parent name, OR
+#     name_field                Feature property for the parent name.
+#     create_code               Literal code for the created parent, OR
+#     create_code_template      Format string for the created parent's code.
+#     create_code_prefix_parts  Optional prefix-parts for the template.
+#
+#   Or a "code lookup" (parent must already exist):
+#
+#     code_template             Format string for the parent code.
+#     code_prefix_parts         Optional prefix-parts for the template.
+
+# Example: district with a stub STATE parent (name lookup, literal code).
+[[geojson]]
+path = "geography/example_district.geojson"
+geo_type = "DISTRICT"
+name_field = "dtname"
+code_template = "{object_id}"
+
+  [geojson.parent]
+  type = "STATE"
+  name = "Example State"
+  create_code = "00"
+
+# Example: block whose DISTRICT parent is already imported above
+# (code lookup — fails if the parent is missing).
+# [[geojson]]
+# path = "geography/example_block.geojson"
+# geo_type = "BLOCK"
+# name_field = "sdtname"
+# code_template = "{object_id}"
+#
+#   [geojson.parent]
+#   type = "DISTRICT"
+#   code_template = "{object_id}"
+#   code_prefix_parts = 2
+
+# Each entry describes one state's CSVs.
+#
+# name         Display name of the state. It must match (case-insensitively)
+#              a STATE Geography loaded by `import_geojson`. Must be unique.
+# indicators   Path to the state's indicator-definitions CSV (relative to this
+#              file), read by the `import_indicators` command
+# data         Path to the state's indicator-values CSV (relative to this
+#              file), read by the `import_data` command
+# resource_id  Optional. DataSpace resource ID used by the frontend analytics
+#              page to fetch dynamically-generated charts.
+# hidden       Optional, default false. When true, the state is imported
+#              normally (so you can stage its data) but hidden from the
+#              GraphQL state list, so the frontend doesn't advertise it.
+[[states]]
+name = "Example State"
+indicators = "indicators/example_indicators.csv"
+data = "data/example_data.csv"
