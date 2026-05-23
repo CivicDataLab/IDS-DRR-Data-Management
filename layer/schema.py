@@ -1,7 +1,7 @@
 import json
 import logging
 from collections import defaultdict
-from datetime import datetime
+from datetime import date
 
 import strawberry
 import strawberry_django
@@ -215,20 +215,20 @@ def get_time_trends(
         timestamp based on the specified filters.
 
     """
-    # Parse the string into a datetime object.
-    date_format = "%Y_%m"
-    datetime_object = datetime.strptime(data_filter.data_period, date_format)
+    # Parse the "YYYY_MM" period into a date (first of the month).
+    year, month = (int(part) for part in data_filter.data_period.split("_"))
+    date_object = date(year, month, 1)
     time_list = []
 
     # Get the list of data periods for the required time range.
     if data_filter.period == "3M":
         for i in range(4):
-            tme = datetime_object - relativedelta(months=i)
+            tme = date_object - relativedelta(months=i)
             time_list.append(tme.strftime("%Y_%m"))
         time_list.reverse()
     elif data_filter.period == "1Y":
         for i in range(13):
-            tme = datetime_object - relativedelta(months=i)
+            tme = date_object - relativedelta(months=i)
             time_list.append(tme.strftime("%Y_%m"))
         time_list.reverse()
     else:
