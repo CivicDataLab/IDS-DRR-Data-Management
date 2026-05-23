@@ -89,7 +89,7 @@ def invalidate_cache_pattern(pattern: str, verbose: bool = False):
         if verbose:
             logger.info("Invalidated cache pattern: %s", pattern)
     except Exception:
-        logger.error("Error invalidating cache pattern %s", pattern, exc_info=True)
+        logger.exception("Error invalidating cache pattern %s", pattern)
 
 
 def invalidate_data_caches(verbose: bool = False):
@@ -163,4 +163,4 @@ def clear_all_caches():
         cache.clear()
         logger.info("All caches cleared successfully")
     except Exception:
-        logger.error("Error clearing all caches", exc_info=True)
+        logger.exception("Error clearing all caches")
