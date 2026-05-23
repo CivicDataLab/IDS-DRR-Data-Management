@@ -498,8 +498,6 @@ def get_indicators(
         The function also prints the execution time, which might be useful for performance monitoring.
 
     """
-    data_list = []
-
     indcators = Indicators.objects.filter(is_visible=True)
     if state_code:
         indcators = indcators.filter(geography__code=state_code)
@@ -517,10 +515,7 @@ def get_indicators(
         "unit__name",
         "IDS_dataSpace",
     )
-    for data in data_queryset:
-        data_list.append(data)
-
-    return data_list
+    return list(data_queryset)
 
 
 @cache_query('time_periods')
