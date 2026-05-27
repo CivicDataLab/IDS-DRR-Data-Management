@@ -29,6 +29,21 @@ def _leaflet_bounds(extent):
     return None
 
 
+def _group_data_by_geography_code(
+    queryset,
+    geographies: list[Geography],
+    *,
+    select_related: tuple[str, ...],
+) -> defaultdict[str, list]:
+    """Get matching Data rows in one query and group them by geography code."""
+    code_by_id = {g.id: g.code for g in geographies}
+    qs = queryset.filter(geography__in=geographies).select_related(*select_related)
+    grouped = defaultdict(list)
+    for data in qs:
+        grouped[code_by_id[data.geography_id]].append(data)
+    return grouped
+
+
 @cache_query('table_data')
 def get_district_data(
     indc_filter: types.IndicatorFilter,
@@ -52,12 +67,12 @@ def get_district_data(
 
     """
     data_list = []
-    data_dict = {}
 
     if indc_filter:
         dataset_obj = Data.objects.filter(
             Q(indicator__slug=indc_filter.slug)
-            | Q(indicator__parent__slug=indc_filter.slug)
+            | Q(indicator__parent__slug=indc_filter.slug),
+            indicator__is_visible=True,
         )
     if data_filter:
         dataset_obj = dataset_obj.filter(data_period=data_filter.data_period)
@@ -73,27 +88,30 @@ def get_district_data(
     else:
         geo_obj = Geography.objects.filter(code__in=geo_filter.code)
 
-    for geo in geo_obj:
-        for obj in dataset_obj.filter(geography=geo, indicator__is_visible=True):
-            data_dict[obj.geography.type.lower()] = obj.geography.name
-            data_dict[obj.geography.type.lower().replace(" ", "-") + "-code"] = (
-                obj.geography.code
-            )
-            if obj.indicator.unit:
-                unit = obj.indicator.unit.name
-                data_dict[obj.indicator.slug] = {
-                    "value": str(obj.value) + " " + unit,
-                    "title": obj.indicator.name,
-                }
-            else:
-                data_dict[obj.indicator.slug] = {
-                    "value": str(obj.value),
-                    "title": obj.indicator.name,
-                }
+    geographies = list(geo_obj)
+    data_by_geography_code = _group_data_by_geography_code(
+        dataset_obj,
+        geographies,
+        select_related=("indicator", "indicator__unit"),
+    )
 
-        if data_dict:
-            data_list.append(data_dict)
-            data_dict = {}
+    for geo in geographies:
+        rows = data_by_geography_code[geo.code]
+        if not rows:
+            continue
+
+        geography_type = geo.type.lower()
+        data_dict = {
+            geography_type: geo.name,
+            f"{geography_type.replace(' ', '-')}-code": geo.code,
+        }
+        for obj in rows:
+            unit = obj.indicator.unit.name if obj.indicator.unit else ""
+            data_dict[obj.indicator.slug] = {
+                "value": f"{obj.value} {unit}" if unit else str(obj.value),
+                "title": obj.indicator.name,
+            }
+        data_list.append(data_dict)
 
     return sorted(
         data_list,
@@ -126,7 +144,6 @@ def get_table_data(
 
     """
     data_list = []
-    data_dict = {}
     data_obj = Data.objects.filter(indicator__is_visible=True)
 
     # Filter by time period
@@ -159,34 +176,37 @@ def get_table_data(
     else:
         geo_obj = Geography.objects.filter(type="DISTRICT")
 
+    geographies = list(geo_obj)
+    data_by_geography_code = _group_data_by_geography_code(
+        data_obj,
+        geographies,
+        select_related=("indicator", "indicator__unit"),
+    )
+
     # Process geography and data for each region
-    for geo in geo_obj:
-        for obj in data_obj.filter(geography=geo):
-            data_dict["type"] = geo.type
-            data_dict["region-name"] = obj.geography.name
-            data_dict[obj.geography.type.lower().replace(" ", "-") + "-code"] = (
-                obj.geography.code
-            )
-            if obj.indicator.unit:
-                unit = obj.indicator.unit.name
-                data_dict[obj.indicator.slug] = {
-                    "value": str(obj.value) + " " + unit,
-                    "title": obj.indicator.name,
-                }
-            else:
-                data_dict[obj.indicator.slug] = {
-                    "value": str(obj.value),
-                    "title": obj.indicator.name,
-                }
+    for geo in geographies:
+        rows = data_by_geography_code[geo.code]
+        if not rows:
+            continue
 
-        if data_dict:
-            # Reorder data_dict so that the selected indicator is first
-            if indc_filter and indc_filter.slug in data_dict:
-                selected_indicator = {indc_filter.slug: data_dict.pop(indc_filter.slug)}
-                data_dict = {**selected_indicator, **data_dict}
+        data_dict = {
+            "type": geo.type,
+            "region-name": geo.name,
+            f"{geo.type.lower().replace(' ', '-')}-code": geo.code,
+        }
+        for obj in rows:
+            unit = obj.indicator.unit.name if obj.indicator.unit else ""
+            data_dict[obj.indicator.slug] = {
+                "value": f"{obj.value} {unit}" if unit else str(obj.value),
+                "title": obj.indicator.name,
+            }
 
-            data_list.append(data_dict)
-            data_dict = {}
+        # Reorder data_dict so that the selected indicator is first
+        if indc_filter and indc_filter.slug in data_dict:
+            selected_indicator = {indc_filter.slug: data_dict.pop(indc_filter.slug)}
+            data_dict = {**selected_indicator, **data_dict}
+
+        data_list.append(data_dict)
 
     # Prioritize district values at the top
     return sorted(data_list, key=lambda d: d.get("type") != "DISTRICT")
@@ -247,7 +267,10 @@ def get_time_trends(
         | Q(geography__code__in=geo_filter.code),
         indicator__slug=indc_filter.slug,
         data_period__in=time_list,
-    )
+    ).select_related("geography")
+    data_by_period = defaultdict(list)
+    for data in data_queryset:
+        data_by_period[data.data_period].append(data)
 
     # Creating initial dict structure.
     data_dict = {}
@@ -256,19 +279,14 @@ def get_time_trends(
     # Iterating over each data period to create a list of dicts.
     # Where each dict represents data for that district for that data period.
     for time in time_list:
-        temp_dict = {}
         data_list = []
-        filtered_queryset = data_queryset.filter(data_period=time)
-        for data in filtered_queryset:
-            temp_dict[data.geography.type.lower().replace(" ", "-")] = (
-                data.geography.name
-            )
-            temp_dict[data.geography.type.lower().replace(" ", "-") + "-code"] = (
-                data.geography.code
-            )
-            temp_dict[indc_filter.slug] = data.value
-            data_list.append(temp_dict)
-            temp_dict = {}
+        for data in data_by_period[time]:
+            geography_type_slug = data.geography.type.lower().replace(" ", "-")
+            data_list.append({
+                geography_type_slug: data.geography.name,
+                f"{geography_type_slug}-code": data.geography.code,
+                indc_filter.slug: data.value,
+            })
 
         data_dict[indc_filter.slug][time] = data_list
 
@@ -281,9 +299,8 @@ def get_revenue_data(
     data_filter: types.DataFilter,
     geo_filter: types.GeoFilter | None = None,
 ) -> list[dict]:
-    data_list = []
-    data_dict = {}
-    """Retrieve revenue circle-specific data based on specified filters.
+    """
+    Retrieve revenue circle-specific data based on specified filters.
 
     Args:
         indc_filter (types.IndicatorFilter): An IndicatorFilter object used
@@ -296,44 +313,56 @@ def get_revenue_data(
     Returns:
         list[dict]: A list containing dictionary of revenue circles
             mapping each to it's relevant data fields.
-    """
 
-    geo_queryset = Geography.objects.filter(code__in=geo_filter.code)
+    """
+    data_list = []
+
+    geo_queryset = Geography.objects.filter(
+        code__in=geo_filter.code
+    ).select_related("parentId")
 
     rc_data_queryset = Data.objects.filter(
         Q(indicator__parent__slug=indc_filter.slug)
         | Q(indicator__slug=indc_filter.slug),
+        indicator__is_visible=True,
     )
     rc_data_queryset = rc_data_queryset.filter(data_period=data_filter.data_period)
 
-    for geo in geo_queryset:
-        for obj in rc_data_queryset.filter(geography=geo, indicator__is_visible=True):
-            data_dict["type"] = obj.geography.type.lower()
-            data_dict[obj.geography.type.lower().replace(" ", "-")] = obj.geography.name
-            data_dict[(obj.geography.type + " code").lower().replace(" ", "-")] = (
-                obj.geography.code
-            )
-            if obj.geography.parentId:
-                parent = obj.geography.parentId
-                data_dict["parent_type"] = parent.type.lower()
-                data_dict[parent.type.lower().replace(" ", "-")] = parent.name
-                data_dict[(parent.type.lower() + " code").lower().replace(" ", "-")] = (
-                    parent.code
-                )
-            if obj.indicator.unit:
-                unit = obj.indicator.unit.name
-                data_dict[obj.indicator.slug] = {
-                    "value": str(obj.value) + " " + unit,
-                    "title": obj.indicator.name,
-                }
-            else:
-                data_dict[obj.indicator.slug] = {
-                    "value": str(obj.value),
-                    "title": obj.indicator.name,
-                }
-        if data_dict:
-            data_list.append(data_dict)
-            data_dict = {}
+    geographies = list(geo_queryset)
+    data_by_geography_code = _group_data_by_geography_code(
+        rc_data_queryset,
+        geographies,
+        select_related=("indicator", "indicator__unit"),
+    )
+
+    for geo in geographies:
+        rows = data_by_geography_code[geo.code]
+        if not rows:
+            continue
+
+        geography_type = geo.type.lower()
+        geography_type_slug = geography_type.replace(" ", "-")
+        data_dict = {
+            "type": geography_type,
+            geography_type_slug: geo.name,
+            f"{geography_type_slug}-code": geo.code,
+        }
+        if geo.parentId:
+            parent = geo.parentId
+            parent_type = parent.type.lower()
+            parent_type_slug = parent_type.replace(" ", "-")
+            data_dict["parent_type"] = parent_type
+            data_dict[parent_type_slug] = parent.name
+            data_dict[f"{parent_type_slug}-code"] = parent.code
+
+        for obj in rows:
+            unit = obj.indicator.unit.name if obj.indicator.unit else ""
+            data_dict[obj.indicator.slug] = {
+                "value": f"{obj.value} {unit}" if unit else str(obj.value),
+                "title": obj.indicator.name,
+            }
+
+        data_list.append(data_dict)
 
     return sorted(
         data_list,
@@ -459,10 +488,10 @@ def get_district_map_data(
         )
 
         if district_code in district_data_map:
-            data = district_data_map[district_code]
-
             # Add indicator slug and value to properties
-            district["properties"][data.indicator.slug] = data.value
+            district["properties"][indc_filter.slug] = (
+                district_data_map[district_code].value
+            )
 
         # Remove unnecessary keys
         district["properties"].pop("parentId", None)
@@ -575,19 +604,25 @@ def get_district_rev_circle(geo_filter: types.GeoFilter):
 def get_child_indicators(
     parent_id: int | None = None, state_code: str | None = None
 ) -> list:
-    indicators = Indicators.objects.filter(parent__id=parent_id, is_visible=True)
+    visible = Indicators.objects.filter(is_visible=True)
     if state_code:
-        indicators = indicators.filter(geography__code=state_code)
-    return [
-        {
+        visible = visible.filter(geography__code=state_code)
+
+    children_by_parent_id = defaultdict(list)
+    for indicator in visible:
+        if indicator.parent_id is not None:
+            children_by_parent_id[indicator.parent_id].append(indicator)
+
+    def build(indicator):
+        return {
             "slug": indicator.slug,
             "name": indicator.name,
             "description": indicator.long_description,
-            "children": get_child_indicators(indicator.id),
+            "children": [build(child) for child in children_by_parent_id[indicator.id]],
             "IDS_dataSpace": indicator.IDS_dataSpace,
         }
-        for indicator in indicators
-    ]
+
+    return [build(indicator) for indicator in visible.filter(parent__id=parent_id)]
 
 
 @cache_query('states')
