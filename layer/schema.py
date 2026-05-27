@@ -401,6 +401,7 @@ def get_revenue_map_data(
         .select_related("parentId")
     )
     extent_by_code = {g.code: g.geom.extent if g.geom else None for g in rcs}
+    geography_by_code = {g.code: g for g in rcs}
     geo_json = json.loads(serialize("geojson", rcs))
 
     rc_data = Data.objects.filter(
@@ -418,18 +419,16 @@ def get_revenue_map_data(
 
         rc["properties"]["bounds"] = _leaflet_bounds(extent_by_code.get(rc_code))
 
-        if rc_code in rc_data_map:
-            data = rc_data_map[rc_code]
-            geo_object = data.geography
-
-            # Add parent district code to properties
+        geo_object = geography_by_code.get(rc_code)
+        if geo_object and geo_object.parentId:
             parent_code_key = (
                 f"{geo_object.parentId.type.lower().replace(' ', '-')}-code"
             )
             rc["properties"][parent_code_key] = geo_object.parentId.code
 
+        if rc_code in rc_data_map:
             # Add indicator slug and value to properties
-            rc["properties"][data.indicator.slug] = data.value
+            rc["properties"][indc_filter.slug] = rc_data_map[rc_code].value
 
         # Remove unnecessary keys
         rc["properties"].pop("parentId", None)
