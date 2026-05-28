@@ -7,8 +7,7 @@ import strawberry
 import strawberry_django
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.contrib.gis.db.models.aggregates import Union
-from django.contrib.gis.db.models.functions import MakeValid
+from django.contrib.gis.db.models.aggregates import Extent
 from django.core.serializers import serialize
 from django.db.models import F, Q
 from strawberry.scalars import JSON
@@ -635,38 +634,62 @@ def get_states():
     name_filter = Q()
     for name in visible:
         name_filter |= Q(name__iexact=name)
-    state_geographies = Geography.objects.filter(name_filter, type="STATE")
+    state_geographies = list(Geography.objects.filter(name_filter, type="STATE"))
+    if not state_geographies:
+        return []
+
+    root_state_code_by_id = {}
+    state_code_by_id = {geo.id: geo.code for geo in state_geographies}
+    parent_by_id = dict(Geography.objects.values_list("id", "parentId"))
+    for geography_id in parent_by_id:
+        # INVARIANT: Every geography roots at a STATE (the only parentId=NULL rows).
+        root_id = geography_id
+        while parent_by_id[root_id] is not None:
+            root_id = parent_by_id[root_id]
+        # Omit any non-visible or unconfigured states.
+        state_code = state_code_by_id.get(root_id)
+        if state_code is not None:
+            root_state_code_by_id[geography_id] = state_code
+
+    periods_by_state_code = defaultdict(set)
+    # NOTE: If the database were multi-tenant (e.g. multiple frontends),
+    # then it would be faster to add a geography_id__in filter.
+    for geography_id, data_period in (
+        Data.objects.values_list("geography_id", "data_period").distinct()
+    ):
+        state_code = root_state_code_by_id.get(geography_id)
+        if state_code is not None:
+            periods_by_state_code[state_code].add(data_period)
+    periods_by_state_code = {
+        state_code: sorted(periods, reverse=True)
+        for state_code, periods in periods_by_state_code.items()
+    }
+
+    bbox_by_state_id = dict(
+        Geography.objects.filter(parentId__in=state_geographies)
+        .values_list("parentId")
+        .annotate(bbox=Extent("geom"))
+    )
+
+    child_type_by_state_id = dict(
+        Geography.objects.filter(parentId__parentId__in=state_geographies)
+        .values_list("parentId__parentId", "type")
+        .distinct()
+    )
 
     states = []
     for state_geography in state_geographies:
-        state_code = state_geography.code
-        time_periods = list(
-            Data.objects.filter(
-                Q(geography__code=state_code) |
-                Q(geography__parentId__code=state_code) |
-                Q(geography__parentId__parentId__code=state_code)
-            )
-            .values_list("data_period", flat=True)
-            .annotate(custom_ordering=F("data_period"))
-            .distinct()
-            .order_by("-custom_ordering")
-        )
-        valid_geometries = Geography.objects.filter(parentId=state_geography).annotate(
-            valid_geom=MakeValid("geom")
-        )
-        state_geometry = valid_geometries.aggregate(union_geometry=Union("valid_geom"))[
-            "union_geometry"
-        ]
-        state_centroid = state_geometry.centroid if state_geometry else None
-        bounds = _leaflet_bounds(state_geometry.extent if state_geometry else None)
-        grandchild = Geography.objects.filter(parentId__parentId__code=state_code).first()
+        bbox = bbox_by_state_id.get(state_geography.id)
+        time_periods = periods_by_state_code.get(state_geography.code, [])
         states.append({
             "name": state_geography.name,
             "slug": state_geography.slug,
-            "code": state_code,
-            "child_type": grandchild.type if grandchild else None,
-            "center": (state_centroid.y, state_centroid.x) if state_centroid else None,
-            "bounds": bounds,
+            "code": state_geography.code,
+            "child_type": child_type_by_state_id.get(state_geography.id),
+            "center": ((bbox[1] + bbox[3]) / 2, (bbox[0] + bbox[2]) / 2)
+            if bbox
+            else None,
+            "bounds": _leaflet_bounds(bbox),
             "resource_id": visible.get(state_geography.name.lower(), ""),
             "time_periods": time_periods,
             "latest_time_period": time_periods[0] if time_periods else None,
