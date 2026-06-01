@@ -14,7 +14,6 @@ from django.core.serializers import serialize
 from django.db.models import F, Q
 from strawberry.scalars import JSON
 from strawberry_django.optimizer import DjangoOptimizerExtension
-import geojson
 
 from . import types
 from layer.models import Data, Geography, Indicators
@@ -23,13 +22,11 @@ from layer.cache_utils import cache_query
 logger = logging.getLogger(__name__)
 
 
-def bounding_box(coord_list):
-    box = []
-    for i in (0, 1):
-        res = sorted(coord_list, key=lambda x: x[i])
-        box.append((res[0][i], res[-1][i]))
-    ret = [[box[1][0], box[0][0]], [box[1][1], box[0][1]]]
-    return ret
+def _leaflet_bounds(extent):
+    """Convert a PostGIS extent (xmin, ymin, xmax, ymax) into Leaflet's [[S, W], [N, E]]."""
+    if extent:
+        return [[extent[1], extent[0]], [extent[3], extent[2]]]
+    return None
 
 
 @cache_query('table_data')
@@ -365,12 +362,13 @@ def get_revenue_map_data(
         associated indicator data.
     """
 
-    geo_json = json.loads(
-        serialize(
-            "geojson",
-            Geography.objects.filter(parentId__parentId__code__in=geo_filter.code),
-        )
+    rcs = list(
+        Geography.objects
+        .filter(parentId__parentId__code__in=geo_filter.code)
+        .select_related("parentId")
     )
+    extent_by_code = {g.code: g.geom.extent if g.geom else None for g in rcs}
+    geo_json = json.loads(serialize("geojson", rcs))
 
     rc_data = Data.objects.filter(
         indicator__slug=indc_filter.slug,
@@ -384,6 +382,9 @@ def get_revenue_map_data(
     # Iterate over GeoJSON features and populate with indicator data
     for rc in geo_json["features"]:
         rc_code = rc["properties"]["code"]
+
+        rc["properties"]["bounds"] = _leaflet_bounds(extent_by_code.get(rc_code))
+
         if rc_code in rc_data_map:
             data = rc_data_map[rc_code]
             geo_object = data.geography
@@ -427,14 +428,11 @@ def get_district_map_data(
     """
 
     # Convert geography objects to a GeoJson format.
-    geo_json = json.loads(
-        serialize(
-            "geojson",
-            Geography.objects.filter(
-                type="DISTRICT", parentId__code__in=geo_filter.code
-            ),
-        )
+    districts = list(
+        Geography.objects.filter(type="DISTRICT", parentId__code__in=geo_filter.code)
     )
+    extent_by_code = {g.code: g.geom.extent if g.geom else None for g in districts}
+    geo_json = json.loads(serialize("geojson", districts))
 
     # Get Indicator Data for each district.
     district_data = Data.objects.filter(
@@ -450,22 +448,21 @@ def get_district_map_data(
     # Iterate over GeoJSON features and populate with indicator data
     for district in geo_json["features"]:
         district_code = district["properties"]["code"]
+
+        district["properties"]["bounds"] = _leaflet_bounds(
+            extent_by_code.get(district_code)
+        )
+
         if district_code in district_data_map:
             data = district_data_map[district_code]
-
-            # Add bounding box of district
-            poly = geojson.Polygon(district["geometry"]["coordinates"])
-            district["properties"]["bounds"] = bounding_box(
-                list(geojson.utils.coords(poly))
-            )
 
             # Add indicator slug and value to properties
             district["properties"][data.indicator.slug] = data.value
 
-            # Remove unnecessary keys
-            district["properties"].pop("parentId", None)
-            district["properties"].pop("pk", None)
-            district.pop("id", None)
+        # Remove unnecessary keys
+        district["properties"].pop("parentId", None)
+        district["properties"].pop("pk", None)
+        district.pop("id", None)
 
     return geo_json
 
@@ -632,6 +629,7 @@ def get_states():
             "union_geometry"
         ]
         state_centroid = state_geometry.centroid if state_geometry else None
+        bounds = _leaflet_bounds(state_geometry.extent if state_geometry else None)
         grandchild = Geography.objects.filter(parentId__parentId__code=state_code).first()
         states.append({
             "name": state_geography.name,
@@ -639,6 +637,7 @@ def get_states():
             "code": state_code,
             "child_type": grandchild.type if grandchild else None,
             "center": (state_centroid.y, state_centroid.x) if state_centroid else None,
+            "bounds": bounds,
             "resource_id": visible.get(state_geography.name.lower(), ""),
             "time_periods": time_periods,
             "latest_time_period": time_periods[0] if time_periods else None,
