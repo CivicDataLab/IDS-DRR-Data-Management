@@ -27,15 +27,15 @@ def configuration_file_present(app_configs, **kwargs):
             )
         )
     else:
-        for key in ("geojson", "states"):
-            if key not in settings.CONFIG:
-                messages.append(
-                    Warning(
-                        f"The configuration file is missing the [[{key}]] section.",
-                        hint=f"The {key!r} importer will have nothing to import.",
-                        id=f"layer.W002.{key}",
-                    )
-                )
+        messages.extend(
+            Warning(
+                f"The configuration file is missing the [[{key}]] section.",
+                hint=f"The {key!r} importer will have nothing to import.",
+                id=f"layer.W002.{key}",
+            )
+            for key in ("geojson", "states")
+            if key not in settings.CONFIG
+        )
     return messages
 
 

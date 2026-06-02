@@ -1,24 +1,23 @@
 import json
 import logging
-import typing
 from collections import defaultdict
-from datetime import datetime
-from typing import Optional
+from datetime import date
 
 import strawberry
 import strawberry_django
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.contrib.gis.db.models.functions import MakeValid
 from django.contrib.gis.db.models.aggregates import Union
+from django.contrib.gis.db.models.functions import MakeValid
 from django.core.serializers import serialize
 from django.db.models import F, Q
 from strawberry.scalars import JSON
 from strawberry_django.optimizer import DjangoOptimizerExtension
 
-from . import types
-from layer.models import Data, Geography, Indicators
 from layer.cache_utils import cache_query
+from layer.models import Data, Geography, Indicators
+
+from . import types
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +35,8 @@ def get_district_data(
     data_filter: types.DataFilter,
     geo_filter: types.GeoFilter,
 ) -> list[dict]:
-    """Retrieve district-specific data based on specified filters.
+    """
+    Retrieve district-specific data based on specified filters.
 
     Args:
         indc_filter (types.IndicatorFilter): An IndicatorFilter object used
@@ -49,6 +49,7 @@ def get_district_data(
     Returns:
         list[dict]: A list containing dictionary of districts
             mapping each to it's relevant data fields.
+
     """
     data_list = []
     data_dict = {}
@@ -94,22 +95,22 @@ def get_district_data(
             data_list.append(data_dict)
             data_dict = {}
 
-    data_list = sorted(
+    return sorted(
         data_list,
         key=lambda d: float(d[indc_filter.slug]["value"].split()[0]),
         reverse=True,
     )
 
-    return data_list
 
 
 @cache_query('table_data')
 def get_table_data(
-    indc_filter: Optional[types.IndicatorFilter] = None,
-    data_filter: Optional[types.DataFilter] = None,
-    geo_filter: Optional[types.GeoFilter] = None,
+    indc_filter: types.IndicatorFilter | None = None,
+    data_filter: types.DataFilter | None = None,
+    geo_filter: types.GeoFilter | None = None,
 ) -> list[dict]:
-    """Retrieve data to be displayed on table based on specified filters.
+    """
+    Retrieve data to be displayed on table based on specified filters.
 
     Args:
         indc_filter (types.IndicatorFilter, Optional): An IndicatorFilter object used
@@ -122,6 +123,7 @@ def get_table_data(
     Returns:
         list[dict]: A list containing dictionary of districts
             mapping each to it's relevant data fields.
+
     """
     data_list = []
     data_dict = {}
@@ -187,9 +189,8 @@ def get_table_data(
             data_dict = {}
 
     # Prioritize district values at the top
-    data_list = sorted(data_list, key=lambda d: d.get("type") != "DISTRICT")
+    return sorted(data_list, key=lambda d: d.get("type") != "DISTRICT")
 
-    return data_list
 
 
 @cache_query('time_trends')
@@ -198,7 +199,8 @@ def get_time_trends(
     data_filter: types.DataFilter,
     geo_filter: types.GeoFilter,
 ) -> dict:
-    """Retrieve time trends data based on specified filters.
+    """
+    Retrieve time trends data based on specified filters.
 
     Args:
         indc_filter (types.IndicatorFilter): An IndicatorFilter object used
@@ -211,21 +213,22 @@ def get_time_trends(
     Returns:
         dict: A dictionary containing time trends data aggregated for each
         timestamp based on the specified filters.
+
     """
-    # Parse the string into a datetime object.
-    date_format = "%Y_%m"
-    datetime_object = datetime.strptime(data_filter.data_period, date_format)
+    # Parse the "YYYY_MM" period into a date (first of the month).
+    year, month = (int(part) for part in data_filter.data_period.split("_"))
+    date_object = date(year, month, 1)
     time_list = []
 
     # Get the list of data periods for the required time range.
     if data_filter.period == "3M":
-        for i in range(0, 4):
-            tme = datetime_object - relativedelta(months=i)
+        for i in range(4):
+            tme = date_object - relativedelta(months=i)
             time_list.append(tme.strftime("%Y_%m"))
         time_list.reverse()
     elif data_filter.period == "1Y":
-        for i in range(0, 13):
-            tme = datetime_object - relativedelta(months=i)
+        for i in range(13):
+            tme = date_object - relativedelta(months=i)
             time_list.append(tme.strftime("%Y_%m"))
         time_list.reverse()
     else:
@@ -235,7 +238,7 @@ def get_time_trends(
             .distinct()
             .order_by("custom_ordering")
         )
-        time_list = [time for time in list_queryset]
+        time_list = list(list_queryset)
 
     # Filter the data.
     data_queryset = Data.objects.filter(
@@ -276,7 +279,7 @@ def get_time_trends(
 def get_revenue_data(
     indc_filter: types.IndicatorFilter,
     data_filter: types.DataFilter,
-    geo_filter: Optional[types.GeoFilter] = None,
+    geo_filter: types.GeoFilter | None = None,
 ) -> list[dict]:
     data_list = []
     data_dict = {}
@@ -332,22 +335,22 @@ def get_revenue_data(
             data_list.append(data_dict)
             data_dict = {}
 
-    data_list = sorted(
+    return sorted(
         data_list,
         key=lambda d: float(d[indc_filter.slug]["value"].split()[0]),
         reverse=True,
     )
 
-    return data_list
 
 
 @cache_query('map_data')
 def get_revenue_map_data(
     indc_filter: types.IndicatorFilter,
     data_filter: types.DataFilter,
-    geo_filter: Optional[types.GeoFilter] = None,
+    geo_filter: types.GeoFilter | None = None,
 ) -> dict:
-    """Retrieve revenue-circle map data based on specified filters.
+    """
+    Retrieve revenue-circle map data based on specified filters.
 
     Args:
         indc_filter (types.IndicatorFilter): An IndicatorFilter object used
@@ -361,8 +364,8 @@ def get_revenue_map_data(
     Returns:
         dict: A GeoJSON-like dictionary representing revenue circle features with
         associated indicator data.
-    """
 
+    """
     rcs = list(
         Geography.objects
         .filter(parentId__parentId__code__in=geo_filter.code)
@@ -411,9 +414,10 @@ def get_revenue_map_data(
 def get_district_map_data(
     indc_filter: types.IndicatorFilter,
     data_filter: types.DataFilter,
-    geo_filter: Optional[types.GeoFilter] = None,
+    geo_filter: types.GeoFilter | None = None,
 ) -> dict:
-    """Retrieve district map data based on specified filters.
+    """
+    Retrieve district map data based on specified filters.
 
     Args:
         indc_filter (types.IndicatorFilter): An IndicatorFilter object used
@@ -426,8 +430,8 @@ def get_district_map_data(
     Returns:
         dict: A GeoJSON-like dictionary representing district features with
         associated indicator data.
-    """
 
+    """
     # Convert geography objects to a GeoJson format.
     districts = list(
         Geography.objects.filter(type="DISTRICT", parentId__code__in=geo_filter.code)
@@ -470,8 +474,8 @@ def get_district_map_data(
 
 @cache_query('indicators')
 def get_indicators(
-    indc_filter: Optional[types.IndicatorFilter] = None,
-    state_code: Optional[str] = None,
+    indc_filter: types.IndicatorFilter | None = None,
+    state_code: str | None = None,
 ) -> list:
     """
     Retrieve a list of indicators and associated data from the 'indicator' table.
@@ -492,9 +496,8 @@ def get_indicators(
 
     Note:
         The function also prints the execution time, which might be useful for performance monitoring.
-    """
-    data_list = []
 
+    """
     indcators = Indicators.objects.filter(is_visible=True)
     if state_code:
         indcators = indcators.filter(geography__code=state_code)
@@ -512,10 +515,7 @@ def get_indicators(
         "unit__name",
         "IDS_dataSpace",
     )
-    for data in data_queryset:
-        data_list.append(data)
-
-    return data_list
+    return list(data_queryset)
 
 
 @cache_query('time_periods')
@@ -529,9 +529,8 @@ def get_timeperiod():
     )
 
     # Create CustomDataPeriodList objects directly in the query
-    time_list = [types.CustomDataPeriodList(value=time) for time in data]
+    return [types.CustomDataPeriodList(value=time) for time in data]
 
-    return time_list
 
 
 @cache_query('map_data')
@@ -574,23 +573,21 @@ def get_district_rev_circle(geo_filter: types.GeoFilter):
 
 @cache_query('indicators')
 def get_child_indicators(
-    parent_id: Optional[int] = None, state_code: Optional[str] = None
-) -> typing.List:
-    indicator_list = []
+    parent_id: int | None = None, state_code: str | None = None
+) -> list:
     indicators = Indicators.objects.filter(parent__id=parent_id, is_visible=True)
     if state_code:
         indicators = indicators.filter(geography__code=state_code)
-    for indicator in indicators:
-        indicator_list.append(
-            {
-                "slug": indicator.slug,
-                "name": indicator.name,
-                "description": indicator.long_description,
-                "children": get_child_indicators(indicator.id),
-                "IDS_dataSpace": indicator.IDS_dataSpace,
-            }
-        )
-    return indicator_list
+    return [
+        {
+            "slug": indicator.slug,
+            "name": indicator.name,
+            "description": indicator.long_description,
+            "children": get_child_indicators(indicator.id),
+            "IDS_dataSpace": indicator.IDS_dataSpace,
+        }
+        for indicator in indicators
+    ]
 
 
 @cache_query('states')
@@ -611,8 +608,8 @@ def get_states():
         state_code = state_geography.code
         time_periods = list(
             Data.objects.filter(
-                Q(geography__code=state_code) | 
-                Q(geography__parentId__code=state_code) | 
+                Q(geography__code=state_code) |
+                Q(geography__parentId__code=state_code) |
                 Q(geography__parentId__parentId__code=state_code)
             )
             .values_list("data_period", flat=True)
@@ -644,22 +641,22 @@ def get_states():
 
 
 @strawberry.type
-class Query:  # camelCase
+class Query:
     indicators: JSON = strawberry_django.field(resolver=get_indicators)
-    districtViewData: JSON = strawberry_django.field(resolver=get_district_data)
-    tableData: JSON = strawberry_django.field(resolver=get_table_data)
-    indicatorsByCategory: JSON = strawberry_django.field(resolver=get_child_indicators)
-    districtMapData: JSON = strawberry_django.field(resolver=get_district_map_data)
-    getTimeTrends: JSON = strawberry_django.field(resolver=get_time_trends)
-    revCircleViewData: JSON = strawberry_django.field(resolver=get_revenue_data)
-    revCircleMapData: JSON = strawberry_django.field(resolver=get_revenue_map_data)
-    getDataTimePeriods: list[types.CustomDataPeriodList] = strawberry_django.field(
+    district_view_data: JSON = strawberry_django.field(resolver=get_district_data)
+    table_data: JSON = strawberry_django.field(resolver=get_table_data)
+    indicators_by_category: JSON = strawberry_django.field(resolver=get_child_indicators)
+    district_map_data: JSON = strawberry_django.field(resolver=get_district_map_data)
+    get_time_trends: JSON = strawberry_django.field(resolver=get_time_trends)
+    rev_circle_view_data: JSON = strawberry_django.field(resolver=get_revenue_data)
+    rev_circle_map_data: JSON = strawberry_django.field(resolver=get_revenue_map_data)
+    get_data_time_periods: list[types.CustomDataPeriodList] = strawberry_django.field(
         resolver=get_timeperiod
     )
-    getDistrictRevCircle: JSON = strawberry_django.field(
+    get_district_rev_circle: JSON = strawberry_django.field(
         resolver=get_district_rev_circle
     )
-    getStates: JSON = strawberry_django.field(resolver=get_states)
+    get_states: JSON = strawberry_django.field(resolver=get_states)
 
 
 schema = strawberry.Schema(

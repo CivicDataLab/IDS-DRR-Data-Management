@@ -3,7 +3,12 @@
 import json
 
 from django.conf import settings
-from django.contrib.gis.geos import GEOSGeometry, GeometryCollection, MultiPolygon, Polygon
+from django.contrib.gis.geos import (
+    GeometryCollection,
+    GEOSGeometry,
+    MultiPolygon,
+    Polygon,
+)
 from django.core.management.base import CommandError
 from django.db import connection
 
