@@ -108,6 +108,7 @@ def get_table_data(
     indc_filter: types.IndicatorFilter | None = None,
     data_filter: types.DataFilter | None = None,
     geo_filter: types.GeoFilter | None = None,
+    module: str | None = "flood",
 ) -> list[dict]:
     """
     Retrieve data to be displayed on table based on specified filters.
@@ -128,6 +129,8 @@ def get_table_data(
     data_list = []
     data_dict = {}
     data_obj = Data.objects.filter(indicator__is_visible=True)
+    if module:
+        data_obj = data_obj.filter(module=module)
 
     # Filter by time period
     if data_filter:
@@ -476,6 +479,7 @@ def get_district_map_data(
 def get_indicators(
     indc_filter: types.IndicatorFilter | None = None,
     state_code: str | None = None,
+    module: str | None = "flood",
 ) -> list:
     """
     Retrieve a list of indicators and associated data from the 'indicator' table.
@@ -499,6 +503,8 @@ def get_indicators(
 
     """
     indcators = Indicators.objects.filter(is_visible=True)
+    if module:
+        indcators = indcators.filter(module=module)
     if state_code:
         indcators = indcators.filter(geography__code=state_code)
     if indc_filter:
@@ -514,6 +520,7 @@ def get_indicators(
         "data_source",
         "unit__name",
         "IDS_dataSpace",
+        "module",
     )
     return list(data_queryset)
 
@@ -573,9 +580,13 @@ def get_district_rev_circle(geo_filter: types.GeoFilter):
 
 @cache_query('indicators')
 def get_child_indicators(
-    parent_id: int | None = None, state_code: str | None = None
+    parent_id: int | None = None,
+    state_code: str | None = None,
+    module: str | None = "flood",
 ) -> list:
     indicators = Indicators.objects.filter(parent__id=parent_id, is_visible=True)
+    if module:
+        indicators = indicators.filter(module=module)
     if state_code:
         indicators = indicators.filter(geography__code=state_code)
     return [
@@ -583,7 +594,7 @@ def get_child_indicators(
             "slug": indicator.slug,
             "name": indicator.name,
             "description": indicator.long_description,
-            "children": get_child_indicators(indicator.id),
+            "children": get_child_indicators(indicator.id, state_code, module),
             "IDS_dataSpace": indicator.IDS_dataSpace,
         }
         for indicator in indicators
@@ -626,6 +637,13 @@ def get_states():
         state_centroid = state_geometry.centroid if state_geometry else None
         bounds = _leaflet_bounds(state_geometry.extent if state_geometry else None)
         grandchild = Geography.objects.filter(parentId__parentId__code=state_code).first()
+        modules = list(
+            Indicators.objects.filter(geography=state_geography, is_visible=True)
+            .exclude(module__isnull=True)
+            .values_list("module", flat=True)
+            .distinct()
+            .order_by("module")
+        )
         states.append({
             "name": state_geography.name,
             "slug": state_geography.slug,
@@ -634,6 +652,7 @@ def get_states():
             "center": (state_centroid.y, state_centroid.x) if state_centroid else None,
             "bounds": bounds,
             "resource_id": visible.get(state_geography.name.lower(), ""),
+            "modules": modules,
             "time_periods": time_periods,
             "latest_time_period": time_periods[0] if time_periods else None,
         })

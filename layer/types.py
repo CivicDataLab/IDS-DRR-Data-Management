@@ -29,6 +29,7 @@ class GeoFilter:
 class IndicatorFilter:
     name: str | None
     slug: str | None
+    module: str | None
 
 
 @strawberry_django.filter(models.Data)
@@ -73,6 +74,7 @@ class Indicators:
     department: Optional["Department"] = None
     scheme: Optional["Scheme"] = None
     parent: Optional["Indicators"]
+    module: str | None = None
 
 
 @strawberry_django.type(models.Data, filters=DataFilter)
@@ -83,6 +85,7 @@ class Data:
     geography: "Geography"
     scheme: Optional["Scheme"] = None
     data_period: str | None
+    module: str | None = None
 
 
 @strawberry.type

@@ -18,7 +18,7 @@ from layer.signals import invalidate_data_cache
 style = color_style()
 
 
-def _replace_values(df, indicators, code=None):
+def _replace_values(df, indicators, module, code=None):
     # Get the geographic codes for which to import indicator values.
     codes = [code] if code else df.index.unique().tolist()
 
@@ -51,15 +51,19 @@ def _replace_values(df, indicators, code=None):
     # COPY bypasses Django's ORM, so set added/modified to emulate auto_now_add/auto_now.
     melted["added"] = now
     melted["modified"] = now
+    melted["module"] = module
 
     # Disconnect post_delete signal so Django can DELETE directly without
     # SELECTing all rows first to fire per-instance signals.
     post_delete.disconnect(invalidate_data_cache, sender=Data)
     try:
-        # Delete indicator values matching the loaded geographies and the time periods in the matching rows.
-        print(f"  Deleting indicator values for {len(geographies)} geographies...", end=" ", flush=True)
+        # Delete only this module's values for the loaded geographies and the
+        # time periods in the matching rows, so importing one module never
+        # touches another module's data for the same geography/period.
+        print(f"  Deleting {module!r} indicator values for {len(geographies)} geographies...", end=" ", flush=True)
         start = time.time()
         Data.objects.filter(
+            module=module,
             geography_id__in=list(geographies.values()),
             data_period__in=rows["timeperiod"].unique().tolist(),
         ).delete()
@@ -71,15 +75,18 @@ def _replace_values(df, indicators, code=None):
         # Build a TSV buffer for PostgreSQL COPY, which expects tab-separated
         # values with \N for NULLs and no header row.
         buf = io.StringIO()
-        melted[["value", "indicator_id", "geography_id", "timeperiod", "added", "modified"]].to_csv(
-            buf, sep="\t", na_rep="\\N", header=False, index=False,
-        )
+        melted[
+            ["value", "indicator_id", "geography_id", "timeperiod", "added", "modified", "module"]
+        ].to_csv(buf, sep="\t", na_rep="\\N", header=False, index=False)
         buf.seek(0)
         with connection.cursor() as cursor:
             cursor.copy_from(
                 buf,
                 Data._meta.db_table,  # noqa: SLF001
-                columns=("value", "indicator_id", "geography_id", "data_period", "added", "modified"),
+                columns=(
+                    "value", "indicator_id", "geography_id", "data_period",
+                    "added", "modified", "module",
+                ),
             )
         print(f"{time.time() - start:.1f}s")
     finally:
@@ -90,54 +97,60 @@ def _replace_values(df, indicators, code=None):
 
 def import_values(specs, config_dir, code=None):
     """
-    Import indicator values for each state in ``specs``.
+    Import indicator values for each state/module in ``specs``.
 
-    Each spec is a ``[[states]]`` entry from the configuration file with
-    ``name`` and ``data`` (a path relative to ``config_dir``). Raises
-    ``CommandError`` if a state has no indicators in the database or none
-    of its indicators' slugs appear as columns in the CSV.
+    Each spec is a ``[[states]]`` entry from the configuration file with a
+    ``name`` and a list of ``modules`` (each with ``module`` and a ``data``
+    path relative to ``config_dir``). Raises ``CommandError`` if a module has
+    no indicators in the database or none of its indicators' slugs appear as
+    columns in the CSV. A module whose CSV file does not exist yet is skipped.
     """
     for spec in specs:
-        # Read the configuration.
         name = spec["name"]
-        path = config_dir / spec["data"]
 
-        # Load visible and allow-list indicators, as a {slug: pk} dict.
-        indicators = dict(
-            Indicators.objects.filter(geography__name__iexact=name)
-            .filter(Q(is_visible=True) | Q(slug__in=settings.WHITELIST_INDICATORS))
-            .values_list("slug", "pk")
-        )
-        if not indicators:
-            raise CommandError(
-                f"No indicators in the database for state {name!r}. "
-                f"Run 'manage.py import_indicators' first."
+        for module_spec in spec.get("modules", []):
+            module = module_spec["module"]
+            path = config_dir / module_spec["data"]
+            if not path.is_file():
+                print(style.WARNING(f"  Skipping {module!r} for {name!r}: {path} not found"))
+                continue
+
+            # Load visible and allow-list indicators for this module, as a {slug: pk} dict.
+            indicators = dict(
+                Indicators.objects.filter(geography__name__iexact=name, module=module)
+                .filter(Q(is_visible=True) | Q(slug__in=settings.WHITELIST_INDICATORS))
+                .values_list("slug", "pk")
+            )
+            if not indicators:
+                raise CommandError(
+                    f"No {module!r} indicators in the database for state {name!r}. "
+                    f"Run 'manage.py import_indicators' first."
+                )
+
+            # Read the indicator values.
+            print(f"Importing {module!r} {(code or name)!r} indicator values from {path} ...")
+            df = pd.read_csv(
+                path,
+                index_col="object-id",
+                dtype={"object-id": str},
+                low_memory=False,
             )
 
-        # Read the indicator values.
-        print(f"Importing {(code or name)!r} indicator values from {path} ...")
-        df = pd.read_csv(
-            path,
-            index_col="object-id",
-            dtype={"object-id": str},
-            low_memory=False,
-        )
+            # Determine which indicators are present.
+            present = {}
+            missing = []
+            for slug, pk in indicators.items():
+                if slug in df.columns:
+                    present[slug] = pk
+                else:
+                    missing.append(slug)
+            if missing:
+                print(style.WARNING(f"  Missing indicators, by slug: {', '.join(missing)}"))
+            if not present:
+                raise CommandError(
+                    f"None of the existing {module!r} indicators for state {name!r} "
+                    f"appear as columns in {path}."
+                )
 
-        # Determine which indicators are present.
-        present = {}
-        missing = []
-        for slug, pk in indicators.items():
-            if slug in df.columns:
-                present[slug] = pk
-            else:
-                missing.append(slug)
-        if missing:
-            print(style.WARNING(f"  Missing indicators, by slug: {', '.join(missing)}"))
-        if not present:
-            raise CommandError(
-                f"None of the existing indicators for state {name!r} "
-                f"appear as columns in {path}."
-            )
-
-        # Replace the indicator values.
-        _replace_values(df, present, code)
+            # Replace the indicator values.
+            _replace_values(df, present, module, code)

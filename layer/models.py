@@ -92,6 +92,14 @@ class Indicators(models.Model):
         blank=True,
         help_text='Dataset link from the indicators CSV column "IDS_dataSpace".',
     )
+    module = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        default="flood",
+        db_index=True,
+        help_text="Hazard module this indicator belongs to, e.g. 'flood', 'heat'.",
+    )
 
     def save(self, *args, **kwargs):
         indc_obj = Indicators.objects.last()
@@ -116,8 +124,17 @@ class Data(models.Model):
     scheme = models.ForeignKey(
         Scheme, on_delete=models.PROTECT, null=True, blank=True)
     data_period = models.CharField(max_length=100, null=True, blank=True)
+    module = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        default="flood",
+        db_index=True,
+        help_text="Hazard module (mirrors indicator.module), e.g. 'flood', 'heat'.",
+    )
 
     class Meta:
         indexes = [
             models.Index(fields=["geography", "data_period"]),
+            models.Index(fields=["module", "data_period"]),
         ]
