@@ -57,16 +57,20 @@ def _replace_values(df, indicators, module, code=None):
     # SELECTing all rows first to fire per-instance signals.
     post_delete.disconnect(invalidate_data_cache, sender=Data)
     try:
-        # Delete only this module's values for the loaded geographies and the
-        # time periods in the matching rows, so importing one module never
-        # touches another module's data for the same geography/period.
+        # Full state/module import: replace every period for these geographies
+        # (the CSV is the source of truth). District-only import (--district):
+        # only replace the periods present in the file.
         print(f"  Deleting {module!r} indicator values for {len(geographies)} geographies...", end=" ", flush=True)
         start = time.time()
-        Data.objects.filter(
+        delete_qs = Data.objects.filter(
             module=module,
             geography_id__in=list(geographies.values()),
-            data_period__in=rows["timeperiod"].unique().tolist(),
-        ).delete()
+        )
+        if code:
+            delete_qs = delete_qs.filter(
+                data_period__in=rows["timeperiod"].unique().tolist(),
+            )
+        delete_qs.delete()
         print(f"{time.time() - start:.1f}s")
 
         # COPY indicator values.

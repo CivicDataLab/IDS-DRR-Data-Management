@@ -53,12 +53,13 @@ def get_district_data(
     """
     data_list = []
     data_dict = {}
-
     if indc_filter:
         dataset_obj = Data.objects.filter(
             Q(indicator__slug=indc_filter.slug)
             | Q(indicator__parent__slug=indc_filter.slug)
         )
+    if indc_filter and indc_filter.module:
+        dataset_obj = dataset_obj.filter(module=indc_filter.module)
     if data_filter:
         dataset_obj = dataset_obj.filter(data_period=data_filter.data_period)
 
@@ -108,7 +109,6 @@ def get_table_data(
     indc_filter: types.IndicatorFilter | None = None,
     data_filter: types.DataFilter | None = None,
     geo_filter: types.GeoFilter | None = None,
-    module: str | None = "flood",
 ) -> list[dict]:
     """
     Retrieve data to be displayed on table based on specified filters.
@@ -129,8 +129,8 @@ def get_table_data(
     data_list = []
     data_dict = {}
     data_obj = Data.objects.filter(indicator__is_visible=True)
-    if module:
-        data_obj = data_obj.filter(module=module)
+    if indc_filter and indc_filter.module:
+        data_obj = data_obj.filter(module=indc_filter.module)
 
     # Filter by time period
     if data_filter:
@@ -251,6 +251,8 @@ def get_time_trends(
         indicator__slug=indc_filter.slug,
         data_period__in=time_list,
     )
+    if indc_filter and indc_filter.module:
+        data_queryset = data_queryset.filter(module=indc_filter.module)
 
     # Creating initial dict structure.
     data_dict = {}
@@ -306,8 +308,10 @@ def get_revenue_data(
     rc_data_queryset = Data.objects.filter(
         Q(indicator__parent__slug=indc_filter.slug)
         | Q(indicator__slug=indc_filter.slug),
+        data_period=data_filter.data_period,
     )
-    rc_data_queryset = rc_data_queryset.filter(data_period=data_filter.data_period)
+    if indc_filter and indc_filter.module:
+        rc_data_queryset = rc_data_queryset.filter(module=indc_filter.module)
 
     for geo in geo_queryset:
         for obj in rc_data_queryset.filter(geography=geo, indicator__is_visible=True):
@@ -382,6 +386,8 @@ def get_revenue_map_data(
         data_period=data_filter.data_period,
         geography__parentId__parentId__code__in=geo_filter.code,
     ).select_related("geography")
+    if indc_filter and indc_filter.module:
+        rc_data = rc_data.filter(module=indc_filter.module)
 
     # Create a dictionary to store indicator data by geography code
     rc_data_map = {data.geography.code: data for data in rc_data}
@@ -449,6 +455,8 @@ def get_district_map_data(
         geography__type="DISTRICT",
         geography__parentId__code__in=geo_filter.code,
     ).select_related("geography")
+    if indc_filter and indc_filter.module:
+        district_data = district_data.filter(module=indc_filter.module)
 
     # Create a dictionary to store indicator data by geography code
     district_data_map = {data.geography.code: data for data in district_data}
@@ -479,7 +487,6 @@ def get_district_map_data(
 def get_indicators(
     indc_filter: types.IndicatorFilter | None = None,
     state_code: str | None = None,
-    module: str | None = "flood",
 ) -> list:
     """
     Retrieve a list of indicators and associated data from the 'indicator' table.
@@ -503,8 +510,8 @@ def get_indicators(
 
     """
     indcators = Indicators.objects.filter(is_visible=True)
-    if module:
-        indcators = indcators.filter(module=module)
+    if indc_filter and indc_filter.module:
+        indcators = indcators.filter(module=indc_filter.module)
     if state_code:
         indcators = indcators.filter(geography__code=state_code)
     if indc_filter:
@@ -526,11 +533,13 @@ def get_indicators(
 
 
 @cache_query('time_periods')
-def get_timeperiod():
+def get_timeperiod(module: str | None = "flood"):
     # Use annotation to create a custom field for sorting
+    data = Data.objects.values_list("data_period", flat=True)
+    if module:
+        data = data.filter(module=module)
     data = (
-        Data.objects.values_list("data_period", flat=True)
-        .annotate(custom_ordering=F("data_period"))
+        data.annotate(custom_ordering=F("data_period"))
         .distinct()
         .order_by("-custom_ordering")
     )
@@ -601,8 +610,8 @@ def get_child_indicators(
     ]
 
 
-@cache_query('states')
-def get_states():
+# @cache_query('states')
+def get_states(module: str | None = "flood"):
     specs = settings.CONFIG.get("states", [])
     visible = {spec["name"].lower(): spec.get("resource_id", "") for spec in specs if not spec.get("hidden", False)}
     if not visible:
@@ -617,13 +626,15 @@ def get_states():
     states = []
     for state_geography in state_geographies:
         state_code = state_geography.code
-        time_periods = list(
-            Data.objects.filter(
-                Q(geography__code=state_code) |
-                Q(geography__parentId__code=state_code) |
-                Q(geography__parentId__parentId__code=state_code)
+        time_periods_qs = Data.objects.filter(
+                Q(geography__code=state_code)
+                | Q(geography__parentId__code=state_code)
+                | Q(geography__parentId__parentId__code=state_code)
             )
-            .values_list("data_period", flat=True)
+        if module:
+            time_periods_qs = time_periods_qs.filter(Q(module=module))
+        time_periods = list(
+            time_periods_qs.values_list("data_period", flat=True)
             .annotate(custom_ordering=F("data_period"))
             .distinct()
             .order_by("-custom_ordering")
