@@ -610,7 +610,7 @@ def get_child_indicators(
     ]
 
 
-# @cache_query('states')
+@cache_query('states')
 def get_states(module: str | None = "flood"):
     specs = settings.CONFIG.get("states", [])
     visible = {spec["name"].lower(): spec.get("resource_id", "") for spec in specs if not spec.get("hidden", False)}
