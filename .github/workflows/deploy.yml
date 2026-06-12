@@ -1,0 +1,102 @@
+name: Deploy
+
+# Build the image, push it to GHCR, deploy to the target EC2 host over SSH, and
+# (on dev) run the QA smoke suite against the freshly deployed dev environment.
+#
+#   push to dev  -> environment "development" -> tag :dev  -> dev EC2 host  -> smoke gate
+#   push to main -> environment "production"  -> tag :prod -> prod EC2 host
+#
+# The host already has a docker-compose.yml whose service image points at
+# ghcr.io/<repo>:<dev|prod>; this workflow only pulls and restarts it.
+
+on:
+  push:
+    branches: [dev, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-push:
+    name: Build & push image
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+    steps:
+      - uses: actions/checkout@v6.0.3
+
+      # ghcr.io image paths must be lowercase; the repo slug is mixed-case.
+      - id: meta
+        run: |
+          echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+          echo "env_tag=${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/build-push-action@v7
+        with:
+          push: true
+          file: Dockerfile
+          tags: |
+            ghcr.io/${{ steps.meta.outputs.name }}:${{ steps.meta.outputs.env_tag }}
+            ghcr.io/${{ steps.meta.outputs.name }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to EC2
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+    steps:
+      - name: Pull, migrate & restart on host
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: TOKEN,REG_USER,DEPLOY_PATH,SERVICE
+          script: |
+            set -euo pipefail
+            echo "$TOKEN" | docker login ghcr.io -u "$REG_USER" --password-stdin
+            cd "$DEPLOY_PATH"
+            docker compose pull "$SERVICE"
+            # Django migrations are not run by the container entrypoint, so apply
+            # them explicitly against the freshly pulled image before restarting.
+            docker compose run --rm "$SERVICE" python manage.py migrate --noinput
+            docker compose up -d "$SERVICE"
+            docker image prune -f
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REG_USER: ${{ github.actor }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          SERVICE: ${{ vars.COMPOSE_SERVICE }}
+
+  dev-smoke:
+    name: Smoke (dev)
+    needs: deploy
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    steps:
+      # Triggers IDS-DRR-QA-Automation's dispatch.yml and blocks until it
+      # finishes; this job (and its check) is green only if smoke passes.
+      - uses: convictional/trigger-workflow-and-wait@f69fa9eedd3c62a599220f4d5745230e237904be # v1.6.5
+        with:
+          owner: CivicDataLab
+          repo: IDS-DRR-QA-Automation
+          github_token: ${{ secrets.QA_REPO_PAT }}
+          workflow_file_name: dispatch.yml
+          ref: main
+          wait_interval_seconds: 30
+          client_payload: '{"scope":"smoke","target_env":"dev"}'
