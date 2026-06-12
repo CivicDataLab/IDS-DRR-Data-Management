@@ -1,0 +1,29 @@
+name: QA Gate
+
+# Gate for promoting dev -> main. On a PR targeting main, run the full QA
+# regression suite against the dev environment and block the merge until it
+# passes. Mark the "qa-gate" check as a required status check on the main
+# branch (Settings -> Branches) so the PR cannot be merged while it is red.
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: qa-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qa-gate:
+    name: Full regression (dev)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: convictional/trigger-workflow-and-wait@f69fa9eedd3c62a599220f4d5745230e237904be # v1.6.5
+        with:
+          owner: CivicDataLab
+          repo: IDS-DRR-QA-Automation
+          github_token: ${{ secrets.QA_REPO_PAT }}
+          workflow_file_name: dispatch.yml
+          ref: main
+          wait_interval_seconds: 60
+          client_payload: '{"scope":"regression","target_env":"dev"}'
