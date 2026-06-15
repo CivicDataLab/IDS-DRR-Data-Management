@@ -126,3 +126,4 @@ class IndicatorCategory:
     description: str | None
     children: list["IndicatorCategory"]
     ids_data_space: str | None = strawberry.field(name="IDS_dataSpace")
+    category: str | None = None

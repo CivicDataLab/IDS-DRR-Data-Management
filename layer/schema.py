@@ -556,6 +556,7 @@ def get_indicators(
         "unit__name",
         "IDS_dataSpace",
         "module",
+        "category",
     )
     return [
         types.Indicator(
@@ -646,16 +647,17 @@ def get_child_indicators(
             children_by_parent_id[indicator.parent_id].append(indicator)
 
     def build(indicator):
+        children = [build(child) for child in children_by_parent_id[indicator.id]]
         return types.IndicatorCategory(
             slug=indicator.slug,
             name=indicator.name,
             description=indicator.long_description,
-            children=[build(child) for child in children_by_parent_id[indicator.id]],
+            children=children,
             ids_data_space=indicator.IDS_dataSpace,
+            category=indicator.category if not children else None,
         )
 
     return [build(indicator) for indicator in visible.filter(parent__id=parent_id)]
-
 
 @cache_query('states')
 def get_states(module: str | None = "flood"):
