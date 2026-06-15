@@ -101,3 +101,23 @@ class State:
     resource_id: str = strawberry.field(name="resource_id")
     time_periods: list[str] = strawberry.field(name="time_periods")
     latest_time_period: str | None = strawberry.field(name="latest_time_period")
+
+
+@strawberry.type
+class Indicator:
+    name: str
+    slug: str
+    long_description: str | None = strawberry.field(name="long_description")
+    short_description: str | None = strawberry.field(name="short_description")
+    data_source: str | None = strawberry.field(name="data_source")
+    unit_name: str | None = strawberry.field(name="unit__name")
+    ids_data_space: str | None = strawberry.field(name="IDS_dataSpace")
+
+
+@strawberry.type
+class IndicatorCategory:
+    slug: str
+    name: str
+    description: str | None
+    children: list["IndicatorCategory"]
+    ids_data_space: str | None = strawberry.field(name="IDS_dataSpace")

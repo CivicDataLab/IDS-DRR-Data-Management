@@ -542,7 +542,18 @@ def get_indicators(
         "unit__name",
         "IDS_dataSpace",
     )
-    return list(data_queryset)
+    return [
+        types.Indicator(
+            name=row["name"],
+            slug=row["slug"],
+            long_description=row["long_description"],
+            short_description=row["short_description"],
+            data_source=row["data_source"],
+            unit_name=row["unit__name"],
+            ids_data_space=row["IDS_dataSpace"],
+        )
+        for row in data_queryset
+    ]
 
 
 @cache_query('time_periods')
@@ -612,13 +623,13 @@ def get_child_indicators(
             children_by_parent_id[indicator.parent_id].append(indicator)
 
     def build(indicator):
-        return {
-            "slug": indicator.slug,
-            "name": indicator.name,
-            "description": indicator.long_description,
-            "children": [build(child) for child in children_by_parent_id[indicator.id]],
-            "IDS_dataSpace": indicator.IDS_dataSpace,
-        }
+        return types.IndicatorCategory(
+            slug=indicator.slug,
+            name=indicator.name,
+            description=indicator.long_description,
+            children=[build(child) for child in children_by_parent_id[indicator.id]],
+            ids_data_space=indicator.IDS_dataSpace,
+        )
 
     return [build(indicator) for indicator in visible.filter(parent__id=parent_id)]
 
@@ -699,10 +710,14 @@ def get_states():
 
 @strawberry.type
 class Query:
-    indicators: JSON = strawberry_django.field(resolver=get_indicators)
+    indicators: list[types.Indicator] = strawberry_django.field(
+        resolver=get_indicators
+    )
     district_view_data: JSON = strawberry_django.field(resolver=get_district_data)
     table_data: JSON = strawberry_django.field(resolver=get_table_data)
-    indicators_by_category: JSON = strawberry_django.field(resolver=get_child_indicators)
+    indicators_by_category: list[types.IndicatorCategory] = strawberry_django.field(
+        resolver=get_child_indicators
+    )
     district_map_data: JSON = strawberry_django.field(resolver=get_district_map_data)
     get_time_trends: JSON = strawberry_django.field(resolver=get_time_trends)
     rev_circle_view_data: JSON = strawberry_django.field(resolver=get_revenue_data)
