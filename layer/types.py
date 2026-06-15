@@ -88,3 +88,16 @@ class Data:
 @strawberry.type
 class CustomDataPeriodList:
     value: str
+
+
+@strawberry.type
+class State:
+    name: str
+    slug: str
+    code: str
+    center: list[float] | None
+    bounds: list[list[float]] | None
+    child_type: str | None = strawberry.field(name="child_type")
+    resource_id: str = strawberry.field(name="resource_id")
+    time_periods: list[str] = strawberry.field(name="time_periods")
+    latest_time_period: str | None = strawberry.field(name="latest_time_period")

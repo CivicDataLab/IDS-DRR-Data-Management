@@ -681,19 +681,19 @@ def get_states():
     for state_geography in state_geographies:
         bbox = bbox_by_state_id.get(state_geography.id)
         time_periods = periods_by_state_code.get(state_geography.code, [])
-        states.append({
-            "name": state_geography.name,
-            "slug": state_geography.slug,
-            "code": state_geography.code,
-            "child_type": child_type_by_state_id.get(state_geography.id),
-            "center": ((bbox[1] + bbox[3]) / 2, (bbox[0] + bbox[2]) / 2)
+        states.append(types.State(
+            name=state_geography.name,
+            slug=state_geography.slug,
+            code=state_geography.code,
+            child_type=child_type_by_state_id.get(state_geography.id),
+            center=[(bbox[1] + bbox[3]) / 2, (bbox[0] + bbox[2]) / 2]
             if bbox
             else None,
-            "bounds": _leaflet_bounds(bbox),
-            "resource_id": visible.get(state_geography.name.lower(), ""),
-            "time_periods": time_periods,
-            "latest_time_period": time_periods[0] if time_periods else None,
-        })
+            bounds=_leaflet_bounds(bbox),
+            resource_id=visible.get(state_geography.name.lower(), ""),
+            time_periods=time_periods,
+            latest_time_period=time_periods[0] if time_periods else None,
+        ))
     return states
 
 
@@ -713,7 +713,7 @@ class Query:
     get_district_rev_circle: JSON = strawberry_django.field(
         resolver=get_district_rev_circle
     )
-    get_states: JSON = strawberry_django.field(resolver=get_states)
+    get_states: list[types.State] = strawberry_django.field(resolver=get_states)
 
 
 schema = strawberry.Schema(
