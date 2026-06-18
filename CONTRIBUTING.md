@@ -74,3 +74,5 @@ pre-commit run --all-files
 ## License
 
 By contributing, you agree that your contributions will be licensed under the [GNU AGPL v3.0](LICENSE).
+
+By submitting a contribution, you certify that you wrote it or otherwise have the right to submit it under the project's license (see the [Developer Certificate of Origin](https://developercertificate.org/)).
