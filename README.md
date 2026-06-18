@@ -1,16 +1,29 @@
 # IDS-DRR Data Management
-Intelligent Data Solution - Disaster Risk Reduction(IDS-DRR) is a system to assist flood management through data-driven ways. The repository contains the code for the data management layer which serves as a bridge between data sources and client applications.
 
-### Import Data
-Make migration for layers app: `python manage.py makemigrations`
-Run migrations: `python manage.py migrate`
-Import data: `python manage.py migrate_data`
-Import data for specific state: `python manage.py migrate_data --state assam|HP`
-Import data for specific district from a state: `python manage.py migrate_data --state assam --district 201`
+Intelligent Data Solution for Disaster Risk Reduction (IDS-DRR) is a platform that assists disaster management decision-making through data-driven analytics. This repository contains the **data management layer**: the backend that ingests geographic and indicator data and serves them via a GraphQL API to the [IDS-DRR Frontend](https://github.com/CivicDataLab/IDS-DRR-Frontend).
 
-## License:
-All content in this repository is licensed under
-[![GNU-AGPL](https://www.gnu.org/graphics/agplv3-155x51.png)](LICENSE.md)
+## Quick start
 
+Using Docker:
 
-If you want to contribute, please contact us at info@civicdatalab.in
+```bash
+git clone https://github.com/CivicDataLab/IDS-DRR-Data-Management.git
+cd IDS-DRR-Data-Management
+
+docker compose up -d --build
+docker exec context_layer_Backend python manage.py makemigrations
+docker exec context_layer_Backend python manage.py migrate
+docker exec context_layer_Backend python manage.py import_geojson
+docker exec context_layer_Backend python manage.py import_indicators
+docker exec context_layer_Backend python manage.py import_data
+```
+
+The API is then available at <http://localhost:8000>.
+
+For full documentation (environment variables, deployment configuration (`config.toml`), and data import schemas), see the [Data Management API docs](https://ids-drr.readthedocs.io/en/latest/platform/data-management.html).
+
+If you want to contribute, please contact us at info@civicdatalab.in.
+
+## License
+
+This project is licensed under the [GNU Affero General Public License v3.0](./LICENSE) (AGPL-3.0) © CivicDataLab.
