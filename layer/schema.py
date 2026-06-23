@@ -557,6 +557,8 @@ def get_indicators(
         "IDS_dataSpace",
         "module",
         "category",
+        "is_raster_available",
+        "raster_polarity",
     )
     return [
         types.Indicator(
@@ -568,6 +570,8 @@ def get_indicators(
             unit_name=row["unit__name"],
             ids_data_space=row["IDS_dataSpace"],
             module=row["module"],
+            is_raster_available=row["is_raster_available"],
+            raster_polarity=row["raster_polarity"],
         )
         for row in data_queryset
     ]
@@ -655,6 +659,8 @@ def get_child_indicators(
             children=children,
             ids_data_space=indicator.IDS_dataSpace,
             category=indicator.category if not children else None,
+            is_raster_available=indicator.is_raster_available,
+            raster_polarity=indicator.raster_polarity,
         )
 
     return [build(indicator) for indicator in visible.filter(parent__id=parent_id)]

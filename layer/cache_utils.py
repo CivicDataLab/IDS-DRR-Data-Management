@@ -92,6 +92,12 @@ def invalidate_cache_pattern(pattern: str, *, verbose: bool = False):
         logger.exception("Error invalidating cache pattern %s", pattern)
 
 
+def invalidate_raster_caches(*, verbose: bool = False):
+    """Invalidate on-disk raster stats and rendered tile caches."""
+    for pattern in ("raster_stats:*", "raster_tile:*"):
+        invalidate_cache_pattern(pattern, verbose=verbose)
+
+
 def invalidate_data_caches(*, verbose: bool = False):
     """
     Invalidate all data-dependent caches.
@@ -113,6 +119,7 @@ def invalidate_data_caches(*, verbose: bool = False):
     ]
     for pattern in patterns:
         invalidate_cache_pattern(pattern, verbose=verbose)
+    invalidate_raster_caches(verbose=verbose)
 
 
 def invalidate_geography_caches(*, verbose: bool = False):
@@ -151,6 +158,7 @@ def invalidate_indicator_caches(*, verbose: bool = False):
     ]
     for pattern in patterns:
         invalidate_cache_pattern(pattern, verbose=verbose)
+    invalidate_raster_caches(verbose=verbose)
 
 
 def clear_all_caches():

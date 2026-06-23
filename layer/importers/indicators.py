@@ -27,6 +27,14 @@ def clean_value(value):
     return str(value).strip() or None
 
 
+def raster_polarity_from_csv(value) -> bool:
+    """Map CSV ``rasterPolarity``: ``y`` → True (normal), ``n`` → False (inverted)."""
+    polarity = clean_value(value)
+    if polarity is None:
+        return True
+    return polarity.lower() != "n"
+
+
 def import_indicators(specs, config_dir):
     """
     Import indicator definitions for each state/module in ``specs``.
@@ -97,6 +105,12 @@ def import_indicators(specs, config_dir):
                         "data_source": str(row.datasource).strip() or None,
                         "parent": parent,
                         "is_visible": str(row.visible_on_platform) == "y",
+                        "is_raster_available": str(
+                            getattr(row, "isRasterAvailable", "n")
+                        ).lower() == "y",
+                        "raster_polarity": raster_polarity_from_csv(
+                            getattr(row, "rasterPolarity", None)
+                        ),
                         "IDS_dataSpace": clean_value(getattr(row, "IDS_dataSpace", None)),
                     },
                 )

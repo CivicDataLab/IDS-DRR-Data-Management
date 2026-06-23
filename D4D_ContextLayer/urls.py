@@ -28,5 +28,12 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("graphql", GraphQLView.as_view(schema=schema)),
     path("chart-types/<str:chart_type>", views.chart_type_geojson, name="chart_type_geojson"),
+    path("raster/metadata", views.raster_metadata, name="raster_metadata"),
+    path("raster/value", views.raster_value, name="raster_value"),
+    path(
+        "raster/tiles/<int:z>/<int:x>/<int:y>.png",
+        views.raster_tile,
+        name="raster_tile",
+    ),
     path("", include("plugin.urls")),
 ]

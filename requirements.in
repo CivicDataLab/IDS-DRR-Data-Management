@@ -8,6 +8,7 @@ pydantic
 python-dateutil
 python-dotenv
 requests
+rio-tiler>=6,<7
 strawberry-graphql
 strawberry-graphql-django
 uvicorn

@@ -75,6 +75,8 @@ class Indicators:
     scheme: Optional["Scheme"] = None
     parent: Optional["Indicators"]
     module: str | None = None
+    is_raster_available: auto
+    raster_polarity: auto
 
 
 @strawberry_django.type(models.Data, filters=DataFilter)
@@ -117,6 +119,8 @@ class Indicator:
     unit_name: str | None = strawberry.field(name="unit__name")
     ids_data_space: str | None = strawberry.field(name="IDS_dataSpace")
     module: str | None = None
+    is_raster_available: bool = strawberry.field(name="is_raster_available")
+    raster_polarity: bool = strawberry.field(name="raster_polarity")
 
 
 @strawberry.type
@@ -127,3 +131,5 @@ class IndicatorCategory:
     children: list["IndicatorCategory"]
     ids_data_space: str | None = strawberry.field(name="IDS_dataSpace")
     category: str | None = None
+    is_raster_available: bool = strawberry.field(name="is_raster_available")
+    raster_polarity: bool = strawberry.field(name="raster_polarity")
