@@ -591,7 +591,8 @@ def get_timeperiod(module: str | None = "flood", state_code: str | None = None):
     if state_code:
         data = data.filter(
             Q(geography__code=state_code)
-            | Q(geography__code__startswith=f"{state_code}-")
+            | Q(geography__parentId__code=state_code)
+            | Q(geography__parentId__parentId__code=state_code)
         )
     data = (
         data.annotate(custom_ordering=F("data_period"))
@@ -648,7 +649,6 @@ def get_child_indicators(
     state_code: str | None = None,
     module: str | None = "flood",
 ) -> list:
-    print("module", module)
     visible = Indicators.objects.filter(is_visible=True)
     if module:
         visible = visible.filter(module=module)
