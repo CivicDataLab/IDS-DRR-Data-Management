@@ -43,6 +43,13 @@ def _group_data_by_geography_code(
     return grouped
 
 
+def _display_value(value, unit: str = "") -> str:
+    """Format a Data.value for API responses (None → empty string)."""
+    if value is None:
+        return ""
+    return f"{value} {unit}".strip() if unit else str(value)
+
+
 @cache_query('table_data')
 def get_district_data(
     indc_filter: types.IndicatorFilter,
@@ -106,19 +113,18 @@ def get_district_data(
             geography_type: geo.name,
             f"{geography_type.replace(' ', '-')}-code": geo.code,
         }
+        sort_key = float("-inf")
         for obj in rows:
             unit = obj.indicator.unit.name if obj.indicator.unit else ""
+            if obj.indicator.slug == indc_filter.slug and obj.value is not None:
+                sort_key = obj.value
             data_dict[obj.indicator.slug] = {
-                "value": f"{obj.value} {unit}" if unit else str(obj.value),
+                "value": _display_value(obj.value, unit),
                 "title": obj.indicator.name,
             }
-        data_list.append(data_dict)
+        data_list.append((sort_key, data_dict))
 
-    return sorted(
-        data_list,
-        key=lambda d: float(d[indc_filter.slug]["value"].split()[0]),
-        reverse=True,
-    )
+    return [row for _, row in sorted(data_list, key=lambda item: item[0], reverse=True)]
 
 
 
@@ -200,7 +206,7 @@ def get_table_data(
         for obj in rows:
             unit = obj.indicator.unit.name if obj.indicator.unit else ""
             data_dict[obj.indicator.slug] = {
-                "value": f"{obj.value} {unit}" if unit else str(obj.value),
+                "value": _display_value(obj.value, unit),
                 "title": obj.indicator.name,
             }
 
@@ -362,20 +368,19 @@ def get_revenue_data(
             data_dict[parent_type_slug] = parent.name
             data_dict[f"{parent_type_slug}-code"] = parent.code
 
+        sort_key = float("-inf")
         for obj in rows:
             unit = obj.indicator.unit.name if obj.indicator.unit else ""
+            if obj.indicator.slug == indc_filter.slug and obj.value is not None:
+                sort_key = obj.value
             data_dict[obj.indicator.slug] = {
-                "value": f"{obj.value} {unit}" if unit else str(obj.value),
+                "value": _display_value(obj.value, unit),
                 "title": obj.indicator.name,
             }
 
-        data_list.append(data_dict)
+        data_list.append((sort_key, data_dict))
 
-    return sorted(
-        data_list,
-        key=lambda d: float(d[indc_filter.slug]["value"].split()[0]),
-        reverse=True,
-    )
+    return [row for _, row in sorted(data_list, key=lambda item: item[0], reverse=True)]
 
 
 
@@ -578,11 +583,16 @@ def get_indicators(
 
 
 @cache_query('time_periods')
-def get_timeperiod(module: str | None = "flood"):
+def get_timeperiod(module: str | None = "flood", state_code: str | None = None):
     # Use annotation to create a custom field for sorting
     data = Data.objects.values_list("data_period", flat=True)
     if module:
         data = data.filter(module=module)
+    if state_code:
+        data = data.filter(
+            Q(geography__code=state_code)
+            | Q(geography__code__startswith=f"{state_code}-")
+        )
     data = (
         data.annotate(custom_ordering=F("data_period"))
         .distinct()
