@@ -37,7 +37,8 @@ services:
     build: .
     restart: always
     container_name: "context_layer_Backend"
-    command: python manage.py runserver 0.0.0.0:8000
+    command: >-
+      bash -c "mkdir -p /usr/local/lib/python3.12/site-packages/plugin/assets/charts && python manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/code
     ports:
