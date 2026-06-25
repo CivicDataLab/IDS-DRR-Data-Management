@@ -336,8 +336,8 @@ def get_revenue_data(
         Q(indicator__parent__slug=indc_filter.slug)
         | Q(indicator__slug=indc_filter.slug),
         indicator__is_visible=True,
+        data_period=data_filter.data_period,
     )
-    rc_data_queryset = rc_data_queryset.filter(data_period=data_filter.data_period)
     if indc_filter and indc_filter.module:
         rc_data_queryset = rc_data_queryset.filter(module=indc_filter.module)
 
@@ -542,17 +542,17 @@ def get_indicators(
         The function also prints the execution time, which might be useful for performance monitoring.
 
     """
-    indcators = Indicators.objects.filter(is_visible=True)
+    indicators = Indicators.objects.filter(is_visible=True)
     if indc_filter and indc_filter.module:
-        indcators = indcators.filter(module=indc_filter.module)
+        indicators = indicators.filter(module=indc_filter.module)
     if state_code:
-        indcators = indcators.filter(geography__code=state_code)
+        indicators = indicators.filter(geography__code=state_code)
     if indc_filter:
-        indcators = indcators.filter(
+        indicators = indicators.filter(
             Q(slug=indc_filter.slug) | Q(parent__slug=indc_filter.slug)
         )
 
-    data_queryset = indcators.values(
+    data_queryset = indicators.values(
         "name",
         "slug",
         "long_description",
