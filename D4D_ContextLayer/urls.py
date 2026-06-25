@@ -3,6 +3,7 @@ URL configuration for D4D_ContextLayer project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/4.2/topics/http/urls/
+
 Examples:
 Function views
     1. Add an import:  from my_app import views
@@ -13,16 +14,19 @@ Class-based views
 Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+
 """
+
 from django.contrib import admin
-from django.urls import path, re_path
+from django.urls import include, path
+from strawberry.django.views import GraphQLView
 
 from layer import views
 from layer.schema import schema
-from strawberry.django.views import GraphQLView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("graphql", GraphQLView.as_view(schema=schema)),
-    path("report", views.generate_report)
+    path("chart-types/<str:chart_type>", views.chart_type_geojson, name="chart_type_geojson"),
+    path("", include("plugin.urls")),
 ]

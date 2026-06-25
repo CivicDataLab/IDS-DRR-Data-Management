@@ -10,36 +10,52 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
-from pathlib import Path
 import os
+import tomllib
+from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
+from pydantic import ValidationError
+
+from D4D_ContextLayer.config import Config
 
 # Load environment variables from .env file
 load_dotenv()
 
+production = os.getenv("DJANGO_ENV") == "production"
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+CONFIG_PATH = Path(os.getenv("CONFIG_PATH", BASE_DIR / "config.toml"))
+CONFIG_DIR = CONFIG_PATH.parent
+CONFIG = tomllib.loads(CONFIG_PATH.read_text()) if CONFIG_PATH.is_file() else {}
+
+try:
+    Config.model_validate(CONFIG)
+except ValidationError as exc:
+    raise ImproperlyConfigured(f"Invalid {CONFIG_PATH}:\n{exc}") from exc
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-pn452gc08m0cfvwv#ti*$r$-0sx$_c%(ptt&gap^gg=f4p7yql"
+SECRET_KEY = os.getenv("SECRET_KEY", "!!!SECRET_KEY!!!")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", str(not production)) == "True"
 
-ALLOWED_HOSTS = ["*"]
-CHART_API_BASE_URL = os.getenv("CHART_API_BASE_URL")
+ALLOWED_HOSTS = [".localhost", "127.0.0.1", "[::1]", "0.0.0.0"]  # noqa: S104
+if "ALLOWED_HOSTS" in os.environ:
+    ALLOWED_HOSTS.extend(os.getenv("ALLOWED_HOSTS", "").split(","))
 
 # Whitelisted indicators while importing data
-WHITELIST_INDICATORS = [
+WHITELIST_INDICATORS = CONFIG.get("whitelist_indicators") or [
     x.strip() for x in os.getenv("WHITELIST_INDICATORS", "").split(",")
 ]
 
 CORS_ORIGIN_ALLOW_ALL = True
-# CORS_ORIGIN_WHITELIST = ['*']
 
 CORS_ALLOW_METHODS = [
     "DELETE",
@@ -75,6 +91,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.gis",
     "layer",
+    "plugin",
 ]
 
 MIDDLEWARE = [
@@ -163,13 +180,29 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {
+        "django.db.backends": {
+            "handlers": ["console"],
+            "level": os.getenv("DJANGO_DB_LOG_LEVEL", "WARNING"),
+        },
+    },
+}
+
 STRAWBERRY_DJANGO = {
     "FIELD_DESCRIPTION_FROM_HELP_TEXT": True,
     "TYPE_DESCRIPTION_FROM_MODEL_DOCSTRING": True,
 }
 
 # Default period for table data
-DEFAULT_TIME_PERIOD = "2024_08"
+DEFAULT_TIME_PERIOD = CONFIG.get("default_time_period", "2024_08")
 
 # ASGI application class to use
 ASGI_APPLICATION = "D4D_ContextLayer.asgi.application"

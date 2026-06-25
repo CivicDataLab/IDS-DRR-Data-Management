@@ -1,6 +1,7 @@
 from django.contrib import admin
 
-from .models import *
+from .models import Data, Department, Geography, Indicators, Scheme, Unit
+
 
 class CustomUnitAdmin(admin.ModelAdmin):
     list_display = ["name", "symbol"]
@@ -11,11 +12,6 @@ class CustomGeoAdmin(admin.ModelAdmin):
     list_display = ["name", "code", "type", "parentId"]
     class Meta:
         model = Geography
-
-# class CustomPageAdmin(admin.ModelAdmin):
-#     list_display = ["name"]
-#     class Meta:
-#         model = Page
 
 class CustomDepartmentAdmin(admin.ModelAdmin):
     list_display = ["name", "geography"]
@@ -40,7 +36,6 @@ class CustomDataAdmin(admin.ModelAdmin):
 
 admin.site.register(Unit, CustomUnitAdmin)
 admin.site.register(Geography, CustomGeoAdmin)
-# admin.site.register(Page, CustomPageAdmin)
 admin.site.register(Department, CustomDepartmentAdmin)
 admin.site.register(Scheme, CustomSchemeAdmin)
 admin.site.register(Indicators, CustomIndicatorAdmin)

@@ -1,0 +1,17 @@
+django
+django-cors-headers
+django-redis
+geojson
+pandas
+psycopg2
+pydantic
+python-dateutil
+python-dotenv
+requests
+strawberry-graphql
+strawberry-graphql-django
+uvicorn
+# `ids-drr-plugin` is an optional package. This line installs a stub package from plugin-stub/
+# containing a Django app. Deployments can override it with (e.g. to add a PDF report view):
+#   pip install path/to/my-plugin
+./plugin-stub
