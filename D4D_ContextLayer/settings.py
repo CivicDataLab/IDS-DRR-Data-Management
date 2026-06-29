@@ -234,4 +234,6 @@ CACHE_TIMEOUTS = {
     "table_data": 60 * 15,
     "time_trends": 60 * 20,
     "time_periods": 60 * 60 * 6,
+    "raster_stats": 60 * 60 * 24,
+    "raster_tiles": 60 * 60 * 24,
 }

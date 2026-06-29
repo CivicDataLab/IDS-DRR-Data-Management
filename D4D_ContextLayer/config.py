@@ -76,12 +76,35 @@ class GeojsonSpec(_Strict):
     parent: ParentSpec
 
 
+class ModuleSpec(_Strict):
+    module: str  # hazard module, e.g. "flood" | "heat"
+    indicators: str  # path to the indicators CSV (relative to config dir)
+    data: str  # path to the data CSV (relative to config dir)
+    # Directory of GeoTIFF files for this state/module (relative to config dir).
+    # Required in config.toml for any module that serves raster indicators; CSV
+    # ``{slug}-raster`` columns store filenames only.
+    raster_folder: str | None = None
+    # When true, district/block raster tiles use the state GeoTIFF clipped to the
+    # requested geography boundary (see layer.raster).
+    district_uses_state_level_raster_file: bool = False
+
+
 class StateSpec(_Strict):
     name: str
-    indicators: str
-    data: str
     resource_id: str = ""
     hidden: bool = False
+    modules: list[ModuleSpec] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _validate_modules(self) -> "StateSpec":
+        seen = set()
+        for module_spec in self.modules:
+            if module_spec.module in seen:
+                raise ValueError(
+                    f"duplicate module {module_spec.module!r} for state {self.name!r}"
+                )
+            seen.add(module_spec.module)
+        return self
 
 
 class ChartTypeSpec(_Strict):

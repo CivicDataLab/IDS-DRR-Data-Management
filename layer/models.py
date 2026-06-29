@@ -92,6 +92,25 @@ class Indicators(models.Model):
         blank=True,
         help_text='Dataset link from the indicators CSV column "IDS_dataSpace".',
     )
+    module = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        default="flood",
+        db_index=True,
+        help_text="Hazard module this indicator belongs to, e.g. 'flood', 'heat'.",
+    )
+    is_raster_available = models.BooleanField(
+        default=False,
+        help_text="Whether a raster layer exists for this indicator.",
+    )
+    raster_polarity = models.BooleanField(
+        default=True,
+        help_text=(
+            "CSV rasterPolarity: True (y) = high values red/dark; "
+            "False (n) = low values red/dark."
+        ),
+    )
 
     def save(self, *args, **kwargs):
         indc_obj = Indicators.objects.last()
@@ -116,8 +135,23 @@ class Data(models.Model):
     scheme = models.ForeignKey(
         Scheme, on_delete=models.PROTECT, null=True, blank=True)
     data_period = models.CharField(max_length=100, null=True, blank=True)
+    module = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        default="flood",
+        db_index=True,
+        help_text="Hazard module (mirrors indicator.module), e.g. 'flood', 'heat'.",
+    )
+    raster_file = models.CharField(
+        max_length=500,
+        null=True,
+        blank=True,
+        help_text="Raster filename under data/<module>/raster/<state>/, when applicable.",
+    )
 
     class Meta:
         indexes = [
             models.Index(fields=["geography", "data_period"]),
+            models.Index(fields=["module", "data_period"]),
         ]

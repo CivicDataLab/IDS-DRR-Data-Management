@@ -29,6 +29,7 @@ class GeoFilter:
 class IndicatorFilter:
     name: str | None
     slug: str | None
+    module: str | None
 
 
 @strawberry_django.filter(models.Data)
@@ -73,6 +74,9 @@ class Indicators:
     department: Optional["Department"] = None
     scheme: Optional["Scheme"] = None
     parent: Optional["Indicators"]
+    module: str | None = None
+    is_raster_available: auto
+    raster_polarity: auto
 
 
 @strawberry_django.type(models.Data, filters=DataFilter)
@@ -83,6 +87,7 @@ class Data:
     geography: "Geography"
     scheme: Optional["Scheme"] = None
     data_period: str | None
+    module: str | None = None
 
 
 @strawberry.type
@@ -99,6 +104,7 @@ class State:
     bounds: list[list[float]] | None
     child_type: str | None = strawberry.field(name="child_type")
     resource_id: str = strawberry.field(name="resource_id")
+    modules: list[str] = strawberry.field(default_factory=list)
     time_periods: list[str] = strawberry.field(name="time_periods")
     latest_time_period: str | None = strawberry.field(name="latest_time_period")
 
@@ -112,6 +118,9 @@ class Indicator:
     data_source: str | None = strawberry.field(name="data_source")
     unit_name: str | None = strawberry.field(name="unit__name")
     ids_data_space: str | None = strawberry.field(name="IDS_dataSpace")
+    module: str | None = None
+    is_raster_available: bool = strawberry.field(name="is_raster_available")
+    raster_polarity: bool = strawberry.field(name="raster_polarity")
 
 
 @strawberry.type
@@ -121,3 +130,6 @@ class IndicatorCategory:
     description: str | None
     children: list["IndicatorCategory"]
     ids_data_space: str | None = strawberry.field(name="IDS_dataSpace")
+    category: str | None = None
+    is_raster_available: bool = strawberry.field(name="is_raster_available")
+    raster_polarity: bool = strawberry.field(name="raster_polarity")

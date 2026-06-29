@@ -5,6 +5,7 @@ from layer.cache_utils import (
     invalidate_data_caches,
     invalidate_geography_caches,
     invalidate_indicator_caches,
+    invalidate_raster_caches,
 )
 
 
@@ -33,6 +34,12 @@ class Command(BaseCommand):
             help='Invalidate indicator-dependent caches',
         )
 
+        parser.add_argument(
+            '--invalidate-raster',
+            action='store_true',
+            help='Invalidate raster stats and tile caches',
+        )
+
     def handle(self, *args, **options):
         if options['clear_all']:
             self.stdout.write('Clearing all caches...')
@@ -54,11 +61,17 @@ class Command(BaseCommand):
             invalidate_indicator_caches()
             self.stdout.write(self.style.SUCCESS('Indicator caches invalidated'))
 
+        if options['invalidate_raster']:
+            self.stdout.write('Invalidating raster caches...')
+            invalidate_raster_caches()
+            self.stdout.write(self.style.SUCCESS('Raster caches invalidated'))
+
         if not any([
             options['clear_all'],
             options['invalidate_data'],
             options['invalidate_geography'],
-            options['invalidate_indicators']
+            options['invalidate_indicators'],
+            options['invalidate_raster'],
         ]):
             self.stdout.write(self.style.WARNING(
                 'No action specified. Use --help to see available options.'

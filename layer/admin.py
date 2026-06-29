@@ -24,12 +24,15 @@ class CustomSchemeAdmin(admin.ModelAdmin):
         model = Scheme
 
 class CustomIndicatorAdmin(admin.ModelAdmin):
-    list_display = ["name", "type", "display_order", "category"]
+    list_display = [
+        "name", "type", "display_order", "category",
+        "is_raster_available", "raster_polarity",
+    ]
     class Meta:
         model = Indicators
 
 class CustomDataAdmin(admin.ModelAdmin):
-    list_display = ["value", "indicator", "geography"]
+    list_display = ["value", "indicator", "geography", "raster_file"]
     class Meta:
         model = Data
 

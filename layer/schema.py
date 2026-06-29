@@ -43,6 +43,13 @@ def _group_data_by_geography_code(
     return grouped
 
 
+def _display_value(value, unit: str = "") -> str:
+    """Format a Data.value for API responses (None → empty string)."""
+    if value is None:
+        return ""
+    return f"{value} {unit}".strip() if unit else str(value)
+
+
 @cache_query('table_data')
 def get_district_data(
     indc_filter: types.IndicatorFilter,
@@ -73,6 +80,8 @@ def get_district_data(
             | Q(indicator__parent__slug=indc_filter.slug),
             indicator__is_visible=True,
         )
+    if indc_filter and indc_filter.module:
+        dataset_obj = dataset_obj.filter(module=indc_filter.module)
     if data_filter:
         dataset_obj = dataset_obj.filter(data_period=data_filter.data_period)
 
@@ -104,19 +113,18 @@ def get_district_data(
             geography_type: geo.name,
             f"{geography_type.replace(' ', '-')}-code": geo.code,
         }
+        sort_key = float("-inf")
         for obj in rows:
             unit = obj.indicator.unit.name if obj.indicator.unit else ""
+            if obj.indicator.slug == indc_filter.slug and obj.value is not None:
+                sort_key = obj.value
             data_dict[obj.indicator.slug] = {
-                "value": f"{obj.value} {unit}" if unit else str(obj.value),
+                "value": _display_value(obj.value, unit),
                 "title": obj.indicator.name,
             }
-        data_list.append(data_dict)
+        data_list.append((sort_key, data_dict))
 
-    return sorted(
-        data_list,
-        key=lambda d: float(d[indc_filter.slug]["value"].split()[0]),
-        reverse=True,
-    )
+    return [row for _, row in sorted(data_list, key=lambda item: item[0], reverse=True)]
 
 
 
@@ -144,6 +152,8 @@ def get_table_data(
     """
     data_list = []
     data_obj = Data.objects.filter(indicator__is_visible=True)
+    if indc_filter and indc_filter.module:
+        data_obj = data_obj.filter(module=indc_filter.module)
 
     # Filter by time period
     if data_filter:
@@ -196,7 +206,7 @@ def get_table_data(
         for obj in rows:
             unit = obj.indicator.unit.name if obj.indicator.unit else ""
             data_dict[obj.indicator.slug] = {
-                "value": f"{obj.value} {unit}" if unit else str(obj.value),
+                "value": _display_value(obj.value, unit),
                 "title": obj.indicator.name,
             }
 
@@ -267,6 +277,8 @@ def get_time_trends(
         indicator__slug=indc_filter.slug,
         data_period__in=time_list,
     ).select_related("geography")
+    if indc_filter and indc_filter.module:
+        data_queryset = data_queryset.filter(module=indc_filter.module)
     data_by_period = defaultdict(list)
     for data in data_queryset:
         data_by_period[data.data_period].append(data)
@@ -324,8 +336,10 @@ def get_revenue_data(
         Q(indicator__parent__slug=indc_filter.slug)
         | Q(indicator__slug=indc_filter.slug),
         indicator__is_visible=True,
+        data_period=data_filter.data_period,
     )
-    rc_data_queryset = rc_data_queryset.filter(data_period=data_filter.data_period)
+    if indc_filter and indc_filter.module:
+        rc_data_queryset = rc_data_queryset.filter(module=indc_filter.module)
 
     geographies = list(geo_queryset)
     data_by_geography_code = _group_data_by_geography_code(
@@ -354,20 +368,19 @@ def get_revenue_data(
             data_dict[parent_type_slug] = parent.name
             data_dict[f"{parent_type_slug}-code"] = parent.code
 
+        sort_key = float("-inf")
         for obj in rows:
             unit = obj.indicator.unit.name if obj.indicator.unit else ""
+            if obj.indicator.slug == indc_filter.slug and obj.value is not None:
+                sort_key = obj.value
             data_dict[obj.indicator.slug] = {
-                "value": f"{obj.value} {unit}" if unit else str(obj.value),
+                "value": _display_value(obj.value, unit),
                 "title": obj.indicator.name,
             }
 
-        data_list.append(data_dict)
+        data_list.append((sort_key, data_dict))
 
-    return sorted(
-        data_list,
-        key=lambda d: float(d[indc_filter.slug]["value"].split()[0]),
-        reverse=True,
-    )
+    return [row for _, row in sorted(data_list, key=lambda item: item[0], reverse=True)]
 
 
 
@@ -408,6 +421,8 @@ def get_revenue_map_data(
         data_period=data_filter.data_period,
         geography__parentId__parentId__code__in=geo_filter.code,
     ).select_related("geography")
+    if indc_filter and indc_filter.module:
+        rc_data = rc_data.filter(module=indc_filter.module)
 
     # Create a dictionary to store indicator data by geography code
     rc_data_map = {data.geography.code: data for data in rc_data}
@@ -473,6 +488,8 @@ def get_district_map_data(
         geography__type="DISTRICT",
         geography__parentId__code__in=geo_filter.code,
     ).select_related("geography")
+    if indc_filter and indc_filter.module:
+        district_data = district_data.filter(module=indc_filter.module)
 
     # Create a dictionary to store indicator data by geography code
     district_data_map = {data.geography.code: data for data in district_data}
@@ -525,15 +542,17 @@ def get_indicators(
         The function also prints the execution time, which might be useful for performance monitoring.
 
     """
-    indcators = Indicators.objects.filter(is_visible=True)
+    indicators = Indicators.objects.filter(is_visible=True)
+    if indc_filter and indc_filter.module:
+        indicators = indicators.filter(module=indc_filter.module)
     if state_code:
-        indcators = indcators.filter(geography__code=state_code)
+        indicators = indicators.filter(geography__code=state_code)
     if indc_filter:
-        indcators = indcators.filter(
+        indicators = indicators.filter(
             Q(slug=indc_filter.slug) | Q(parent__slug=indc_filter.slug)
         )
 
-    data_queryset = indcators.values(
+    data_queryset = indicators.values(
         "name",
         "slug",
         "long_description",
@@ -541,6 +560,10 @@ def get_indicators(
         "data_source",
         "unit__name",
         "IDS_dataSpace",
+        "module",
+        "category",
+        "is_raster_available",
+        "raster_polarity",
     )
     return [
         types.Indicator(
@@ -551,17 +574,28 @@ def get_indicators(
             data_source=row["data_source"],
             unit_name=row["unit__name"],
             ids_data_space=row["IDS_dataSpace"],
+            module=row["module"],
+            is_raster_available=row["is_raster_available"],
+            raster_polarity=row["raster_polarity"],
         )
         for row in data_queryset
     ]
 
 
 @cache_query('time_periods')
-def get_timeperiod():
+def get_timeperiod(module: str | None = "flood", state_code: str | None = None):
     # Use annotation to create a custom field for sorting
+    data = Data.objects.values_list("data_period", flat=True)
+    if module:
+        data = data.filter(module=module)
+    if state_code:
+        data = data.filter(
+            Q(geography__code=state_code)
+            | Q(geography__parentId__code=state_code)
+            | Q(geography__parentId__parentId__code=state_code)
+        )
     data = (
-        Data.objects.values_list("data_period", flat=True)
-        .annotate(custom_ordering=F("data_period"))
+        data.annotate(custom_ordering=F("data_period"))
         .distinct()
         .order_by("-custom_ordering")
     )
@@ -611,9 +645,13 @@ def get_district_rev_circle(geo_filter: types.GeoFilter):
 
 @cache_query('indicators')
 def get_child_indicators(
-    parent_id: int | None = None, state_code: str | None = None
+    parent_id: int | None = None,
+    state_code: str | None = None,
+    module: str | None = "flood",
 ) -> list:
     visible = Indicators.objects.filter(is_visible=True)
+    if module:
+        visible = visible.filter(module=module)
     if state_code:
         visible = visible.filter(geography__code=state_code)
 
@@ -623,19 +661,22 @@ def get_child_indicators(
             children_by_parent_id[indicator.parent_id].append(indicator)
 
     def build(indicator):
+        children = [build(child) for child in children_by_parent_id[indicator.id]]
         return types.IndicatorCategory(
             slug=indicator.slug,
             name=indicator.name,
             description=indicator.long_description,
-            children=[build(child) for child in children_by_parent_id[indicator.id]],
+            children=children,
             ids_data_space=indicator.IDS_dataSpace,
+            category=indicator.category if not children else None,
+            is_raster_available=indicator.is_raster_available,
+            raster_polarity=indicator.raster_polarity,
         )
 
     return [build(indicator) for indicator in visible.filter(parent__id=parent_id)]
 
-
 @cache_query('states')
-def get_states():
+def get_states(module: str | None = "flood"):
     specs = settings.CONFIG.get("states", [])
     visible = {spec["name"].lower(): spec.get("resource_id", "") for spec in specs if not spec.get("hidden", False)}
     if not visible:
@@ -665,9 +706,10 @@ def get_states():
     periods_by_state_code = defaultdict(set)
     # NOTE: If the database were multi-tenant (e.g. multiple frontends),
     # then it would be faster to add a geography_id__in filter.
-    for geography_id, data_period in (
-        Data.objects.values_list("geography_id", "data_period").distinct()
-    ):
+    data_periods_qs = Data.objects.values_list("geography_id", "data_period").distinct()
+    if module:
+        data_periods_qs = data_periods_qs.filter(module=module)
+    for geography_id, data_period in data_periods_qs:
         state_code = root_state_code_by_id.get(geography_id)
         if state_code is not None:
             periods_by_state_code[state_code].add(data_period)
@@ -688,10 +730,23 @@ def get_states():
         .distinct()
     )
 
+    modules_by_state_id = defaultdict(set)
+    for state_id, module_name in (
+        Indicators.objects.filter(
+            geography__in=state_geographies,
+            is_visible=True,
+        )
+        .exclude(module__isnull=True)
+        .values_list("geography_id", "module")
+        .distinct()
+    ):
+        modules_by_state_id[state_id].add(module_name)
+
     states = []
     for state_geography in state_geographies:
         bbox = bbox_by_state_id.get(state_geography.id)
         time_periods = periods_by_state_code.get(state_geography.code, [])
+        modules = sorted(modules_by_state_id.get(state_geography.id, []))
         states.append(types.State(
             name=state_geography.name,
             slug=state_geography.slug,
@@ -702,6 +757,7 @@ def get_states():
             else None,
             bounds=_leaflet_bounds(bbox),
             resource_id=visible.get(state_geography.name.lower(), ""),
+            modules=modules,
             time_periods=time_periods,
             latest_time_period=time_periods[0] if time_periods else None,
         ))
