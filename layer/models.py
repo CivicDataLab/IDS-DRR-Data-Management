@@ -25,30 +25,6 @@ class Geography(models.Model):
         return super().save(*args, **kwargs)
 
 
-class Department(models.Model):
-    name = models.CharField(max_length=20, null=False)
-    description = models.CharField(null=True, max_length=1500, blank=True)
-    slug = models.SlugField(max_length=20, null=True, blank=True)
-    geography = models.ForeignKey(Geography, on_delete=models.PROTECT)
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(f"{self.name}")
-        return super().save(*args, **kwargs)
-
-
-class Scheme(models.Model):
-    name = models.CharField(max_length=20, null=False)
-    description = models.CharField(null=True, max_length=1500, blank=True)
-    slug = models.SlugField(max_length=20, null=True, blank=True)
-    department = models.ForeignKey(Department, on_delete=models.PROTECT)
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(f"{self.name}")
-        return super().save(*args, **kwargs)
-
-
 class Indicators(models.Model):
     name = models.CharField(max_length=100, null=False)
     long_description = models.CharField(null=True, max_length=500, blank=True)
@@ -71,12 +47,7 @@ class Indicators(models.Model):
     geography = models.ForeignKey(
         Geography, on_delete=models.PROTECT, null=True, blank=True
     )
-    department = models.ForeignKey(
-        Department, on_delete=models.PROTECT, null=True, blank=True
-    )
     data_source = models.CharField(max_length=100, null=True, blank=True)
-    scheme = models.ForeignKey(
-        Scheme, on_delete=models.PROTECT, null=True, blank=True)
     parent = models.ForeignKey(
         "self",
         blank=True,
@@ -132,8 +103,6 @@ class Data(models.Model):
         Indicators, on_delete=models.CASCADE, null=False)
     geography = models.ForeignKey(
         Geography, on_delete=models.PROTECT, null=False)
-    scheme = models.ForeignKey(
-        Scheme, on_delete=models.PROTECT, null=True, blank=True)
     data_period = models.CharField(max_length=100, null=True, blank=True)
     module = models.CharField(
         max_length=50,
