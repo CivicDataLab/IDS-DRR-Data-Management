@@ -51,6 +51,11 @@ def chart_type_geojson(request, chart_type):
     return JsonResponse({"type": "FeatureCollection", "features": features})
 
 
+def _json_error(message: str, status: int = 400, **extra) -> JsonResponse:
+    """Return a JSON error body for raster API clients (not Django's HTML 404 page)."""
+    return JsonResponse({"error": message, **extra}, status=status)
+
+
 def _raster_query_params(request) -> dict:
     module = request.GET.get("module")
     indicator = request.GET.get("indicator")
@@ -86,15 +91,18 @@ def raster_metadata(request):
     """
     params = _raster_query_params(request)
     if "error" in params:
-        return JsonResponse(params, status=400)
+        return _json_error(params["error"], status=400)
 
-    context = raster.get_raster_context(
-        module=params["module"],
-        indicator_slug=params["indicator"],
-        geography_code=params["geography_code"],
-        data_period=params["period"],
-    )
-    meta = raster.get_raster_metadata(context)
+    try:
+        context = raster.get_raster_context(
+            module=params["module"],
+            indicator_slug=params["indicator"],
+            geography_code=params["geography_code"],
+            data_period=params["period"],
+        )
+        meta = raster.get_raster_metadata(context)
+    except Http404 as exc:
+        return _json_error(str(exc), status=404)
     # build_absolute_uri encodes `{z}` placeholders; tile clients need them literal.
     base = request.build_absolute_uri("/").rstrip("/")
     meta["tiles"] = [f"{base}{meta['tile_url_template']}"]
@@ -112,20 +120,20 @@ def raster_tile(request, z: int, x: int, y: int):
     """
     params = _raster_query_params(request)
     if "error" in params:
-        return JsonResponse(params, status=400)
+        return _json_error(params["error"], status=400)
 
-    context = raster.get_raster_context(
-        module=params["module"],
-        indicator_slug=params["indicator"],
-        geography_code=params["geography_code"],
-        data_period=params["period"],
-    )
     try:
+        context = raster.get_raster_context(
+            module=params["module"],
+            indicator_slug=params["indicator"],
+            geography_code=params["geography_code"],
+            data_period=params["period"],
+        )
         body, content_type = raster.render_raster_tile(context, z, x, y)
-    except Http404:
-        raise
-    except Exception as exc:
-        raise Http404("Could not render tile") from exc
+    except Http404 as exc:
+        return _json_error(str(exc), status=404)
+    except Exception:
+        return _json_error("Could not render tile", status=500)
     return HttpResponse(body, content_type=content_type)
 
 
@@ -148,19 +156,22 @@ def raster_value(request):
     """
     params = _raster_query_params(request)
     if "error" in params:
-        return JsonResponse(params, status=400)
+        return _json_error(params["error"], status=400)
 
     lat = _parse_coordinate(request.GET.get("lat"), "lat")
     if isinstance(lat, dict):
-        return JsonResponse(lat, status=400)
+        return _json_error(lat["error"], status=400)
     lng = _parse_coordinate(request.GET.get("lng"), "lng")
     if isinstance(lng, dict):
-        return JsonResponse(lng, status=400)
+        return _json_error(lng["error"], status=400)
 
-    context = raster.get_raster_context(
-        module=params["module"],
-        indicator_slug=params["indicator"],
-        geography_code=params["geography_code"],
-        data_period=params["period"],
-    )
-    return JsonResponse(raster.get_raster_value(context, lat=lat, lng=lng))
+    try:
+        context = raster.get_raster_context(
+            module=params["module"],
+            indicator_slug=params["indicator"],
+            geography_code=params["geography_code"],
+            data_period=params["period"],
+        )
+        return JsonResponse(raster.get_raster_value(context, lat=lat, lng=lng))
+    except Http404 as exc:
+        return _json_error(str(exc), status=404)
