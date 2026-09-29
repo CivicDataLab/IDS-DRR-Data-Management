@@ -46,21 +46,6 @@ class Geography:
     parent_id: Optional["Geography"] = strawberry_django.field(field_name="parentId")
 
 
-@strawberry_django.type(models.Department)
-class Department:
-    name: auto
-    description: auto
-    geography: "Geography"
-
-
-@strawberry_django.type(models.Scheme)
-class Scheme:
-    name: auto
-    description: str | None = None
-    slug: str | None = None
-    department: Optional["Department"] = None
-
-
 @strawberry_django.type(models.Indicators)
 class Indicators:
     name: auto
@@ -71,8 +56,6 @@ class Indicators:
     slug: str | None = None
     unit: Unit
     geography: Optional["Geography"] = None
-    department: Optional["Department"] = None
-    scheme: Optional["Scheme"] = None
     parent: Optional["Indicators"]
     module: str | None = None
     is_raster_available: auto
@@ -85,7 +68,6 @@ class Data:
     added: datetime.datetime
     indicator: "Indicators"
     geography: "Geography"
-    scheme: Optional["Scheme"] = None
     data_period: str | None
     module: str | None = None
 
