@@ -34,7 +34,12 @@ services:
       start_period: 10s
       timeout: 5s
   web:
-    build: .
+    build:
+      context: .
+      args:
+        PLUGIN_PACKAGE: ${PLUGIN_PACKAGE:-./plugin-stub}
+    # deploy.yml pulls this tag instead of building on the host.
+    image: ${GHCR_IMAGE:-ghcr.io/civicdatalab/ids-drr-data-management}:${IMAGE_TAG:-latest}
     restart: always
     container_name: "context_layer_Backend"
     command: >-
