@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+import json
 import os
 import tomllib
 from pathlib import Path
@@ -31,6 +32,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 CONFIG_PATH = Path(os.getenv("CONFIG_PATH", BASE_DIR / "config.toml"))
 CONFIG_DIR = CONFIG_PATH.parent
 CONFIG = tomllib.loads(CONFIG_PATH.read_text()) if CONFIG_PATH.is_file() else {}
+
+# DataSpace resource IDs differ per DataSpace instance, so each deployment can
+# override config.toml's per-state resource_id, e.g. {"Assam": "<uuid>"}.
+STATE_RESOURCE_IDS = {
+    k.lower(): v for k, v in json.loads(os.getenv("STATE_RESOURCE_IDS") or "{}").items()
+}
+for _state in CONFIG.get("states", []):
+    _state["resource_id"] = STATE_RESOURCE_IDS.get(
+        _state["name"].lower(), _state.get("resource_id", "")
+    )
 
 try:
     Config.model_validate(CONFIG)
