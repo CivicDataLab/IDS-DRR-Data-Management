@@ -116,6 +116,8 @@ def invalidate_data_caches(*, verbose: bool = False):
         'get_revenue_map_data_*',
         'get_district_map_data_*',
         'get_timeperiod_*',
+        # get_states reads each state's data periods.
+        'get_states_*',
     ]
     for pattern in patterns:
         invalidate_cache_pattern(pattern, verbose=verbose)
@@ -155,6 +157,8 @@ def invalidate_indicator_caches(*, verbose: bool = False):
     patterns = [
         'get_indicators_*',
         'get_child_indicators_*',
+        # get_states reads each state's visible-indicator modules.
+        'get_states_*',
     ]
     for pattern in patterns:
         invalidate_cache_pattern(pattern, verbose=verbose)
