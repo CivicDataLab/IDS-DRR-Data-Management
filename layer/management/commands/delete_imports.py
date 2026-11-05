@@ -2,7 +2,6 @@ import sys
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-from django.db.models import ProtectedError
 from django.db.models.signals import post_delete
 
 from layer.cache_utils import (
@@ -21,8 +20,7 @@ from layer.signals import (
 class Command(BaseCommand):
     help = (
         "Delete all rows populated by import_geojson, import_indicators, and "
-        "import_data, so that a different configuration can be loaded from scratch. "
-        "If Department or Scheme rows reference Geography, this command will abort."
+        "import_data, so that a different configuration can be loaded from scratch."
     )
 
     def add_arguments(self, parser):
@@ -72,11 +70,6 @@ class Command(BaseCommand):
                 Indicators.objects.all().delete()
                 Unit.objects.all().delete()
                 Geography.objects.all().delete()
-        except ProtectedError as exc:
-            raise CommandError(
-                f"Cannot delete Geography while other rows reference it: {exc}. "
-                "Remove those rows (e.g. Department, Scheme) first."
-            ) from exc
         finally:
             post_delete.connect(invalidate_data_cache, sender=Data)
             post_delete.connect(invalidate_indicator_cache, sender=Indicators)
